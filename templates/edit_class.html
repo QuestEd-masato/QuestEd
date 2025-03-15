@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}クラス編集{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>クラス編集</h2>
+    <form method="POST" action="{{ url_for('edit_class', class_id=class_obj.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group mb-3">
+            <label for="class_name">クラス名</label>
+            <input type="text" class="form-control" id="class_name" name="class_name" value="{{ class_obj.name }}" required>
+        </div>
+        <div class="form-group mb-3">
+            <label for="description">説明</label>
+            <textarea class="form-control" id="description" name="description" rows="3">{{ class_obj.description or '' }}</textarea>
+        </div>
+        <div class="form-group mb-3">
+            <label for="schedule">スケジュール</label>
+            <input type="text" class="form-control" id="schedule" name="schedule" value="{{ class_obj.schedule or '' }}">
+        </div>
+        <div class="form-group mb-3">
+            <label for="location">場所</label>
+            <input type="text" class="form-control" id="location" name="location" value="{{ class_obj.location or '' }}">
+        </div>
+        <button type="submit" class="btn btn-primary">更新</button>
+        <a href="{{ url_for('view_class', class_id=class_obj.id) }}" class="btn btn-secondary">キャンセル</a>
+    </form>
+</div>
+{% endblock %}

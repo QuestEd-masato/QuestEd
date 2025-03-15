@@ -1,0 +1,276 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ milestone.title }} | QuestEd{% endblock %}
+
+{% block content %}
+<div class="milestone-detail-container">
+    <div class="milestone-header">
+        <h2>マイルストーン: {{ milestone.title }}</h2>
+        <div class="milestone-meta">
+            <span class="class-name">クラス: {{ class_.name }}</span>
+            <span class="due-date">期限: {{ milestone.due_date.strftime('%Y年%m月%d日') }}</span>
+            
+            {% if milestone.due_date < now.date() %}
+            <span class="date-status overdue">期限切れ</span>
+            {% elif (milestone.due_date - now.date()).days <= 7 %}
+            <span class="date-status upcoming">もうすぐ</span>
+            {% endif %}
+        </div>
+        
+        {% if milestone.description %}
+        <div class="milestone-description">
+            <p>{{ milestone.description }}</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="submission-status">
+        {% if is_submitted %}
+        <div class="status-card submitted">
+            <div class="status-icon">✓</div>
+            <div class="status-info">
+                <h3>提出済み</h3>
+                <p>{{ submission.submission_date.strftime('%Y年%m月%d日 %H:%M') }}に提出しました</p>
+            </div>
+        </div>
+        {% else %}
+        <div class="status-card not-submitted">
+            <div class="status-icon">!</div>
+            <div class="status-info">
+                <h3>未提出</h3>
+                {% if milestone.due_date < now.date() %}
+                <p>期限が過ぎています。すぐに提出してください。</p>
+                {% else %}
+                <p>期限までに提出してください。</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    {% if is_submitted %}
+    <div class="submission-content">
+        <h3>提出内容</h3>
+        <div class="content-text">
+            {{ submission.content|nl2br }}
+        </div>
+    </div>
+    
+    {% if submission.reflection %}
+    <div class="submission-reflection">
+        <h3>振り返り</h3>
+        <div class="reflection-text">
+            {{ submission.reflection|nl2br }}
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if submission.feedback %}
+    <div class="submission-feedback">
+        <h3>教師からのフィードバック</h3>
+        <div class="feedback-card">
+            <div class="feedback-header">
+                <span class="grade-label">評価:</span>
+                <span class="grade-value">{{ submission.grade or '未評価' }}</span>
+            </div>
+            <div class="feedback-text">
+                {{ submission.feedback|nl2br }}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="submission-actions">
+        <a href="{{ url_for('submit_milestone', milestone_id=milestone.id) }}" class="btn btn-primary">編集する</a>
+    </div>
+    {% else %}
+    <div class="submission-prompt">
+        <p>このマイルストーンはまだ提出されていません。「提出する」ボタンをクリックして、作業内容を提出してください。</p>
+        <a href="{{ url_for('submit_milestone', milestone_id=milestone.id) }}" class="btn btn-primary">提出する</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .milestone-detail-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .milestone-header {
+        margin-bottom: 2rem;
+    }
+    
+    .milestone-meta {
+        display: flex;
+        gap: 1.5rem;
+        margin: 0.5rem 0 1rem;
+        color: #6c757d;
+        align-items: center;
+    }
+    
+    .date-status {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+    }
+    
+    .date-status.upcoming {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .date-status.overdue {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .milestone-description {
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        margin-top: 1rem;
+    }
+    
+    .submission-status {
+        margin-bottom: 2rem;
+    }
+    
+    .status-card {
+        display: flex;
+        align-items: center;
+        padding: 1.5rem;
+        border-radius: 8px;
+    }
+    
+    .status-card.submitted {
+        background-color: #d4edda;
+    }
+    
+    .status-card.not-submitted {
+        background-color: #f8d7da;
+    }
+    
+    .status-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-right: 1rem;
+    }
+    
+    .status-card.submitted .status-icon {
+        background-color: #28a745;
+        color: white;
+    }
+    
+    .status-card.not-submitted .status-icon {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .status-info h3 {
+        margin: 0 0 0.5rem;
+    }
+    
+    .status-info p {
+        margin: 0;
+    }
+    
+    .submission-content,
+    .submission-reflection,
+    .submission-feedback {
+        margin-bottom: 2rem;
+    }
+    
+    .submission-content h3,
+    .submission-reflection h3,
+    .submission-feedback h3 {
+        margin-bottom: 1rem;
+        color: #333;
+    }
+    
+    .content-text,
+    .reflection-text {
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        line-height: 1.6;
+    }
+    
+    .feedback-card {
+        padding: 1.5rem;
+        background-color: #e3f2fd;
+        border-radius: 8px;
+    }
+    
+    .feedback-header {
+        margin-bottom: 1rem;
+    }
+    
+    .grade-label {
+        font-weight: bold;
+        margin-right: 0.5rem;
+    }
+    
+    .grade-value {
+        display: inline-block;
+        padding: 3px 10px;
+        background-color: #0056b3;
+        color: white;
+        border-radius: 4px;
+    }
+    
+    .feedback-text {
+        line-height: 1.6;
+    }
+    
+    .submission-prompt {
+        padding: 2rem;
+        text-align: center;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .submission-prompt p {
+        margin-bottom: 1.5rem;
+    }
+    
+    .submission-actions {
+        text-align: center;
+        margin-top: 1rem;
+    }
+    
+    @media (max-width: 768px) {
+        .milestone-detail-container {
+            padding: 1rem;
+        }
+        
+        .milestone-meta {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+        
+        .status-card {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .status-icon {
+            margin: 0 0 1rem 0;
+        }
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ milestone.title }} 提出 | QuestEd{% endblock %}
+
+{% block content %}
+<div class="submit-milestone-container">
+    <div class="milestone-header">
+        <h2>マイルストーン提出</h2>
+        <div class="milestone-info">
+            <h3>{{ milestone.title }}</h3>
+            <div class="milestone-meta">
+                <span class="class-name">クラス: {{ class_.name }}</span>
+                <span class="due-date">期限: {{ milestone.due_date.strftime('%Y年%m月%d日') }}</span>
+                
+                {% if milestone.due_date < now.date() %}
+                <span class="date-status overdue">期限切れ</span>
+                {% elif (milestone.due_date - now.date()).days <= 7 %}
+                <span class="date-status upcoming">もうすぐ</span>
+                {% endif %}
+            </div>
+            
+            {% if milestone.description %}
+            <div class="milestone-description">
+                <p>{{ milestone.description }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <form method="POST" action="{{ url_for('submit_milestone', milestone_id=milestone.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div class="form-group">
+            <label for="content">提出内容 <span class="required">*</span></label>
+            <textarea id="content" name="content" rows="10" required placeholder="あなたが取り組んだ内容について詳しく記入してください。探究テーマに関連する活動、学びや発見、調査結果などを含めるとよいでしょう。">{{ submission.content if submission else '' }}</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="reflection">振り返り</label>
+            <textarea id="reflection" name="reflection" rows="5" placeholder="この課題に取り組む中での気づき、難しかった点、学びについて振り返ってみましょう。次回に向けての改善点や質問があれば記入してください。">{{ submission.reflection if submission else '' }}</textarea>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">提出する</button>
+            <a href="{{ url_for('view_milestone', milestone_id=milestone.id) }}" class="btn btn-secondary">キャンセル</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .submit-milestone-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .milestone-header {
+        margin-bottom: 2rem;
+    }
+    
+    .milestone-info {
+        margin-top: 1rem;
+        padding: 1.5rem;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .milestone-info h3 {
+        margin-top: 0;
+        color: #0056b3;
+    }
+    
+    .milestone-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin: 0.5rem 0 1rem;
+        color: #6c757d;
+    }
+    
+    .date-status {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+    }
+    
+    .date-status.upcoming {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .date-status.overdue {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .milestone-description {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #dee2e6;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+    
+    .required {
+        color: #dc3545;
+    }
+    
+    textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 1rem;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+    }
+    
+    @media (max-width: 768px) {
+        .submit-milestone-container {
+            padding: 1rem;
+        }
+        
+        .milestone-meta {
+            flex-direction: column;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+        }
+        
+        .form-actions button,
+        .form-actions a {
+            width: 100%;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+    }
+</style>
+{% endblock %}

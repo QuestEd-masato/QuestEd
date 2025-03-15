@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block title %}マイルストーン編集 | QuestEd{% endblock %}
+
+{% block content %}
+<div class="edit-milestone-container">
+    <h2>マイルストーンの編集</h2>
+    
+    <div class="class-info">
+        <h3>クラス: {{ class_.name }}</h3>
+        {% if class_.description %}
+        <p>{{ class_.description }}</p>
+        {% endif %}
+    </div>
+    
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div class="form-group">
+            <label for="title">タイトル <span class="required">*</span></label>
+            <input type="text" id="title" name="title" value="{{ milestone.title }}" required>
+            <small class="form-text text-muted">例: 中間報告、テーマ発表会、最終レポート提出など</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="description">説明</label>
+            <textarea id="description" name="description" rows="4" placeholder="マイルストーンの内容や要件を詳しく説明してください">{{ milestone.description or '' }}</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="due_date">期限日 <span class="required">*</span></label>
+            <input type="date" id="due_date" name="due_date" value="{{ milestone.due_date.strftime('%Y-%m-%d') }}" required min="{{ now.strftime('%Y-%m-%d') }}">
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">更新する</button>
+            <a href="{{ url_for('view_class', class_id=class_.id) }}" class="btn btn-secondary">キャンセル</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .edit-milestone-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    h2 {
+        margin-bottom: 1.5rem;
+        color: #333;
+    }
+    
+    .class-info {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+    }
+    
+    .class-info h3 {
+        color: #0056b3;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+    
+    .required {
+        color: #dc3545;
+    }
+    
+    input[type="text"],
+    input[type="date"],
+    textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+    }
+    
+    .form-text {
+        display: block;
+        margin-top: 0.25rem;
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+    
+    @media (max-width: 768px) {
+        .edit-milestone-container {
+            padding: 1rem;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+        }
+        
+        .form-actions button,
+        .form-actions a {
+            width: 100%;
+            text-align: center;
+        }
+    }
+</style>
+{% endblock %}

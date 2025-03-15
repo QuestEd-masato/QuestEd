@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="landing-container">
+    <div class="hero-section">
+        <h1>QuestEd</h1>
+        <p class="tagline">探究学習の旅を、より効果的に、より楽しく</p>
+        
+        <div class="hero-actions">
+            {% if current_user.is_authenticated %}
+                {% if current_user.role == 'student' %}
+                    <a href="{{ url_for('student_dashboard') }}" class="btn btn-primary">マイダッシュボード</a>
+                {% elif current_user.role == 'teacher' %}
+                    <a href="{{ url_for('teacher_dashboard') }}" class="btn btn-primary">教師ダッシュボード</a>
+                {% endif %}
+            {% else %}
+                <a href="{{ url_for('login') }}" class="btn btn-primary">ログイン</a>
+                <a href="{{ url_for('register') }}" class="btn btn-secondary">新規登録</a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="features-section">
+        <h2>QuestEdの特徴</h2>
+        
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🧠</div>
+                <h3>AIによる探究テーマ提案</h3>
+                <p>あなたの興味・関心や性格に合わせた、最適な探究テーマをAIが提案します。</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">📝</div>
+                <h3>活動記録の管理</h3>
+                <p>探究活動の記録や振り返りを簡単に管理し、成長の過程を見える化します。</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">👨‍🏫</div>
+                <h3>教師からのフィードバック</h3>
+                <p>活動に対してタイムリーなフィードバックを受け取り、より深い学びにつなげます。</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>進捗管理と可視化</h3>
+                <p>探究活動の進捗状況を簡単に確認でき、計画的に学習を進められます。</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="how-it-works">
+        <h2>利用の流れ</h2>
+        
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3>アンケートに回答</h3>
+                <p>自分の興味・関心や性格に関するアンケートに回答します。</p>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3>AIがテーマを提案</h3>
+                <p>あなたに最適な探究テーマをAIが複数提案します。</p>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3>テーマを選択して活動開始</h3>
+                <p>気に入ったテーマを選び、探究活動を始めましょう。</p>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">4</div>
+                <h3>活動記録と振り返り</h3>
+                <p>定期的に活動内容を記録し、振り返りを行います。</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .landing-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 1rem;
+    }
+    
+    .hero-section {
+        text-align: center;
+        padding: 4rem 0;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        margin-bottom: 3rem;
+    }
+    
+    h1 {
+        font-size: 3rem;
+        color: #0056b3;
+        margin-bottom: 1rem;
+    }
+    
+    .tagline {
+        font-size: 1.5rem;
+        color: #6c757d;
+        margin-bottom: 2rem;
+    }
+    
+    .hero-actions {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+    }
+    
+    .features-section {
+        margin-bottom: 3rem;
+    }
+    
+    .features-section h2,
+    .how-it-works h2 {
+        text-align: center;
+        margin-bottom: 2rem;
+        color: #333;
+    }
+    
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+    }
+    
+    .feature-card {
+        background-color: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        text-align: center;
+    }
+    
+    .feature-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .feature-card h3 {
+        color: #0056b3;
+        margin-bottom: 0.5rem;
+    }
+    
+    .steps {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+    
+    .step {
+        flex: 1 1 200px;
+        background-color: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        position: relative;
+    }
+    
+    .step-number {
+        width: 40px;
+        height: 40px;
+        background-color: #0056b3;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 0 auto 1rem;
+        font-weight: bold;
+    }
+    
+    .step h3 {
+        color: #0056b3;
+        margin-bottom: 0.5rem;
+    }
+    
+    @media (max-width: 768px) {
+        .hero-section {
+            padding: 2rem 0;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+        }
+        
+        .tagline {
+            font-size: 1.2rem;
+        }
+        
+        .features-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .steps {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}

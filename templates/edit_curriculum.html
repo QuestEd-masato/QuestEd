@@ -1,0 +1,656 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ curriculum.title }} 編集 - {{ class_obj.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>カリキュラム編集 - {{ curriculum.title }}</h1>
+    <p class="text-muted">{{ class_obj.name }}</p>
+    
+    <div class="mb-3">
+        <a href="{{ url_for('view_curriculum', curriculum_id=curriculum.id) }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> カリキュラム表示に戻る
+        </a>
+    </div>
+    
+    <form method="post" action="{{ url_for('edit_curriculum', curriculum_id=curriculum.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <!-- 基本情報 -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h2 class="h5 mb-0">基本情報</h2>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label for="title" class="form-label">カリキュラムタイトル <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="title" name="title" value="{{ curriculum.title }}" required>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="description" class="form-label">説明</label>
+                            <textarea class="form-control" id="description" name="description" rows="3">{{ curriculum.description }}</textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label for="total_hours" class="form-label">総時間数</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="total_hours" name="total_hours" min="1" value="{{ curriculum.total_hours }}">
+                                <span class="input-group-text">時間</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="has_fieldwork" name="has_fieldwork" 
+                                   {% if curriculum.has_fieldwork %}checked{% endif %} onchange="toggleFieldwork()">
+                            <label class="form-check-label" for="has_fieldwork">
+                                フィールドワークを含む
+                            </label>
+                        </div>
+                        
+                        <div class="form-group mb-3" id="fieldwork_count_container" 
+                             style="display: {% if curriculum.has_fieldwork %}block{% else %}none{% endif %};">
+                            <label for="fieldwork_count" class="form-label">フィールドワーク回数</label>
+                            <input type="number" class="form-control" id="fieldwork_count" name="fieldwork_count" 
+                                   min="1" value="{{ curriculum.fieldwork_count }}">
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="has_presentation" name="has_presentation" 
+                                   {% if curriculum.has_presentation %}checked{% endif %} onchange="togglePresentation()">
+                            <label class="form-check-label" for="has_presentation">
+                                発表会を含む
+                            </label>
+                        </div>
+                        
+                        <div class="form-group mb-3" id="presentation_format_container"
+                             style="display: {% if curriculum.has_presentation %}block{% else %}none{% endif %};">
+                            <label for="presentation_format" class="form-label">発表形式</label>
+                            <select class="form-select" id="presentation_format" name="presentation_format">
+                                <option value="プレゼンテーション" {% if curriculum.presentation_format == 'プレゼンテーション' %}selected{% endif %}>プレゼンテーション</option>
+                                <option value="ポスター発表" {% if curriculum.presentation_format == 'ポスター発表' %}selected{% endif %}>ポスター発表</option>
+                                <option value="成果物展示" {% if curriculum.presentation_format == '成果物展示' %}selected{% endif %}>成果物展示</option>
+                                <option value="ディスカッション" {% if curriculum.presentation_format == 'ディスカッション' %}selected{% endif %}>ディスカッション</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="group_work_level" class="form-label">グループ活動の度合い</label>
+                            <select class="form-select" id="group_work_level" name="group_work_level">
+                                <option value="個人中心" {% if curriculum.group_work_level == '個人中心' %}selected{% endif %}>個人中心</option>
+                                <option value="ハイブリッド" {% if curriculum.group_work_level == 'ハイブリッド' %}selected{% endif %}>ハイブリッド</option>
+                                <option value="グループ中心" {% if curriculum.group_work_level == 'グループ中心' %}selected{% endif %}>グループ中心</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="external_collaboration" name="external_collaboration"
+                                   {% if curriculum.external_collaboration %}checked{% endif %}>
+                            <label class="form-check-label" for="external_collaboration">
+                                外部連携（地域・企業など）
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- カリキュラム内容 -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h2 class="h5 mb-0">カリキュラム内容</h2>
+            </div>
+            <div class="card-body">
+                <!-- フェーズごとに編集フォームを表示 -->
+                {% for phase_index in range(curriculum_data.phases|length) %}
+                    {% set phase = curriculum_data.phases[phase_index] %}
+                    <div class="card mb-3 phase-card" id="phase_{{ phase_index }}">
+                        <div class="card-header bg-light">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <input type="text" class="form-control w-50" name="phase_{{ phase_index }}_name" 
+                                       value="{{ phase.phase }}" placeholder="フェーズ名">
+                                <button type="button" class="btn btn-sm btn-danger" 
+                                        onclick="removePhase({{ phase_index }})">削除</button>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-bordered mb-0" id="phase_{{ phase_index }}_weeks">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 10%">週</th>
+                                        <th style="width: 8%">時間数</th>
+                                        <th style="width: 15%">テーマ</th>
+                                        <th style="width: 22%">活動内容</th>
+                                        <th style="width: 22%">教師のサポート</th>
+                                        <th style="width: 18%">評価方法</th>
+                                        <th style="width: 5%"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for week_index in range(phase.weeks|length) %}
+                                        {% set week = phase.weeks[week_index] %}
+                                        <tr id="phase_{{ phase_index }}_week_{{ week_index }}">
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm" 
+                                                       name="phase_{{ phase_index }}_week_{{ week_index }}_number" 
+                                                       value="{{ week.week }}">
+                                            </td>
+                                            <td>
+                                                <input type="number" class="form-control form-control-sm" 
+                                                       name="phase_{{ phase_index }}_week_{{ week_index }}_hours" 
+                                                       value="{{ week.hours }}" min="1">
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm" 
+                                                       name="phase_{{ phase_index }}_week_{{ week_index }}_theme" 
+                                                       value="{{ week.theme }}">
+                                            </td>
+                                            <td>
+                                                <textarea class="form-control form-control-sm" 
+                                                          name="phase_{{ phase_index }}_week_{{ week_index }}_activities" 
+                                                          rows="2">{{ week.activities }}</textarea>
+                                            </td>
+                                            <td>
+                                                <textarea class="form-control form-control-sm" 
+                                                          name="phase_{{ phase_index }}_week_{{ week_index }}_support" 
+                                                          rows="2">{{ week.teacher_support }}</textarea>
+                                            </td>
+                                            <td>
+                                                <textarea class="form-control form-control-sm" 
+                                                          name="phase_{{ phase_index }}_week_{{ week_index }}_evaluation" 
+                                                          rows="2">{{ week.evaluation }}</textarea>
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                        onclick="removeWeek({{ phase_index }}, {{ week_index }})">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="7">
+                                            <button type="button" class="btn btn-sm btn-success w-100" 
+                                                   onclick="addWeek({{ phase_index }})">
+                                                <i class="fas fa-plus"></i> 週を追加
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- 週のカウンターを追加 -->
+                    <input type="hidden" id="phase_{{ phase_index }}_week_count" 
+                           name="phase_{{ phase_index }}_week_count" value="{{ phase.weeks|length }}">
+                {% endfor %}
+                
+                <!-- フェーズのカウンターを追加 -->
+                <input type="hidden" id="phase_count" name="phase_count" value="{{ curriculum_data.phases|length }}">
+                
+                <div class="text-center mb-3">
+                    <button type="button" class="btn btn-info" onclick="addPhase()">
+                        <i class="fas fa-plus"></i> 新しいフェーズを追加
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ルーブリック編集 -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h2 class="h5 mb-0">評価ルーブリック</h2>
+            </div>
+            <div class="card-body">
+                {% for rubric_index in range(curriculum_data.rubric_suggestion|length) %}
+                    {% set rubric = curriculum_data.rubric_suggestion[rubric_index] %}
+                    <div class="card mb-3 rubric-card" id="rubric_{{ rubric_index }}">
+                        <div class="card-header bg-light">
+                            <div class="row">
+                                <div class="col-md-5">
+                                    <input type="text" class="form-control" 
+                                           name="rubric_{{ rubric_index }}_category" 
+                                           value="{{ rubric.category }}" placeholder="カテゴリ名">
+                                </div>
+                                <div class="col-md-5">
+                                    <input type="text" class="form-control" 
+                                           name="rubric_{{ rubric_index }}_description" 
+                                           value="{{ rubric.description }}" placeholder="説明">
+                                </div>
+                                <div class="col-md-2 text-end">
+                                    <button type="button" class="btn btn-sm btn-danger" 
+                                            onclick="removeRubric({{ rubric_index }})">削除</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-bordered mb-0" id="rubric_{{ rubric_index }}_levels">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 20%">レベル</th>
+                                        <th style="width: 75%">達成基準</th>
+                                        <th style="width: 5%"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for level_index in range(rubric.levels|length) %}
+                                        {% set level = rubric.levels[level_index] %}
+                                        <tr id="rubric_{{ rubric_index }}_level_{{ level_index }}">
+                                            <td>
+                                                <input type="text" class="form-control" 
+                                                       name="rubric_{{ rubric_index }}_level_{{ level_index }}_name" 
+                                                       value="{{ level.level }}">
+                                            </td>
+                                            <td>
+                                                <textarea class="form-control" 
+                                                          name="rubric_{{ rubric_index }}_level_{{ level_index }}_description" 
+                                                          rows="2">{{ level.description }}</textarea>
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                        onclick="removeLevel({{ rubric_index }}, {{ level_index }})">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="3">
+                                            <button type="button" class="btn btn-sm btn-success w-100" 
+                                                    onclick="addLevel({{ rubric_index }})">
+                                                <i class="fas fa-plus"></i> レベルを追加
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- レベルのカウンターを追加 -->
+                    <input type="hidden" id="rubric_{{ rubric_index }}_level_count" 
+                           name="rubric_{{ rubric_index }}_level_count" value="{{ rubric.levels|length }}">
+                {% endfor %}
+                
+                <!-- ルーブリックのカウンターを追加 -->
+                <input type="hidden" id="rubric_count" name="rubric_count" 
+                       value="{{ curriculum_data.rubric_suggestion|length }}">
+                
+                <div class="text-center mb-3">
+                    <button type="button" class="btn btn-info" onclick="addRubric()">
+                        <i class="fas fa-plus"></i> 新しい評価カテゴリを追加
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mb-5">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-save"></i> カリキュラムを更新
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    function toggleFieldwork() {
+        const hasFieldwork = document.getElementById('has_fieldwork').checked;
+        const countContainer = document.getElementById('fieldwork_count_container');
+        countContainer.style.display = hasFieldwork ? 'block' : 'none';
+    }
+    
+    function togglePresentation() {
+        const hasPresentation = document.getElementById('has_presentation').checked;
+        const formatContainer = document.getElementById('presentation_format_container');
+        formatContainer.style.display = hasPresentation ? 'block' : 'none';
+    }
+    
+    // フェーズ関連の操作
+    function addPhase() {
+        const phaseCount = parseInt(document.getElementById('phase_count').value);
+        const newIndex = phaseCount;
+        
+        // 新しいフェーズカードを作成
+        const phaseCard = document.createElement('div');
+        phaseCard.className = 'card mb-3 phase-card';
+        phaseCard.id = `phase_${newIndex}`;
+        
+        // カードの内容を設定
+        phaseCard.innerHTML = `
+            <div class="card-header bg-light">
+                <div class="d-flex justify-content-between align-items-center">
+                    <input type="text" class="form-control w-50" name="phase_${newIndex}_name" 
+                           value="新しいフェーズ" placeholder="フェーズ名">
+                    <button type="button" class="btn btn-sm btn-danger" 
+                            onclick="removePhase(${newIndex})">削除</button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-bordered mb-0" id="phase_${newIndex}_weeks">
+                    <thead>
+                        <tr>
+                            <th style="width: 10%">週</th>
+                            <th style="width: 8%">時間数</th>
+                            <th style="width: 15%">テーマ</th>
+                            <th style="width: 22%">活動内容</th>
+                            <th style="width: 22%">教師のサポート</th>
+                            <th style="width: 18%">評価方法</th>
+                            <th style="width: 5%"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr id="phase_${newIndex}_week_0">
+                            <td>
+                                <input type="text" class="form-control form-control-sm" 
+                                       name="phase_${newIndex}_week_0_number" 
+                                       value="第1週">
+                            </td>
+                            <td>
+                                <input type="number" class="form-control form-control-sm" 
+                                       name="phase_${newIndex}_week_0_hours" 
+                                       value="2" min="1">
+                            </td>
+                            <td>
+                                <input type="text" class="form-control form-control-sm" 
+                                       name="phase_${newIndex}_week_0_theme" 
+                                       value="新しいテーマ">
+                            </td>
+                            <td>
+                                <textarea class="form-control form-control-sm" 
+                                          name="phase_${newIndex}_week_0_activities" 
+                                          rows="2">活動内容を入力してください</textarea>
+                            </td>
+                            <td>
+                                <textarea class="form-control form-control-sm" 
+                                          name="phase_${newIndex}_week_0_support" 
+                                          rows="2">教師のサポート内容を入力してください</textarea>
+                            </td>
+                            <td>
+                                <textarea class="form-control form-control-sm" 
+                                          name="phase_${newIndex}_week_0_evaluation" 
+                                          rows="2">評価方法を入力してください</textarea>
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                        onclick="removeWeek(${newIndex}, 0)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="7">
+                                <button type="button" class="btn btn-sm btn-success w-100" 
+                                        onclick="addWeek(${newIndex})">
+                                    <i class="fas fa-plus"></i> 週を追加
+                                </button>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        `;
+        
+        // カードを追加
+        const lastPhaseCard = document.querySelector('.phase-card:last-of-type');
+        if (lastPhaseCard) {
+            lastPhaseCard.after(phaseCard);
+        } else {
+            const phaseContainer = document.querySelector('.card-body');
+            phaseContainer.prepend(phaseCard);
+        }
+        
+        // 週カウンターを追加
+        const weekCountInput = document.createElement('input');
+        weekCountInput.type = 'hidden';
+        weekCountInput.id = `phase_${newIndex}_week_count`;
+        weekCountInput.name = `phase_${newIndex}_week_count`;
+        weekCountInput.value = '1';
+        phaseCard.after(weekCountInput);
+        
+        // フェーズカウンターを更新
+        document.getElementById('phase_count').value = newIndex + 1;
+    }
+    
+    function removePhase(phaseIndex) {
+        const phaseCard = document.getElementById(`phase_${phaseIndex}`);
+        if (phaseCard) {
+            phaseCard.remove();
+        }
+        
+        const weekCountInput = document.getElementById(`phase_${phaseIndex}_week_count`);
+        if (weekCountInput) {
+            weekCountInput.remove();
+        }
+    }
+    
+    function addWeek(phaseIndex) {
+        const weekCountInput = document.getElementById(`phase_${phaseIndex}_week_count`);
+        const weekCount = parseInt(weekCountInput.value);
+        const newWeekIndex = weekCount;
+        
+        // 週の行を作成
+        const weekRow = document.createElement('tr');
+        weekRow.id = `phase_${phaseIndex}_week_${newWeekIndex}`;
+        
+        // 行の内容を設定
+        weekRow.innerHTML = `
+            <td>
+                <input type="text" class="form-control form-control-sm" 
+                       name="phase_${phaseIndex}_week_${newWeekIndex}_number" 
+                       value="第${newWeekIndex + 1}週">
+            </td>
+            <td>
+                <input type="number" class="form-control form-control-sm" 
+                       name="phase_${phaseIndex}_week_${newWeekIndex}_hours" 
+                       value="2" min="1">
+            </td>
+            <td>
+                <input type="text" class="form-control form-control-sm" 
+                       name="phase_${phaseIndex}_week_${newWeekIndex}_theme" 
+                       value="新しいテーマ">
+            </td>
+            <td>
+                <textarea class="form-control form-control-sm" 
+                          name="phase_${phaseIndex}_week_${newWeekIndex}_activities" 
+                          rows="2">活動内容を入力してください</textarea>
+            </td>
+            <td>
+                <textarea class="form-control form-control-sm" 
+                          name="phase_${phaseIndex}_week_${newWeekIndex}_support" 
+                          rows="2">教師のサポート内容を入力してください</textarea>
+            </td>
+            <td>
+                <textarea class="form-control form-control-sm" 
+                          name="phase_${phaseIndex}_week_${newWeekIndex}_evaluation" 
+                          rows="2">評価方法を入力してください</textarea>
+            </td>
+            <td>
+                <button type="button" class="btn btn-sm btn-outline-danger" 
+                        onclick="removeWeek(${phaseIndex}, ${newWeekIndex})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+        
+        // 週の行を追加
+        const weeksTable = document.getElementById(`phase_${phaseIndex}_weeks`);
+        weeksTable.querySelector('tbody').appendChild(weekRow);
+        
+        // 週カウンターを更新
+        weekCountInput.value = newWeekIndex + 1;
+    }
+    
+    function removeWeek(phaseIndex, weekIndex) {
+        const weekRow = document.getElementById(`phase_${phaseIndex}_week_${weekIndex}`);
+        if (weekRow) {
+            weekRow.remove();
+        }
+    }
+    
+    // ルーブリック関連の操作
+    function addRubric() {
+        const rubricCount = parseInt(document.getElementById('rubric_count').value);
+        const newIndex = rubricCount;
+        
+        // 新しいルーブリックカードを作成
+        const rubricCard = document.createElement('div');
+        rubricCard.className = 'card mb-3 rubric-card';
+        rubricCard.id = `rubric_${newIndex}`;
+        
+        // カードの内容を設定
+        rubricCard.innerHTML = `
+            <div class="card-header bg-light">
+                <div class="row">
+                    <div class="col-md-5">
+                        <input type="text" class="form-control" 
+                               name="rubric_${newIndex}_category" 
+                               value="新しいカテゴリ" placeholder="カテゴリ名">
+                    </div>
+                    <div class="col-md-5">
+                        <input type="text" class="form-control" 
+                               name="rubric_${newIndex}_description" 
+                               value="カテゴリの説明" placeholder="説明">
+                    </div>
+                    <div class="col-md-2 text-end">
+                        <button type="button" class="btn btn-sm btn-danger" 
+                                onclick="removeRubric(${newIndex})">削除</button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-bordered mb-0" id="rubric_${newIndex}_levels">
+                    <thead>
+                        <tr>
+                            <th style="width: 20%">レベル</th>
+                            <th style="width: 75%">達成基準</th>
+                            <th style="width: 5%"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr id="rubric_${newIndex}_level_0">
+                            <td>
+                                <input type="text" class="form-control" 
+                                       name="rubric_${newIndex}_level_0_name" 
+                                       value="S">
+                            </td>
+                            <td>
+                                <textarea class="form-control" 
+                                          name="rubric_${newIndex}_level_0_description" 
+                                          rows="2">達成基準を入力してください</textarea>
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                        onclick="removeLevel(${newIndex}, 0)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3">
+                                <button type="button" class="btn btn-sm btn-success w-100" 
+                                        onclick="addLevel(${newIndex})">
+                                    <i class="fas fa-plus"></i> レベルを追加
+                                </button>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        `;
+        
+        // カードを追加
+        const lastRubricCard = document.querySelector('.rubric-card:last-of-type');
+        if (lastRubricCard) {
+            lastRubricCard.after(rubricCard);
+        } else {
+            const rubricContainer = document.querySelector('.card-body:last-of-type');
+            rubricContainer.prepend(rubricCard);
+        }
+        
+        // レベルカウンターを追加
+        const levelCountInput = document.createElement('input');
+        levelCountInput.type = 'hidden';
+        levelCountInput.id = `rubric_${newIndex}_level_count`;
+        levelCountInput.name = `rubric_${newIndex}_level_count`;
+        levelCountInput.value = '1';
+        rubricCard.after(levelCountInput);
+        
+        // ルーブリックカウンターを更新
+        document.getElementById('rubric_count').value = newIndex + 1;
+    }
+    
+    function removeRubric(rubricIndex) {
+        const rubricCard = document.getElementById(`rubric_${rubricIndex}`);
+        if (rubricCard) {
+            rubricCard.remove();
+        }
+        
+        const levelCountInput = document.getElementById(`rubric_${rubricIndex}_level_count`);
+        if (levelCountInput) {
+            levelCountInput.remove();
+        }
+    }
+    
+    function addLevel(rubricIndex) {
+        const levelCountInput = document.getElementById(`rubric_${rubricIndex}_level_count`);
+        const levelCount = parseInt(levelCountInput.value);
+        const newLevelIndex = levelCount;
+        
+        // レベルの行を作成
+        const levelRow = document.createElement('tr');
+        levelRow.id = `rubric_${rubricIndex}_level_${newLevelIndex}`;
+        
+        // 行の内容を設定
+        levelRow.innerHTML = `
+            <td>
+                <input type="text" class="form-control" 
+                       name="rubric_${rubricIndex}_level_${newLevelIndex}_name" 
+                       value="${getLevelLabel(newLevelIndex)}">
+            </td>
+            <td>
+                <textarea class="form-control" 
+                          name="rubric_${rubricIndex}_level_${newLevelIndex}_description" 
+                          rows="2">達成基準を入力してください</textarea>
+            </td>
+            <td>
+                <button type="button" class="btn btn-sm btn-outline-danger" 
+                        onclick="removeLevel(${rubricIndex}, ${newLevelIndex})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+        
+        // レベルの行を追加
+        const levelsTable = document.getElementById(`rubric_${rubricIndex}_levels`);
+        levelsTable.querySelector('tbody').appendChild(levelRow);
+        
+        // レベルカウンターを更新
+        levelCountInput.value = newLevelIndex + 1;
+    }
+    
+    function removeLevel(rubricIndex, levelIndex) {
+        const levelRow = document.getElementById(`rubric_${rubricIndex}_level_${levelIndex}`);
+        if (levelRow) {
+            levelRow.remove();
+        }
+    }
+    
+    function getLevelLabel(index) {
+        const labels = ['S', 'A', 'B', 'C', 'D'];
+        return index < labels.length ? labels[index] : `レベル${index + 1}`;
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ group.name }} | QuestEd{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2>{{ group.name }}</h2>
+            <div>
+                <a href="{{ url_for('view_groups', class_id=class_obj.id) }}" class="btn btn-outline-secondary">グループ一覧に戻る</a>
+                {% if is_teacher or is_creator %}
+                <a href="{{ url_for('edit_group', group_id=group.id) }}" class="btn btn-outline-primary">編集</a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body">
+            {% if group.description %}
+            <div class="mb-4">
+                <h5>説明</h5>
+                <p>{{ group.description }}</p>
+            </div>
+            {% endif %}
+            
+            <div class="mb-4">
+                <h5>基本情報</h5>
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <th style="width: 150px;">クラス</th>
+                            <td>{{ class_obj.name }}</td>
+                        </tr>
+                        <tr>
+                            <th>作成者</th>
+                            <td>{{ creator.username }}</td>
+                        </tr>
+                        <tr>
+                            <th>作成日</th>
+                            <td>{{ group.created_at.strftime('%Y年%m月%d日') }}</td>
+                        </tr>
+                        <tr>
+                            <th>メンバー数</th>
+                            <td>{{ members|length }}名</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">メンバー一覧</h5>
+                    {% if current_user.role == 'student' %}
+                        {% if is_member %}
+                        <a href="{{ url_for('leave_group', group_id=group.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('このグループから脱退してもよろしいですか？');">グループから脱退</a>
+                        {% else %}
+                        <a href="{{ url_for('join_group', group_id=group.id) }}" class="btn btn-sm btn-outline-success">グループに参加</a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+                
+                {% if members %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>ユーザー名</th>
+                                <th>役割</th>
+                                {% if is_teacher or is_creator %}
+                                <th>操作</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for member in members %}
+                            <tr>
+                                <td>{{ member.username }}</td>
+                                <td>
+                                    {% if member.id == group.created_by %}
+                                    <span class="badge bg-primary">グループリーダー</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">メンバー</span>
+                                    {% endif %}
+                                </td>
+                                {% if is_teacher or is_creator %}
+                                <td>
+                                    {% if member.id != group.created_by %}
+                                    <a href="{{ url_for('remove_group_member', group_id=group.id, student_id=member.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('このメンバーをグループから削除してもよろしいですか？');">削除</a>
+                                    {% endif %}
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    まだメンバーがいません。
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

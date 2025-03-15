@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}テーマ管理{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h1>テーマ管理</h1>
+  
+  <div class="mb-4">
+    <a href="{{ url_for('teacher_dashboard') }}" class="btn btn-secondary">
+      <i class="fas fa-arrow-left"></i> ダッシュボードに戻る
+    </a>
+  </div>
+  
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-info">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">クラス別大テーマ管理</h5>
+    </div>
+    <div class="card-body">
+      {% if classes_with_themes %}
+        <div class="accordion" id="classAccordion">
+          {% for cls in classes_with_themes %}
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="heading{{ cls.class.id }}">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" 
+                        data-bs-target="#collapse{{ cls.class.id }}" aria-expanded="true" 
+                        aria-controls="collapse{{ cls.class.id }}">
+                  {{ cls.class.name }} - 大テーマ ({{ cls.main_themes|length }}件)
+                </button>
+              </h2>
+              <div id="collapse{{ cls.class.id }}" class="accordion-collapse collapse show" 
+                   aria-labelledby="heading{{ cls.class.id }}" data-bs-parent="#classAccordion">
+                <div class="accordion-body">
+                  <div class="mb-3">
+                    <a href="{{ url_for('view_main_themes', class_id=cls.class.id) }}" class="btn btn-outline-primary">
+                      <i class="fas fa-cog"></i> 大テーマを管理
+                    </a>
+                    <a href="{{ url_for('create_main_theme', class_id=cls.class.id) }}" class="btn btn-outline-success">
+                      <i class="fas fa-plus"></i> 新しい大テーマを作成
+                    </a>
+                  </div>
+                  
+                  {% if cls.main_themes %}
+                    <div class="table-responsive">
+                      <table class="table table-striped">
+                        <thead>
+                          <tr>
+                            <th>タイトル</th>
+                            <th>説明</th>
+                            <th>作成日</th>
+                            <th>操作</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for theme in cls.main_themes %}
+                            <tr>
+                              <td>{{ theme.title }}</td>
+                              <td>{{ theme.description|truncate(50) }}</td>
+                              <td>{{ theme.created_at.strftime('%Y-%m-%d') }}</td>
+                              <td>
+                                <a href="{{ url_for('edit_main_theme', theme_id=theme.id) }}" class="btn btn-sm btn-outline-primary">
+                                  <i class="fas fa-edit"></i> 編集
+                                </a>
+                              </td>
+                            </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    </div>
+                  {% else %}
+                    <div class="alert alert-warning">
+                      このクラスにはまだ大テーマがありません。「新しい大テーマを作成」ボタンから作成してください。
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="alert alert-warning">
+          担当クラスがありません。先にクラスを作成してください。
+        </div>
+      {% endif %}
+    </div>
+  </div>
+  
+  <div class="alert alert-info">
+    <h5>大テーマ管理について</h5>
+    <p>各クラスごとに大テーマを設定できます。生徒は大テーマに基づいて個人テーマを設定します。</p>
+    <p>大テーマの設定例：「持続可能な社会」「地域の課題解決」「科学技術の発展と倫理」など</p>
+    <p>良い大テーマは、幅広いアプローチが可能で、生徒が自分の興味関心に合わせて個別テーマを設定できます。</p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ curriculum.title }} - {{ class_obj.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>{{ curriculum.title }}</h1>
+    <p class="text-muted">{{ class_obj.name }} - 作成日: {{ curriculum.created_at.strftime('%Y-%m-%d') }}</p>
+    
+    <div class="d-flex justify-content-between mb-4">
+        <a href="{{ url_for('view_curriculums', class_id=class_obj.id) }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> 一覧に戻る
+        </a>
+        <div>
+            {% if current_user.role == 'teacher' and curriculum.teacher_id == current_user.id %}
+            <a href="{{ url_for('edit_curriculum', curriculum_id=curriculum.id) }}" class="btn btn-warning">
+                <i class="fas fa-edit"></i> 編集
+            </a>
+            {% endif %}
+            <a href="{{ url_for('export_curriculum', curriculum_id=curriculum.id) }}" class="btn btn-success">
+                <i class="fas fa-file-csv"></i> CSVでエクスポート
+            </a>
+        </div>
+    </div>
+    
+    {% if curriculum.description %}
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">カリキュラム説明</h5>
+            <p class="card-text">{{ curriculum.description }}</p>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h2 class="h5 mb-0">カリキュラム情報</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <dl class="row">
+                        <dt class="col-sm-5">総時間数:</dt>
+                        <dd class="col-sm-7">{{ curriculum.total_hours }}時間</dd>
+                        
+                        <dt class="col-sm-5">フィールドワーク:</dt>
+                        <dd class="col-sm-7">
+                            {% if curriculum.has_fieldwork %}
+                                あり（{{ curriculum.fieldwork_count }}回）
+                            {% else %}
+                                なし
+                            {% endif %}
+                        </dd>
+                    </dl>
+                </div>
+                <div class="col-md-6">
+                    <dl class="row">
+                        <dt class="col-sm-5">発表会:</dt>
+                        <dd class="col-sm-7">
+                            {% if curriculum.has_presentation %}
+                                あり（{{ curriculum.presentation_format }}）
+                            {% else %}
+                                なし
+                            {% endif %}
+                        </dd>
+                        
+                        <dt class="col-sm-5">グループ活動:</dt>
+                        <dd class="col-sm-7">{{ curriculum.group_work_level }}</dd>
+                        
+                        <dt class="col-sm-5">外部連携:</dt>
+                        <dd class="col-sm-7">{{ '有り' if curriculum.external_collaboration else 'なし' }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- カリキュラム内容の表示 -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h2 class="h5 mb-0">カリキュラム内容</h2>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>フェーズ</th>
+                            <th>週</th>
+                            <th>時間数</th>
+                            <th>テーマ</th>
+                            <th>活動内容</th>
+                            <th>教師のサポート</th>
+                            <th>評価方法</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for phase in curriculum_data.phases %}
+                            {% for week in phase.weeks %}
+                                <tr>
+                                    {% if loop.first %}
+                                    <td rowspan="{{ phase.weeks|length }}" class="align-middle bg-light">
+                                        {{ phase.phase }}
+                                    </td>
+                                    {% endif %}
+                                    <td>{{ week.week }}</td>
+                                    <td>{{ week.hours }}</td>
+                                    <td>{{ week.theme }}</td>
+                                    <td>{{ week.activities }}</td>
+                                    <td>{{ week.teacher_support }}</td>
+                                    <td>{{ week.evaluation }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ルーブリック表示 -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h2 class="h5 mb-0">評価ルーブリック</h2>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 15%">カテゴリ</th>
+                            <th style="width: 25%">説明</th>
+                            {% set first_rubric = curriculum_data.rubric_suggestion[0] if curriculum_data.rubric_suggestion else None %}
+                            {% if first_rubric %}
+                                {% for level in first_rubric.levels %}
+                                    <th>{{ level.level }}</th>
+                                {% endfor %}
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rubric in curriculum_data.rubric_suggestion %}
+                            <tr>
+                                <td class="align-middle bg-light fw-bold">{{ rubric.category }}</td>
+                                <td class="align-middle">{{ rubric.description }}</td>
+                                {% for level in rubric.levels %}
+                                    <td>{{ level.description }}</td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

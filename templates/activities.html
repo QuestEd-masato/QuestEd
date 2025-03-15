@@ -1,0 +1,569 @@
+{% extends 'base.html' %}
+
+{% block title %}学習記録 | QuestEd{% endblock %}
+
+{% block content %}
+<div class="learning-records-container">
+    <div class="learning-records-header">
+        <h2>学習記録</h2>
+        <div class="theme-info">
+            <h3>選択中のテーマ: {{ theme.title }}</h3>
+            <p>{{ theme.question }}</p>
+        </div>
+        <a href="{{ url_for('new_activity') }}" class="btn btn-primary">新しい学習を記録</a>
+    </div>
+    
+    <div class="filter-container">
+        <div class="tag-filters">
+            <span class="filter-label">タグでフィルター:</span>
+            <button class="tag-filter active" data-tag="all">すべて表示</button>
+            <button class="tag-filter" data-tag="文献調査">文献調査</button>
+            <button class="tag-filter" data-tag="実験">実験</button>
+            <button class="tag-filter" data-tag="インタビュー">インタビュー</button>
+            <button class="tag-filter" data-tag="フィールドワーク">フィールドワーク</button>
+            <button class="tag-filter" data-tag="発表準備">発表準備</button>
+            <button class="tag-filter" data-tag="グループワーク">グループワーク</button>
+            <button class="tag-filter" data-tag="計画">計画</button>
+            <button class="tag-filter" data-tag="振り返り">振り返り</button>
+        </div>
+        
+        <div class="view-options">
+            <button class="view-option active" data-view="timeline">
+                <i class="fas fa-stream"></i> タイムライン表示
+            </button>
+            <button class="view-option" data-view="card">
+                <i class="fas fa-th-large"></i> カード表示
+            </button>
+        </div>
+    </div>
+    
+    {% if activity_logs %}
+    <div class="learning-records-timeline active" id="timeline-view">
+        {% for activity in activity_logs %}
+        <div class="learning-record-card" data-tags="{{ activity.tags|default('') }}">
+            <div class="record-date">
+                <span class="date-label">{% if activity.date %}{{ activity.date.strftime('%Y年%m月%d日') }}{% else %}日付なし{% endif %}</span>
+                <div class="date-line"></div>
+            </div>
+            <div class="record-content">
+                <div class="record-header">
+                    <h3 class="record-title">{{ activity.title }}</h3>
+                    <div class="record-tags">
+                        {% if activity.tags %}
+                            {% for tag in activity.tags.split(',') %}
+                                <span class="record-tag">{{ tag }}</span>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if activity.image_url %}
+                <div class="record-image">
+                    <img src="{{ activity.image_url }}" alt="{{ activity.title }}">
+                </div>
+                {% endif %}
+                
+                <div class="record-text">
+                    <p>{{ activity.content|nl2br }}</p>
+                </div>
+                
+                {% if activity.reflection %}
+                <div class="record-reflection">
+                    <h4>振り返り</h4>
+                    <p>{{ activity.reflection|nl2br }}</p>
+                </div>
+                {% endif %}
+                
+                <div class="record-actions">
+                    <a href="{{ url_for('edit_activity', log_id=activity.id) }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-edit"></i> 編集
+                    </a>
+                    <a href="{{ url_for('delete_activity', log_id=activity.id) }}" class="btn btn-sm btn-danger" 
+                       onclick="return confirm('この学習記録を削除してもよろしいですか？この操作は取り消せません。');">
+                        <i class="fas fa-trash"></i> 削除
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="learning-records-grid" id="card-view">
+        {% for activity in activity_logs %}
+        <div class="grid-card" data-tags="{{ activity.tags|default('') }}">
+            <div class="card-header">
+                <span class="card-date">{% if activity.date %}{{ activity.date.strftime('%Y年%m月%d日') }}{% else %}日付なし{% endif %}</span>
+                <h3 class="card-title">{{ activity.title }}</h3>
+            </div>
+            
+            {% if activity.tags %}
+            <div class="card-tags">
+                {% for tag in activity.tags.split(',') %}
+                    <span class="record-tag">{{ tag }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            {% if activity.image_url %}
+            <div class="card-image">
+                <img src="{{ activity.image_url }}" alt="{{ activity.title }}">
+            </div>
+            {% endif %}
+            
+            <div class="card-excerpt">
+                <p>{{ activity.content|truncate(100) }}</p>
+            </div>
+            
+            <div class="card-actions">
+                <a href="{{ url_for('edit_activity', log_id=activity.id) }}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-edit"></i> 編集
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="export-options">
+        <h4>学習記録をエクスポート</h4>
+        <div class="export-buttons">
+            <a href="{{ url_for('export_activities', format='pdf') }}" class="btn btn-secondary">
+                <i class="fas fa-file-pdf"></i> PDFでダウンロード
+            </a>
+            <a href="{{ url_for('export_activities', format='csv') }}" class="btn btn-secondary">
+                <i class="fas fa-file-csv"></i> CSVでダウンロード
+            </a>
+        </div>
+        <p class="export-note">※ エクスポートされるのは選択中のテーマに関する学習記録のみです。</p>
+    </div>
+    {% else %}
+    <div class="no-records">
+        <p>まだ学習記録がありません。「新しい学習を記録」ボタンから記録を始めましょう。</p>
+        <a href="{{ url_for('new_activity') }}" class="btn btn-primary">学習記録を作成</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // タグフィルター機能
+        const tagFilters = document.querySelectorAll('.tag-filter');
+        const recordCards = document.querySelectorAll('.learning-record-card, .grid-card');
+        
+        tagFilters.forEach(filter => {
+            filter.addEventListener('click', function() {
+                // アクティブクラスの切り替え
+                tagFilters.forEach(f => f.classList.remove('active'));
+                this.classList.add('active');
+                
+                // 選択されたタグ
+                const selectedTag = this.getAttribute('data-tag');
+                
+                // カードのフィルタリング
+                recordCards.forEach(card => {
+                    const cardTags = card.getAttribute('data-tags');
+                    if (selectedTag === 'all' || !cardTags) {
+                        card.style.display = '';
+                    } else {
+                        if (cardTags.includes(selectedTag)) {
+                            card.style.display = '';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    }
+                });
+            });
+        });
+        
+        // 表示切替機能
+        const viewOptions = document.querySelectorAll('.view-option');
+        const timelineView = document.getElementById('timeline-view');
+        const cardView = document.getElementById('card-view');
+        
+        viewOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                // アクティブクラスの切り替え
+                viewOptions.forEach(o => o.classList.remove('active'));
+                this.classList.add('active');
+                
+                // 選択された表示方法
+                const selectedView = this.getAttribute('data-view');
+                
+                // 表示の切り替え
+                if (selectedView === 'timeline') {
+                    timelineView.classList.add('active');
+                    cardView.classList.remove('active');
+                } else {
+                    timelineView.classList.remove('active');
+                    cardView.classList.add('active');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .learning-records-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+    
+    .learning-records-header {
+        margin-bottom: 2rem;
+    }
+    
+    .theme-info {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+    }
+    
+    .theme-info h3 {
+        color: #0056b3;
+        margin-bottom: 0.5rem;
+    }
+    
+    .filter-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+    }
+    
+    .tag-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    
+    .filter-label {
+        font-weight: 500;
+        color: #495057;
+        margin-right: 0.5rem;
+    }
+    
+    .tag-filter {
+        padding: 0.25rem 0.75rem;
+        background-color: #e9ecef;
+        border: none;
+        border-radius: 16px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .tag-filter:hover {
+        background-color: #dee2e6;
+    }
+    
+    .tag-filter.active {
+        background-color: #0056b3;
+        color: white;
+    }
+    
+    .view-options {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .view-option {
+        padding: 0.5rem 1rem;
+        background-color: #e9ecef;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .view-option:hover {
+        background-color: #dee2e6;
+    }
+    
+    .view-option.active {
+        background-color: #0056b3;
+        color: white;
+    }
+    
+    /* タイムライン表示 */
+    .learning-records-timeline {
+        position: relative;
+        margin-top: 2rem;
+        display: none;
+    }
+    
+    .learning-records-timeline.active {
+        display: block;
+    }
+    
+    .learning-records-timeline::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 120px;
+        width: 4px;
+        background-color: #e9ecef;
+    }
+    
+    .learning-record-card {
+        display: flex;
+        margin-bottom: 2rem;
+        position: relative;
+    }
+    
+    .record-date {
+        width: 120px;
+        text-align: right;
+        padding-right: 20px;
+        flex-shrink: 0;
+        position: relative;
+    }
+    
+    .date-label {
+        display: inline-block;
+        background-color: #0056b3;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .date-line {
+        position: absolute;
+        top: 18px;
+        right: -12px;
+        width: 24px;
+        height: 4px;
+        background-color: #e9ecef;
+    }
+    
+    .record-content {
+        flex-grow: 1;
+        background-color: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-left: 2rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .record-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .record-title {
+        margin: 0;
+        color: #333;
+        font-size: 1.5rem;
+    }
+    
+    .record-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .record-tag {
+        display: inline-block;
+        padding: 2px 8px;
+        background-color: #e9ecef;
+        color: #495057;
+        border-radius: 12px;
+        font-size: 0.75rem;
+    }
+    
+    .record-image {
+        margin-bottom: 1rem;
+    }
+    
+    .record-image img {
+        max-width: 100%;
+        border-radius: 4px;
+    }
+    
+    .record-text {
+        margin-bottom: 1rem;
+        color: #555;
+    }
+    
+    .record-reflection {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+    
+    .record-reflection h4 {
+        color: #0056b3;
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+    }
+    
+    .record-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+    }
+    
+    /* カード表示 */
+    .learning-records-grid {
+        display: none;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+    
+    .learning-records-grid.active {
+        display: grid;
+    }
+    
+    .grid-card {
+        background-color: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s;
+    }
+    
+    .grid-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .card-header {
+        padding: 1rem;
+        background-color: #f8f9fa;
+    }
+    
+    .card-date {
+        display: block;
+        color: #6c757d;
+        font-size: 0.85rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .card-title {
+        margin: 0;
+        font-size: 1.25rem;
+        color: #333;
+    }
+    
+    .card-tags {
+        padding: 0.5rem 1rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .card-image {
+        height: 180px;
+        overflow: hidden;
+    }
+    
+    .card-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .card-excerpt {
+        padding: 1rem;
+        color: #555;
+    }
+    
+    .card-actions {
+        padding: 1rem;
+        border-top: 1px solid #e9ecef;
+        text-align: right;
+    }
+    
+    /* エクスポートオプション */
+    .export-options {
+        margin-top: 3rem;
+        padding: 1.5rem;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        text-align: center;
+    }
+    
+    .export-options h4 {
+        margin-top: 0;
+        margin-bottom: 1rem;
+        color: #333;
+    }
+    
+    .export-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .export-note {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-bottom: 0;
+    }
+    
+    /* 記録がない場合 */
+    .no-records {
+        text-align: center;
+        padding: 3rem;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        margin-top: 2rem;
+    }
+    
+    @media (max-width: 768px) {
+        .learning-records-timeline::before {
+            left: 70px;
+        }
+        
+        .record-date {
+            width: 70px;
+        }
+        
+        .date-label {
+            font-size: 0.7rem;
+            padding: 3px 6px;
+        }
+        
+        .record-content {
+            margin-left: 1rem;
+            padding: 1rem;
+        }
+        
+        .record-header {
+            flex-direction: column;
+        }
+        
+        .filter-container {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .tag-filters {
+            margin-bottom: 1rem;
+        }
+        
+        .export-buttons {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}

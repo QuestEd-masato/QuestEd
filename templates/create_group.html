@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}グループ作成 | QuestEd{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h2>{{ class_obj.name }} - グループ作成</h2>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="mb-3">
+                    <label for="name" class="form-label">グループ名 <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="name" name="name" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="description" class="form-label">説明</label>
+                    <textarea class="form-control" id="description" name="description" rows="4"></textarea>
+                    <div class="form-text">グループの目的や活動内容について説明してください。</div>
+                </div>
+                
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('view_groups', class_id=class_obj.id) }}" class="btn btn-outline-secondary">キャンセル</a>
+                    <button type="submit" class="btn btn-primary">グループを作成</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+
+{% block title %}探究テーマ | QuestEd{% endblock %}
+
+{% block content %}
+<div class="themes-container">
+    <h2>あなたの探究テーマ</h2>
+    
+    <div class="actions-bar">
+        <a href="{{ url_for('student_dashboard') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> ダッシュボードに戻る
+        </a>
+        <a href="{{ url_for('student_view_main_themes') }}" class="btn btn-info">
+            <i class="fas fa-list"></i> 大テーマ一覧を見る
+        </a>
+    </div>
+    
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-info">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    {% if themes_with_main %}
+        <div class="themes-list">
+            {% for item in themes_with_main if item.theme.is_ai_generated %}
+                <div class="theme-card {% if item.theme.is_selected %}selected{% endif %}">
+                    {% if item.theme.is_selected %}
+                        <div class="selected-badge">選択中</div>
+                    {% endif %}
+                    
+                    <h3 class="theme-title">{{ item.theme.title }}</h3>
+                    
+                    <div class="theme-section">
+                        <h4>探究の問い</h4>
+                        <p>{{ item.theme.question }}</p>
+                    </div>
+                    
+                    {% if item.main_theme %}
+                        <div class="theme-section main-theme-section">
+                            <h4>関連する大テーマ</h4>
+                            <p>{{ item.main_theme.title }}</p>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="theme-section">
+                        <h4>概要</h4>
+                        <p>{{ item.theme.description or '説明はありません' }}</p>
+                    </div>
+                    
+                    {% if item.theme.rationale %}
+                        <div class="theme-section">
+                            <h4>このテーマを選んだ理由</h4>
+                            <p>{{ item.theme.rationale }}</p>
+                        </div>
+                    {% endif %}
+                    
+                    {% if item.theme.approach %}
+                        <div class="theme-section">
+                            <h4>取り組み方のアドバイス</h4>
+                            <p>{{ item.theme.approach }}</p>
+                        </div>
+                    {% endif %}
+                    
+                    {% if item.theme.potential %}
+                        <div class="theme-section">
+                            <h4>発展の可能性</h4>
+                            <p>{{ item.theme.potential }}</p>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="theme-actions">
+                        {% if not item.theme.is_selected %}
+                            <form method="POST" action="{{ url_for('select_theme', theme_id=item.theme.id) }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-primary">このテーマを選択</button>
+                            </form>
+                        {% endif %}
+                        <a href="{{ url_for('edit_theme', theme_id=item.theme.id) }}" class="btn btn-outline">
+                            <i class="fas fa-edit"></i> 編集する
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-warning">
+            テーマがまだ設定されていません。以下のオプションからテーマを設定してください。
+        </div>
+    {% endif %}
+    
+    <div class="new-theme-section">
+        <h3>テーマを設定する</h3>
+        {% if available_main_themes %}
+            <div class="theme-options">
+                <div class="theme-option-card">
+                    <h4><i class="fas fa-pencil-alt"></i> 自分でテーマを考える</h4>
+                    <p>自分自身の興味関心に基づいて探究テーマを設定します。</p>
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" id="createThemeDropdown" 
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                            大テーマを選択
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="createThemeDropdown">
+                            {% for main_theme in available_main_themes %}
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('create_personal_theme', theme_id=main_theme.id) }}">
+                                        {{ main_theme.title }}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="theme-option-card">
+                    <h4><i class="fas fa-robot"></i> AIにテーマを提案してもらう</h4>
+                    <p>あなたのアンケート回答を基にAIがテーマを提案します。</p>
+                    <div class="dropdown">
+                        <button class="btn btn-success dropdown-toggle" type="button" id="generateThemeDropdown" 
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                            大テーマを選択
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="generateThemeDropdown">
+                            {% for main_theme in available_main_themes %}
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('generate_theme', theme_id=main_theme.id) }}">
+                                        {{ main_theme.title }}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-warning">
+                利用可能な大テーマがありません。教師に大テーマの設定を依頼してください。
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="info-section">
+        <h3>テーマ設定のポイント</h3>
+        <ul>
+            <li><strong>選択中のテーマ</strong>は、今後の活動記録やAIアドバイスなどで使用されます。</li>
+            <li>AIが提案したテーマも、必要に応じて編集できます。</li>
+            <li>大テーマに即した個人テーマを設定することで、クラスメイトとの意見交換がしやすくなります。</li>
+            <li>具体的で調査可能なテーマを選ぶと、探究活動が進めやすくなります。</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .themes-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+    
+    .actions-bar {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .section-intro {
+        margin-bottom: 2rem;
+        color: #6c757d;
+    }
+    
+    .theme-card {
+        margin-bottom: 2rem;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 1.5rem;
+        background-color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        position: relative;
+    }
+    
+    .theme-card.selected {
+        border: 2px solid #0056b3;
+        background-color: #f0f8ff;
+    }
+    
+    .selected-badge {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        background-color: #0056b3;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+    
+    .theme-title {
+        color: #0056b3;
+        margin-bottom: 1rem;
+        font-size: 1.5rem;
+    }
+    
+    .theme-section {
+        margin-bottom: 1rem;
+    }
+    
+    .theme-section h4 {
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+        color: #555;
+    }
+    
+    .main-theme-section {
+        background-color: #f8f9fa;
+        padding: 0.75rem;
+        border-radius: 4px;
+        border-left: 3px solid #0056b3;
+    }
+    
+    .theme-actions {
+        margin-top: 1.5rem;
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+    }
+    
+    .new-theme-section {
+        margin-top: 3rem;
+        padding: 1.5rem;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .new-theme-section h3 {
+        color: #0056b3;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+    
+    .theme-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        justify-content: center;
+    }
+    
+    .theme-option-card {
+        flex: 1;
+        min-width: 250px;
+        padding: 1.5rem;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        text-align: center;
+    }
+    
+    .theme-option-card h4 {
+        color: #0056b3;
+        margin-bottom: 1rem;
+    }
+    
+    .theme-option-card p {
+        margin-bottom: 1.5rem;
+        color: #6c757d;
+    }
+    
+    .info-section {
+        margin-top: 3rem;
+        padding: 1.5rem;
+        background-color: #e6f3ff;
+        border-radius: 8px;
+    }
+    
+    .info-section h3 {
+        color: #0056b3;
+        margin-bottom: 1rem;
+    }
+    
+    .info-section ul {
+        padding-left: 1.5rem;
+    }
+    
+    .info-section li {
+        margin-bottom: 0.5rem;
+    }
+    
+    .btn-outline {
+        background-color: transparent;
+        border: 1px solid #0056b3;
+        color: #0056b3;
+    }
+    
+    .btn-outline:hover {
+        background-color: #0056b3;
+        color: white;
+    }
+    
+    .alert {
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+    }
+    
+    .alert-info {
+        background-color: #cce5ff;
+        border: 1px solid #b8daff;
+        color: #004085;
+    }
+    
+    .alert-warning {
+        background-color: #fff3cd;
+        border: 1px solid #ffeeba;
+        color: #856404;
+    }
+    
+    @media (max-width: 768px) {
+        .theme-card {
+            padding: 1rem;
+        }
+        
+        .theme-title {
+            font-size: 1.3rem;
+        }
+        
+        .theme-section h4 {
+            font-size: 1rem;
+        }
+        
+        .theme-options {
+            flex-direction: column;
+        }
+        
+        .actions-bar {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}

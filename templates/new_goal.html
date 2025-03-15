@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}新しい目標を追加{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <h1 class="mb-4">新しい目標を追加</h1>
+  
+  {% if theme %}
+  <div class="alert alert-info">
+    現在の探究テーマ: {{ theme.title }}
+  </div>
+  {% endif %}
+  
+  <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    
+    <div class="mb-3">
+      <label for="title" class="form-label">目標タイトル <span class="text-danger">*</span></label>
+      <input type="text" class="form-control" id="title" name="title" required>
+    </div>
+    
+    <div class="mb-3">
+      <label for="description" class="form-label">詳細</label>
+      <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+    </div>
+    
+    <div class="mb-3">
+      <label for="goal_type" class="form-label">目標タイプ</label>
+      <select class="form-select" id="goal_type" name="goal_type">
+        <option value="long">長期目標（3ヶ月以上）</option>
+        <option value="medium" selected>中期目標（1〜3ヶ月）</option>
+        <option value="short">短期目標（1ヶ月以内）</option>
+      </select>
+    </div>
+    
+    <div class="mb-3">
+      <label for="due_date" class="form-label">期限日</label>
+      <input type="date" class="form-control" id="due_date" name="due_date">
+    </div>
+    
+    <div class="d-flex justify-content-between">
+      <a href="{{ url_for('goals') }}" class="btn btn-secondary">キャンセル</a>
+      <button type="submit" class="btn btn-primary">保存</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

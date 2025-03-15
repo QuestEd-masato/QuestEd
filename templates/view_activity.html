@@ -1,0 +1,288 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ activity.title }} | QuestEd{% endblock %}
+
+{% block content %}
+<div class="activity-detail-container">
+    <div class="activity-detail-header">
+        <div class="activity-meta">
+            <span class="activity-date">{{ activity.date.strftime('%Y年%m月%d日') }}</span>
+            {% if current_user.id == activity.student_id %}
+            <div class="activity-actions">
+                <a href="{{ url_for('edit_activity', activity_id=activity.id) }}" class="btn btn-outline">編集</a>
+                <button type="button" class="btn btn-danger" onclick="confirmDelete()">削除</button>
+                <form id="delete-form" method="POST" action="{{ url_for('delete_activity', activity_id=activity.id) }}" style="display: none;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                </form>
+            </div>
+            {% endif %}
+        </div>
+        <h2 class="activity-title">{{ activity.title }}</h2>
+        <div class="theme-info">
+            <h3>テーマ: {{ theme.title }}</h3>
+            <p>{{ theme.question }}</p>
+        </div>
+    </div>
+    
+    {% if activity.image_url %}
+    <div class="activity-image">
+        <img src="{{ activity.image_url }}" alt="{{ activity.title }}">
+    </div>
+    {% endif %}
+    
+    <div class="activity-content-section">
+        <h3>活動内容</h3>
+        <div class="activity-content-text">
+            {{ activity.content|nl2br }}
+        </div>
+    </div>
+    
+    {% if activity.reflection %}
+    <div class="activity-reflection-section">
+        <h3>振り返り</h3>
+        <div class="activity-reflection-text">
+            {{ activity.reflection|nl2br }}
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if current_user.role == 'teacher' %}
+    <div class="teacher-feedback-section">
+        <h3>フィードバックを追加</h3>
+        <form method="POST" action="{{ url_for('add_feedback', activity_id=activity.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="form-group">
+                <label for="feedback">フィードバック</label>
+                <textarea id="feedback" name="feedback" rows="4" required placeholder="学生の活動に対するフィードバックを入力してください"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="rating">評価（1〜5）</label>
+                <select id="rating" name="rating" required>
+                    <option value="5">5 - 非常に優れている</option>
+                    <option value="4">4 - 優れている</option>
+                    <option value="3" selected>3 - 良好</option>
+                    <option value="2">2 - 改善が必要</option>
+                    <option value="1">1 - 大幅な改善が必要</option>
+                </select>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">フィードバックを送信</button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+    
+    {% if feedback %}
+    <div class="feedback-list-section">
+        <h3>教師からのフィードバック</h3>
+        {% for fb in feedback %}
+        <div class="feedback-card">
+            <div class="feedback-header">
+                <div class="feedback-rating">
+                    {% for i in range(5) %}
+                    <span class="star {% if i < fb.rating %}filled{% endif %}">★</span>
+                    {% endfor %}
+                </div>
+                <div class="feedback-meta">
+                    <span>{{ fb.created_at.strftime('%Y年%m月%d日 %H:%M') }}</span>
+                </div>
+            </div>
+            <div class="feedback-content">
+                {{ fb.feedback|nl2br }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function confirmDelete() {
+        if (confirm('この活動記録を削除してもよろしいですか？この操作は取り消せません。')) {
+            document.getElementById('delete-form').submit();
+        }
+    }
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .activity-detail-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .activity-detail-header {
+        margin-bottom: 2rem;
+    }
+    
+    .activity-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .activity-date {
+        display: inline-block;
+        background-color: #0056b3;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.9rem;
+    }
+    
+    .activity-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .activity-title {
+        font-size: 1.8rem;
+        color: #333;
+        margin-bottom: 1rem;
+    }
+    
+    .theme-info {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+    }
+    
+    .theme-info h3 {
+        color: #0056b3;
+        margin-bottom: 0.5rem;
+    }
+    
+    .activity-image {
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+    
+    .activity-image img {
+        max-width: 100%;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .activity-content-section,
+    .activity-reflection-section,
+    .teacher-feedback-section,
+    .feedback-list-section {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .activity-content-section h3,
+    .activity-reflection-section h3,
+    .teacher-feedback-section h3,
+    .feedback-list-section h3 {
+        color: #555;
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+    }
+    
+    .activity-content-text,
+    .activity-reflection-text {
+        line-height: 1.6;
+    }
+    
+    .feedback-card {
+        background-color: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+    
+    .feedback-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+    }
+    
+    .feedback-rating {
+        color: #6c757d;
+    }
+    
+    .star.filled {
+        color: #ffc107;
+    }
+    
+    .feedback-meta {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+    
+    .feedback-content {
+        line-height: 1.6;
+    }
+    
+    .btn-outline {
+        background-color: transparent;
+        border: 1px solid #0056b3;
+        color: #0056b3;
+    }
+    
+    .btn-outline:hover {
+        background-color: #0056b3;
+        color: white;
+    }
+    
+    .btn-danger {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .btn-danger:hover {
+        background-color: #c82333;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+    
+    select,
+    textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+    }
+    
+    .form-actions {
+        margin-top: 1rem;
+    }
+    
+    @media (max-width: 768px) {
+        .activity-detail-container {
+            padding: 1rem;
+        }
+        
+        .activity-meta {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+        
+        .activity-title {
+            font-size: 1.5rem;
+        }
+    }

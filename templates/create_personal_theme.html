@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}個人テーマ作成{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h1>個人テーマ作成</h1>
+  
+  <div class="mb-4">
+    <a href="{{ url_for('student_view_main_themes') }}" class="btn btn-secondary">
+      <i class="fas fa-arrow-left"></i> 大テーマ一覧に戻る
+    </a>
+  </div>
+  
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-info">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  
+  <div class="card mb-4">
+    <div class="card-header bg-info text-white">
+      <h5 class="mb-0">大テーマ</h5>
+    </div>
+    <div class="card-body">
+      <h4>{{ main_theme.title }}</h4>
+      <p>{{ main_theme.description }}</p>
+    </div>
+  </div>
+  
+  <div class="card">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">個人テーマの設定</h5>
+    </div>
+    <div class="card-body">
+      <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        
+        <div class="form-group mb-3">
+          <label for="title">テーマタイトル <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="title" name="title" required>
+          <small class="form-text text-muted">あなたの探究テーマを簡潔に表すタイトルをつけてください。</small>
+        </div>
+        
+        <div class="form-group mb-3">
+          <label for="question">探究の問い <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="question" name="question" required>
+          <small class="form-text text-muted">あなたが探究を通じて明らかにしたい問いを具体的に書いてください。</small>
+        </div>
+        
+        <div class="form-group mb-3">
+          <label for="description">テーマの説明</label>
+          <textarea class="form-control" id="description" name="description" rows="5"></textarea>
+          <small class="form-text text-muted">
+            このテーマについての説明や、取り組みたい理由、研究方法などを記載してください。
+          </small>
+        </div>
+        
+        <div class="form-group mb-3">
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> 個人テーマを保存
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <div class="alert alert-info mt-4">
+    <h5>良い探究テーマのポイント</h5>
+    <ul>
+      <li><strong>具体的であること</strong>: 抽象的なテーマより、具体的に絞り込まれたテーマの方が探究しやすいです。</li>
+      <li><strong>興味関心に基づくこと</strong>: 自分自身が興味を持って取り組めるテーマを選びましょう。</li>
+      <li><strong>調査可能であること</strong>: 1年間で調査・研究できる範囲のテーマを選びましょう。</li>
+      <li><strong>大テーマとの関連性</strong>: クラスの大テーマに関連したテーマにすることで、クラスメイトとの意見交換がしやすくなります。</li>
+    </ul>
+  </div>
+</div>
+{% endblock %}

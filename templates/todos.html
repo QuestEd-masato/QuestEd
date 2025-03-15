@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}To Doリスト{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>To Doリスト</h1>
+                <a href="{{ url_for('new_todo') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> 新規作成
+                </a>
+            </div>
+
+            {% if theme %}
+            <div class="alert alert-info">
+                <strong>現在の探究テーマ:</strong> {{ theme.title }}
+            </div>
+            {% endif %}
+
+            {% if todos %}
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <div class="row">
+                            <div class="col-md-1">状態</div>
+                            <div class="col-md-4">タイトル</div>
+                            <div class="col-md-2">期限</div>
+                            <div class="col-md-2">優先度</div>
+                            <div class="col-md-3">アクション</div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush">
+                            {% for todo in todos %}
+                            <li class="list-group-item {% if todo.is_completed %}text-muted bg-light{% endif %}">
+                                <div class="row align-items-center">
+                                    <div class="col-md-1">
+                                        <a href="{{ url_for('toggle_todo', todo_id=todo.id) }}" class="btn btn-sm {% if todo.is_completed %}btn-success{% else %}btn-outline-secondary{% endif %}">
+                                            {% if todo.is_completed %}<i class="fas fa-check"></i>{% else %}<i class="far fa-square"></i>{% endif %}
+                                        </a>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>{{ todo.title }}</strong>
+                                        {% if todo.description %}
+                                        <p class="mb-0 small">{{ todo.description }}</p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-2">
+                                        {% if todo.due_date %}
+                                        <span class="{% if todo.due_date < today and not todo.is_completed %}text-danger{% endif %}">
+                                            {{ todo.due_date.strftime('%Y/%m/%d') }}
+                                        </span>
+                                        {% else %}
+                                        <span class="text-muted">設定なし</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-2">
+                                        {% if todo.priority == 'high' %}
+                                        <span class="badge bg-danger">高</span>
+                                        {% elif todo.priority == 'medium' %}
+                                        <span class="badge bg-warning text-dark">中</span>
+                                        {% else %}
+                                        <span class="badge bg-info text-dark">低</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="btn-group">
+                                            <a href="{{ url_for('edit_todo', todo_id=todo.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-edit"></i> 編集
+                                            </a>
+                                            <a href="{{ url_for('delete_todo', todo_id=todo.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('このTo Doを削除してもよろしいですか？');">
+                                                <i class="fas fa-trash"></i> 削除
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            {% else %}
+                <div class="alert alert-secondary">
+                    To Doがまだありません。「新規作成」ボタンから追加してください。
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 今日の日付を取得してテンプレートで利用可能にする
+        var today = new Date();
+        window.today = today;
+    });
+</script>
+{% endblock %}

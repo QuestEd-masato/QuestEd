@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block title %}QuestEd | 思考特性アンケート編集{% endblock %}
+
+{% block content %}
+<div class="survey-container">
+    <h1>思考特性アンケート編集</h1>
+    <p class="survey-description">あなたの回答を更新してください。</p>
+    
+    <form method="post" action="{{ url_for('personality_survey_edit') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <!-- 質問1 -->
+        <div class="question-group">
+            <h3>質問1: 新しい問題に取り組むとき、どのようなアプローチをしますか？</h3>
+            <div class="options">
+                <div class="option">
+                    <input type="radio" id="q1_systematic" name="question_1" value="systematic" {% if responses.question_1 == 'systematic' %}checked{% endif %} required>
+                    <label for="q1_systematic">体系的に順を追って考える</label>
+                </div>
+                <div class="option">
+                    <input type="radio" id="q1_intuitive" name="question_1" value="intuitive" {% if responses.question_1 == 'intuitive' %}checked{% endif %}>
+                    <label for="q1_intuitive">直感的に全体像をつかむ</label>
+                </div>
+                <div class="option">
+                    <input type="radio" id="q1_collaborative" name="question_1" value="collaborative" {% if responses.question_1 == 'collaborative' %}checked{% endif %}>
+                    <label for="q1_collaborative">他の人と一緒に考える</label>
+                </div>
+                <div class="option">
+                    <input type="radio" id="q1_experimental" name="question_1" value="experimental" {% if responses.question_1 == 'experimental' %}checked{% endif %}>
+                    <label for="q1_experimental">試行錯誤しながら解決策を見つける</label>
+                </div>
+                <div class="option">
+                    <input type="radio" id="q1_reflective" name="question_1" value="reflective" {% if responses.question_1 == 'reflective' %}checked{% endif %}>
+                    <label for="q1_reflective">時間をかけて熟考する</label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 質問2 -->
+        <div class="question-group">
+            <h3>質問2: どのような形で情報を受け取るのが最も理解しやすいですか？</h3>
+            <div class="options">
+                <div class="option">
+                    <input type="radio" id="q2_visual" name="question_2" value="visual" {% if responses.question_2 == 'visual' %}checked{% endif %} required>
+                    <label for="q2_visual">視覚的な情報（図表・映像など）</label>
+                </div>
+                <div class="option">
+                    <input type="radio" id="q2_auditory" name="question_2" value="auditory" {% if responses.question_2 == 'auditory' %}checked{% endif %}>
+                    <label for="q2_auditory">聴覚的な情報（講義・音声など）</label>
+                </div>
+                <div class="option">
+                    <input type="radio" id="q2_reading" name="question_2" value="reading" {% if responses.question_2 == 'reading' %}checked{% endif %}>
+                    <label for="q2_reading">文章や書籍を読むこと</label>
+                </div>
+                <div class="option">
+                    <input type="radio" id="q2_interactive" name="question_2" value="interactive" {% if responses.question_2 == 'interactive' %}checked{% endif %}>
+                    <label for="q2_interactive">対話や質問を通して</label>
+                </div>
+                <div class="option">
+                    <input type="radio" id="q2_practical" name="question_2" value="practical" {% if responses.question_2 == 'practical' %}checked{% endif %}>
+                    <label for="q2_practical">実践や体験を通して</label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 質問3 -->
+        <div class="question-group">
+            <h3>質問3: グループワークでの自分の役割はどのようなものが多いですか？</h3>
+            <div class="options">
+                <div class="option">
+                    <input type="radio" id="q3_leader" name="question_3" value="leader" {% if responses.question_3 == 'leader' %}checked{% endif %} required>
+                    <label for="q3_leader">リーダー・方向性を決める役割</label>
+                </div>
+                <div class="option">
+                    <input type="radio" id="q3_idea" name="question_3" value="idea" {% if responses.question_3 == 'idea' %}checked{% endif %}>
+                    <label for="q3_idea">アイデアを出す役割</label>
+                </div>
+                <div class="option">
+                    <input type="radio" id="q3_organize" name="question_3" value="organize" {% if responses.question_3 == 'organize' %}checked{% endif %}>
+                    <label for="q3_organize">整理・調整する役割</label>
+                </div>
+                <div class="option">
+                    <input type="radio" id="q3_support" name="question_3" value="support" {% if responses.question_3 == 'support' %}checked{% endif %}>
+                    <label for="q3_support">サポート・協力する役割</label>
+                </div>
+                <div class="option">
+                    <input type="radio" id="q3_analyst" name="question_3" value="analyst" {% if responses.question_3 == 'analyst' %}checked{% endif %}>
+                    <label for="q3_analyst">分析・評価する役割</label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 質問4 -->
+        <div class="question-group">
+            <h3>質問4: どのような環境で最も集中できますか？</h3>
+            <div class="options">
+                <div class="option">
+                    <input type="radio" id="q4_quiet" name="question_4" value="quiet" {% if responses.question_4 == 'quiet' %}checked{% endif %} required>
+                    <label for="q4_quiet">静かで落ち着いた環境</label>
+                </div>
+                <div class="option">
+                    <input type="radio" id="q4_dynamic" name="question_4" value="dynamic" {% if responses.question_4 == 'dynamic' %}checked{% endif %}>
+                    <label for="q4_dynamic">活気のある刺激的な環境</label>
+                </div>
+                <div class="option">
+                    <input type="radio" id="q4_nature" name="question_4" value="nature" {% if responses.question_4 == 'nature' %}checked{% endif %}>
+                    <label for="q4_nature">自然に囲まれた環境</label>
+                </div>
+                <div class="option">
+                    <input type="radio" id="q4_group" name="question_4" value="group" {% if responses.question_4 == 'group' %}checked{% endif %}>
+                    <label for="q4_group">人と一緒にいる環境</label>
+                </div>
+                <div class="option">
+                    <input type="radio" id="q4_flexible" name="question_4" value="flexible" {% if responses.question_4 == 'flexible' %}checked{% endif %}>
+                    <label for="q4_flexible">環境にはあまり左右されない</label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 質問5 -->
+        <div class="question-group">
+            <h3>質問5: 目標達成に向けてどのような取り組み方をしますか？</h3>
+            <div class="options">
+                <div class="option">
+                    <input type="radio" id="q5_plan" name="question_5" value="plan" {% if responses.question_5 == 'plan' %}checked{% endif %} required>
+                    <label for="q5_plan">計画を立てて順序立てて進める</label>
+                </div>
+                <div class="option">
+                    <input type="radio" id="q5_flexible" name="question_5" value="flexible" {% if responses.question_5 == 'flexible' %}checked{% endif %}>
+                    <label for="q5_flexible">状況に応じて柔軟に対応する</label>
+                </div>
+                <div class="option">
+                    <input type="radio" id="q5_deadline" name="question_5" value="deadline" {% if responses.question_5 == 'deadline' %}checked{% endif %}>
+                    <label for="q5_deadline">締切が近づいてから集中的に取り組む</label>
+                </div>
+                <div class="option">
+                    <input type="radio" id="q5_iterative" name="question_5" value="iterative" {% if responses.question_5 == 'iterative' %}checked{% endif %}>
+                    <label for="q5_iterative">繰り返し改善しながら進める</label>
+                </div>
+                <div class="option">
+                    <input type="radio" id="q5_help" name="question_5" value="help" {% if responses.question_5 == 'help' %}checked{% endif %}>
+                    <label for="q5_help">必要に応じて助けを求めながら進める</label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <a href="{{ url_for('surveys') }}" class="btn">キャンセル</a>
+            <button type="submit" class="btn primary">回答を更新</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

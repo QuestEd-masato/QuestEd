@@ -1,0 +1,407 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ class_obj.name }} - 評価生成 | QuestEd{% endblock %}
+
+{% block content %}
+<div class="evaluation-container">
+    <div class="evaluation-header">
+        <div class="page-title">
+            <h2>{{ class_obj.name }}</h2>
+            <div class="subtitle">評価生成ツール</div>
+        </div>
+        <div class="header-actions">
+            <a href="{{ url_for('view_class', class_id=class_obj.id) }}" class="btn btn-outline-primary rounded-pill">
+                <i class="fas fa-arrow-left mr-2"></i>クラスに戻る
+            </a>
+        </div>
+    </div>
+    
+    <div class="card shadow-sm mb-4 border-0 rounded-lg">
+        <div class="card-header bg-gradient">
+            <h3 class="mb-0 text-white"><i class="fas fa-sliders-h mr-2"></i>評価設定</h3>
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('generate_evaluations', class_id=class_obj.id) }}" method="GET" class="mb-4">
+                <div class="form-group">
+                    <label for="curriculum_id" class="form-label"><i class="fas fa-book mr-2"></i>カリキュラム/ルーブリック選択:</label>
+                    <select id="curriculum_id" name="curriculum_id" class="form-control custom-select shadow-sm" onchange="this.form.submit()">
+                        <option value="">カリキュラムを選択してください</option>
+                        {% for curriculum in curriculums %}
+                            <option value="{{ curriculum.id }}" {% if selected_curriculum_id == curriculum.id %}selected{% endif %}>
+                                {{ curriculum.title }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <small class="form-text text-muted mt-2"><i class="fas fa-info-circle mr-1"></i>カリキュラムに含まれるルーブリックを評価基準として使用します</small>
+                </div>
+            </form>
+            
+            <form action="{{ url_for('generate_evaluations', class_id=class_obj.id) }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="form-group">
+                    <label class="form-label mb-3"><i class="fas fa-users mr-2"></i>評価対象の学生を選択:</label>
+                    <div class="student-selection">
+                        <div class="selection-header">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="select-all">
+                                <label class="custom-control-label" for="select-all">全て選択/解除</label>
+                            </div>
+                        </div>
+                        <div class="selection-list">
+                            {% for student in students %}
+                                <div class="custom-control custom-checkbox student-item">
+                                    <input class="custom-control-input student-checkbox" type="checkbox" name="student_ids" value="{{ student.id }}" id="student-{{ student.id }}">
+                                    <label class="custom-control-label" for="student-{{ student.id }}">
+                                        {{ student.username }}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow-sm px-4">
+                        <i class="fas fa-magic mr-2"></i>評価を生成
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    {% if evaluations %}
+        <div class="card shadow-sm border-0 rounded-lg">
+            <div class="card-header bg-gradient d-flex justify-content-between align-items-center">
+                <h3 class="mb-0 text-white"><i class="fas fa-clipboard-check mr-2"></i>評価結果</h3>
+                <a href="{{ url_for('generate_evaluations', class_id=class_obj.id, format='csv', curriculum_id=selected_curriculum_id) }}" class="btn btn-light rounded-pill shadow-sm">
+                    <i class="fas fa-download mr-2"></i>CSVエクスポート
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover evaluation-table">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>学生名</th>
+                                <th>評価</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for eval in evaluations %}
+                                <tr>
+                                    <td>
+                                        <div class="student-name">{{ eval.student_name }}</div>
+                                    </td>
+                                    <td>
+                                        <div class="evaluation-card" data-toggle="modal" data-target="#evaluationModal" data-evaluation="{{ eval.evaluation }}" data-student="{{ eval.student_name }}">
+                                            <div class="evaluation-preview">
+                                                {{ eval.evaluation[:20] }}{% if eval.evaluation|length > 20 %}...{% endif %}
+                                            </div>
+                                            <div class="view-details">
+                                                <i class="fas fa-expand-alt"></i> 詳細を表示
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 評価詳細モーダル -->
+        <div class="modal fade" id="evaluationModal" tabindex="-1" role="dialog" aria-labelledby="evaluationModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+                <div class="modal-content border-0 shadow">
+                    <div class="modal-header bg-gradient text-white">
+                        <h5 class="modal-title" id="evaluationModalLabel">評価詳細</h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="student-avatar mb-3">
+                            <i class="fas fa-user-circle"></i>
+                            <h6 id="modal-student-name" class="d-inline-block ml-2"></h6>
+                        </div>
+                        <div class="evaluation-content p-3 bg-light rounded">
+                            <p id="modal-evaluation-text" class="mb-0"></p>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary rounded-pill" data-dismiss="modal">
+                            <i class="fas fa-times mr-2"></i>閉じる
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 全選択/解除の処理
+        const selectAllCheckbox = document.getElementById('select-all');
+        const studentCheckboxes = document.querySelectorAll('.student-checkbox');
+        
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                const isChecked = this.checked;
+                studentCheckboxes.forEach(function(checkbox) {
+                    checkbox.checked = isChecked;
+                });
+            });
+        }
+        
+        // 個別のチェックボックスが変更された時に「全て選択」の状態を更新
+        studentCheckboxes.forEach(function(checkbox) {
+            checkbox.addEventListener('change', function() {
+                const allChecked = Array.from(studentCheckboxes).every(function(cb) {
+                    return cb.checked;
+                });
+                
+                if (selectAllCheckbox) {
+                    selectAllCheckbox.checked = allChecked;
+                }
+            });
+        });
+
+        // 評価カードのクリックイベント
+        const evaluationCards = document.querySelectorAll('.evaluation-card');
+        evaluationCards.forEach(function(card) {
+            card.addEventListener('click', function() {
+                const evaluation = this.getAttribute('data-evaluation');
+                const student = this.getAttribute('data-student');
+                
+                document.getElementById('modal-student-name').textContent = student + ' さんの評価';
+                document.getElementById('modal-evaluation-text').textContent = evaluation;
+                
+                // モーダルを表示
+                $('#evaluationModal').modal('show');
+            });
+        });
+        
+        // ホバーエフェクト
+        document.querySelectorAll('.evaluation-card').forEach(function(card) {
+            card.addEventListener('mouseenter', function() {
+                this.classList.add('evaluation-card-hover');
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.classList.remove('evaluation-card-hover');
+            });
+        });
+    });
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary-color: #4285F4;
+        --primary-gradient: linear-gradient(135deg, #4285F4, #34A853);
+        --secondary-color: #FBBC05;
+        --accent-color: #EA4335;
+        --light-bg: #F8F9FA;
+        --dark-text: #202124;
+        --medium-text: #5F6368;
+        --light-text: #BDC1C6;
+        --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+        --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+        --radius-sm: 4px;
+        --radius-md: 8px;
+        --radius-lg: 12px;
+        --spacing-xs: 0.25rem;
+        --spacing-sm: 0.5rem;
+        --spacing-md: 1rem;
+        --spacing-lg: 1.5rem;
+        --spacing-xl: 2rem;
+        --transition: all 0.3s ease;
+    }
+
+    .evaluation-container {
+        max-width: 1000px;
+        margin: var(--spacing-xl) auto;
+        padding: var(--spacing-md);
+    }
+    
+    .bg-gradient {
+        background: var(--primary-gradient);
+    }
+    
+    .page-title {
+        margin-bottom: var(--spacing-lg);
+    }
+    
+    .page-title h2 {
+        margin-bottom: 0;
+        color: var(--dark-text);
+        font-weight: 700;
+    }
+    
+    .subtitle {
+        color: var(--medium-text);
+        font-size: 1.1rem;
+    }
+    
+    .evaluation-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: var(--spacing-xl);
+    }
+    
+    .card {
+        transition: var(--transition);
+        overflow: hidden;
+    }
+    
+    .card-header {
+        padding: var(--spacing-md) var(--spacing-lg);
+    }
+    
+    .card-body {
+        padding: var(--spacing-lg);
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: var(--dark-text);
+        margin-bottom: var(--spacing-sm);
+    }
+    
+    .form-control {
+        border-radius: var(--radius-md);
+        padding: 0.75rem 1rem;
+        border: 1px solid #E8EAED;
+        transition: var(--transition);
+    }
+    
+    .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(66, 133, 244, 0.25);
+    }
+    
+    .student-selection {
+        border: 1px solid #E8EAED;
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .selection-header {
+        padding: var(--spacing-md) var(--spacing-lg);
+        background-color: var(--light-bg);
+        border-bottom: 1px solid #E8EAED;
+    }
+    
+    .selection-list {
+        max-height: 300px;
+        overflow-y: auto;
+        padding: var(--spacing-sm);
+    }
+    
+    .student-item {
+        margin-bottom: var(--spacing-xs);
+        padding: var(--spacing-sm) var(--spacing-md);
+        border-radius: var(--radius-sm);
+        transition: var(--transition);
+    }
+    
+    .student-item:hover {
+        background-color: var(--light-bg);
+    }
+    
+    .form-actions {
+        margin-top: var(--spacing-lg);
+        display: flex;
+        justify-content: flex-end;
+    }
+    
+    .student-name {
+        font-weight: 600;
+        color: var(--dark-text);
+    }
+    
+    .evaluation-table th {
+        font-weight: 600;
+        border-top: none;
+    }
+    
+    .evaluation-card {
+        background-color: var(--light-bg);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        cursor: pointer;
+        transition: var(--transition);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    
+    .evaluation-card-hover {
+        background-color: rgba(66, 133, 244, 0.1);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .evaluation-preview {
+        font-weight: 500;
+        margin-bottom: var(--spacing-xs);
+    }
+    
+    .view-details {
+        font-size: 0.85rem;
+        color: var(--primary-color);
+        margin-top: var(--spacing-xs);
+        display: flex;
+        align-items: center;
+        opacity: 0.7;
+    }
+    
+    .evaluation-card-hover .view-details {
+        opacity: 1;
+    }
+    
+    .view-details i {
+        margin-right: var(--spacing-xs);
+    }
+    
+    .evaluation-content {
+        background-color: var(--light-bg);
+        border-radius: var(--radius-md);
+        line-height: 1.6;
+    }
+    
+    .student-avatar {
+        display: flex;
+        align-items: center;
+    }
+    
+    .student-avatar i {
+        font-size: 2rem;
+        color: var(--primary-color);
+    }
+    
+    @media (max-width: 768px) {
+        .evaluation-header {
+            flex-direction: column;
+        }
+        
+        .header-actions {
+            margin-top: var(--spacing-md);
+            align-self: flex-start;
+        }
+        
+        .evaluation-card {
+            padding: var(--spacing-sm);
+        }
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}大テーマ管理 - {{ class_obj.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h1>大テーマ管理 - {{ class_obj.name }}</h1>
+  
+  <div class="mb-4">
+    <a href="{{ url_for('view_class', class_id=class_obj.id) }}" class="btn btn-secondary">
+      <i class="fas fa-arrow-left"></i> クラス詳細に戻る
+    </a>
+    <a href="{{ url_for('create_main_theme', class_id=class_obj.id) }}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> 新しい大テーマを作成
+    </a>
+  </div>
+  
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-info">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">大テーマ一覧</h5>
+    </div>
+    <div class="card-body">
+      {% if main_themes %}
+        <div class="table-responsive">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>タイトル</th>
+                <th>説明</th>
+                <th>作成日</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for theme in main_themes %}
+                <tr>
+                  <td>{{ theme.title }}</td>
+                  <td>{{ theme.description|truncate(50) }}</td>
+                  <td>{{ theme.created_at.strftime('%Y-%m-%d') }}</td>
+                  <td>
+                    <a href="{{ url_for('edit_main_theme', theme_id=theme.id) }}" class="btn btn-sm btn-outline-primary">
+                      <i class="fas fa-edit"></i> 編集
+                    </a>
+                    <a href="{{ url_for('delete_main_theme', theme_id=theme.id) }}" class="btn btn-sm btn-outline-danger" 
+                       onclick="return confirm('本当に削除しますか？関連する個人テーマへの影響があります。');">
+                      <i class="fas fa-trash"></i> 削除
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="alert alert-warning">
+          このクラスにはまだ大テーマがありません。「新しい大テーマを作成」ボタンから作成してください。
+        </div>
+      {% endif %}
+    </div>
+  </div>
+  
+  <div class="alert alert-info">
+    <h5>大テーマについて</h5>
+    <p>大テーマは、クラス全体で共有される探究学習の大きな方向性です。学生はこの大テーマに基づいて個人の探究テーマを設定します。</p>
+    <p>例: 「持続可能な社会」という大テーマから、学生は「地域の再生可能エネルギー活用」などの個人テーマを設定できます。</p>
+  </div>
+</div>
+{% endblock %}

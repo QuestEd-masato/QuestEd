@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}QuestEd | クラス一覧{% endblock %}
+
+{% block content %}
+<div class="classes-container">
+    <h1>クラス一覧</h1>
+    
+    {% if classes %}
+        <div class="classes-grid">
+            {% for class in classes %}
+            <div class="class-card">
+                <h2>{{ class.name }}</h2>
+                <p><strong>担当教師:</strong> {{ class.teacher.username }}</p>
+                <div class="class-actions">
+                    <a href="{{ url_for('class_details', class_id=class.id) }}" class="btn">詳細を見る</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="no-classes">
+            <p>まだクラスがありません。</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

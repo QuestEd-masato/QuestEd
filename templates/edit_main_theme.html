@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}大テーマ編集 - {{ main_theme.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h1>大テーマ編集</h1>
+  
+  <div class="mb-4">
+    <a href="{{ url_for('view_main_themes', class_id=main_theme.class_id) }}" class="btn btn-secondary">
+      <i class="fas fa-arrow-left"></i> 大テーマ一覧に戻る
+    </a>
+  </div>
+  
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-info">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  
+  <div class="card">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">大テーマを編集</h5>
+    </div>
+    <div class="card-body">
+      <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        
+        <div class="form-group mb-3">
+          <label for="title">タイトル <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="title" name="title" value="{{ main_theme.title }}" required>
+          <small class="form-text text-muted">明確で具体的なタイトルを設定してください。</small>
+        </div>
+        
+        <div class="form-group mb-3">
+          <label for="description">説明</label>
+          <textarea class="form-control" id="description" name="description" rows="5">{{ main_theme.description }}</textarea>
+          <small class="form-text text-muted">
+            このテーマの概要、探究の方向性、期待される学習目標などを記載してください。
+            学生はこの情報を元に個人テーマを設定します。
+          </small>
+        </div>
+        
+        <div class="form-group mb-3">
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> 変更を保存
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <div class="alert alert-warning mt-4">
+    <h5>注意</h5>
+    <p>大テーマを変更すると、このテーマに基づいて学生が設定した個人テーマにも影響する可能性があります。</p>
+    <p>大幅な変更を行う場合は、学生に事前に通知することをお勧めします。</p>
+  </div>
+</div>
+{% endblock %}

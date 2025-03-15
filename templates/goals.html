@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+
+{% block title %}目標管理{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <h1 class="mb-4">目標管理</h1>
+  
+  {% if theme %}
+  <div class="alert alert-info">
+    現在の探究テーマ: {{ theme.title }}
+  </div>
+  {% endif %}
+  
+  <div class="mb-4">
+    <a href="{{ url_for('new_goal') }}" class="btn btn-primary">新しい目標を追加</a>
+  </div>
+  
+  {% if goals %}
+    <h2>長期目標</h2>
+    <div class="list-group mb-4">
+      {% for goal in goals if goal.goal_type == 'long' %}
+        <div class="list-group-item">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-1 {% if goal.is_completed %}text-muted text-decoration-line-through{% endif %}">
+              {{ goal.title }}
+            </h5>
+            <div>
+              {% if goal.due_date %}
+                {% if today > goal.due_date and not goal.is_completed %}
+                  <span class="badge bg-danger">期限切れ</span>
+                {% elif (goal.due_date - today).days <= 7 and not goal.is_completed %}
+                  <span class="badge bg-warning text-dark">期限間近</span>
+                {% endif %}
+                <small>期限: {{ goal.due_date.strftime('%Y年%m月%d日') }}</small>
+              {% endif %}
+            </div>
+          </div>
+          <p class="mb-1">{{ goal.description or '' }}</p>
+          <div class="progress mt-2" style="height: 20px;">
+            <div class="progress-bar {% if (goal.progress or 0) < 25 %}bg-danger{% elif (goal.progress or 0) < 75 %}bg-warning{% else %}bg-success{% endif %}" 
+                 role="progressbar" style="width: {{ goal.progress or 0 }}%;" 
+                 aria-valuenow="{{ goal.progress or 0 }}" aria-valuemin="0" aria-valuemax="100">
+              {{ goal.progress or 0 }}%
+            </div>
+          </div>
+          <div class="d-flex justify-content-end mt-2">
+            <a href="{{ url_for('edit_goal', goal_id=goal.id) }}" class="btn btn-sm btn-outline-primary me-2">編集</a>
+            <a href="{{ url_for('delete_goal', goal_id=goal.id) }}" class="btn btn-sm btn-outline-danger" 
+               onclick="return confirm('この目標を削除してもよろしいですか？')">削除</a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    
+    <h2>中期目標</h2>
+    <div class="list-group mb-4">
+      {% for goal in goals if goal.goal_type == 'medium' %}
+        <div class="list-group-item">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-1 {% if goal.is_completed %}text-muted text-decoration-line-through{% endif %}">
+              {{ goal.title }}
+            </h5>
+            <div>
+              {% if goal.due_date %}
+                {% if today > goal.due_date and not goal.is_completed %}
+                  <span class="badge bg-danger">期限切れ</span>
+                {% elif (goal.due_date - today).days <= 7 and not goal.is_completed %}
+                  <span class="badge bg-warning text-dark">期限間近</span>
+                {% endif %}
+                <small>期限: {{ goal.due_date.strftime('%Y年%m月%d日') }}</small>
+              {% endif %}
+            </div>
+          </div>
+          <p class="mb-1">{{ goal.description or '' }}</p>
+          <div class="progress mt-2" style="height: 20px;">
+            <div class="progress-bar {% if (goal.progress or 0) < 25 %}bg-danger{% elif (goal.progress or 0) < 75 %}bg-warning{% else %}bg-success{% endif %}" 
+                 role="progressbar" style="width: {{ goal.progress or 0 }}%;" 
+                 aria-valuenow="{{ goal.progress or 0 }}" aria-valuemin="0" aria-valuemax="100">
+              {{ goal.progress or 0 }}%
+            </div>
+          </div>
+          <div class="d-flex justify-content-end mt-2">
+            <a href="{{ url_for('edit_goal', goal_id=goal.id) }}" class="btn btn-sm btn-outline-primary me-2">編集</a>
+            <a href="{{ url_for('delete_goal', goal_id=goal.id) }}" class="btn btn-sm btn-outline-danger" 
+               onclick="return confirm('この目標を削除してもよろしいですか？')">削除</a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    
+    <h2>短期目標</h2>
+    <div class="list-group mb-4">
+      {% for goal in goals if goal.goal_type == 'short' %}
+        <div class="list-group-item">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-1 {% if goal.is_completed %}text-muted text-decoration-line-through{% endif %}">
+              {{ goal.title }}
+            </h5>
+            <div>
+              {% if goal.due_date %}
+                {% if today > goal.due_date and not goal.is_completed %}
+                  <span class="badge bg-danger">期限切れ</span>
+                {% elif (goal.due_date - today).days <= 7 and not goal.is_completed %}
+                  <span class="badge bg-warning text-dark">期限間近</span>
+                {% endif %}
+                <small>期限: {{ goal.due_date.strftime('%Y年%m月%d日') }}</small>
+              {% endif %}
+            </div>
+          </div>
+          <p class="mb-1">{{ goal.description or '' }}</p>
+          <div class="progress mt-2" style="height: 20px;">
+            <div class="progress-bar {% if (goal.progress or 0) < 25 %}bg-danger{% elif (goal.progress or 0) < 75 %}bg-warning{% else %}bg-success{% endif %}" 
+                 role="progressbar" style="width: {{ goal.progress or 0 }}%;" 
+                 aria-valuenow="{{ goal.progress or 0 }}" aria-valuemin="0" aria-valuemax="100">
+              {{ goal.progress or 0 }}%
+            </div>
+          </div>
+          <div class="d-flex justify-content-end mt-2">
+            <a href="{{ url_for('edit_goal', goal_id=goal.id) }}" class="btn btn-sm btn-outline-primary me-2">編集</a>
+            <a href="{{ url_for('delete_goal', goal_id=goal.id) }}" class="btn btn-sm btn-outline-danger" 
+               onclick="return confirm('この目標を削除してもよろしいですか？')">削除</a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-info">
+      目標がまだ設定されていません。「新しい目標を追加」ボタンから目標を設定しましょう。
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

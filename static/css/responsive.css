@@ -1,0 +1,170 @@
+/* スマホ版（768px以下）のスタイル */
+@media (max-width: 768px) {
+    /* 全体のフォントサイズを小さめに */
+    body {
+        font-size: 14px;
+    }
+    
+    /* コンテナの幅を調整 */
+    .container {
+        padding: 0 0.75rem;
+    }
+    
+    /* カードとフォームの余白を縮小 */
+    .card {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    /* 表がはみ出さないように */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* ボタンのサイズを調整 */
+    .btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+    }
+    
+    /* フォーム要素をタップしやすく */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="date"],
+    select,
+    textarea {
+        padding: 0.75rem;
+        font-size: 16px; /* iOS で自動ズームを防ぐため */
+    }
+    
+    /* チェックボックスとラジオボタンの領域を広く */
+    input[type="checkbox"],
+    input[type="radio"] {
+        width: 20px;
+        height: 20px;
+    }
+    
+    /* ダッシュボードのグリッドを1列に */
+    .dashboard-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    /* 2列のレイアウトを1列に */
+    .col-2 {
+        grid-template-columns: 1fr !important;
+    }
+    
+    /* ヘッダーをコンパクトに */
+    header h1 {
+        font-size: 1.5rem;
+    }
+    
+    /* フッターも最小限に */
+    footer {
+        padding: 0.75rem;
+        font-size: 0.8rem;
+    }
+    
+    /* モーダルの幅を調整 */
+    .modal {
+        width: 95%;
+        max-width: 400px;
+    }
+    
+    /* テーブルのセル幅を調整 */
+    .table th,
+    .table td {
+        padding: 0.5rem;
+    }
+    
+    /* タブのボタンをコンパクトに */
+    .tab-btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+    }
+    
+    /* スプリットビューのフォームをスタック */
+    .form-row {
+        flex-direction: column;
+    }
+    
+    /* アクションボタンをブロック表示 */
+    .action-buttons .btn {
+        display: block;
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* AIチャット画面でのサイドバーとメインエリアの配置 */
+    .chat-container .col-md-3,
+    .chat-container .col-md-9 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+    
+    /* チャットUIの調整 */
+    #chat-container {
+        height: 350px;
+    }
+}
+
+/* タブレット版（769px〜991px）のスタイル */
+@media (min-width: 769px) and (max-width: 991px) {
+    .container {
+        max-width: 720px;
+    }
+    
+    .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+    
+    /* メニューバーは通常表示 */
+    .hamburger-menu {
+        display: none;
+    }
+    
+    nav ul {
+        display: flex !important;
+        position: static;
+        width: auto;
+        height: auto;
+        background-color: transparent;
+        padding: 0;
+        box-shadow: none;
+    }
+}
+
+/* 大画面版（992px以上）のスタイル */
+@media (min-width: 992px) {
+    .container {
+        max-width: 960px;
+    }
+    
+    .dashboard-grid {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    }
+    
+    /* メニューバーは通常表示 */
+    .hamburger-menu {
+        display: none;
+    }
+    
+    nav ul {
+        display: flex !important;
+        position: static;
+        width: auto;
+        height: auto;
+        background-color: transparent;
+        padding: 0;
+        box-shadow: none;
+    }
+}
+
+/* 超大画面（1200px以上）のスタイル */
+@media (min-width: 1200px) {
+    .container {
+        max-width: 1140px;
+    }
+}

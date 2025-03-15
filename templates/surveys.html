@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+
+{% block title %}アンケート | QuestEd{% endblock %}
+
+{% block content %}
+<div class="surveys-container">
+    <h2>探究学習アンケート</h2>
+    <p class="section-intro">AIによるテーマ提案のために、あなたの興味・関心や性格特性について教えてください。</p>
+    
+    <div class="survey-cards">
+        <div class="survey-card {% if interest_survey %}completed{% else %}pending{% endif %}">
+            <div class="survey-header">
+                <h3>興味・関心アンケート</h3>
+                <div class="survey-status">
+                    {% if interest_survey %}
+                    <span class="status-badge completed">完了</span>
+                    {% else %}
+                    <span class="status-badge pending">未回答</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="survey-description">
+                <p>あなたの好きな科目や興味のある社会問題、将来やってみたいことなどを教えてください。これらの情報をもとに、AIがあなたに合った探究テーマを提案します。</p>
+            </div>
+            
+            <div class="survey-actions">
+                {% if interest_survey %}
+                <a href="{{ url_for('interest_survey_edit') }}" class="btn">回答を編集する</a>
+                {% else %}
+                <a href="{{ url_for('interest_survey') }}" class="btn btn-primary">回答する</a>
+                {% endif %}
+            </div>
+            
+            {% if interest_survey %}
+            <div class="survey-submitted-at">
+                {{ interest_survey.submitted_at.strftime('%Y年%m月%d日 %H:%M') }}に回答
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="survey-card {% if personality_survey %}completed{% else %}pending{% endif %}">
+            <div class="survey-header">
+                <h3>性格診断アンケート</h3>
+                <div class="survey-status">
+                    {% if personality_survey %}
+                    <span class="status-badge completed">完了</span>
+                    {% else %}
+                    <span class="status-badge pending">未回答</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="survey-description">
+                <p>あなたの学習スタイルや取り組み方の特徴を知るために、簡単な性格診断を行います。あなたに合った探究アプローチの提案に役立てます。</p>
+            </div>
+            
+            <div class="survey-actions">
+                {% if personality_survey %}
+                <a href="{{ url_for('personality_survey_edit') }}" class="btn">回答を編集する</a>
+                {% else %}
+                <a href="{{ url_for('personality_survey') }}" class="btn btn-primary">回答する</a>
+                {% endif %}
+            </div>
+            
+            {% if personality_survey %}
+            <div class="survey-submitted-at">
+                {{ personality_survey.submitted_at.strftime('%Y年%m月%d日 %H:%M') }}に回答
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    {% if interest_survey and personality_survey %}
+    <div class="surveys-complete">
+        <p>両方のアンケートに回答いただきありがとうございます！</p>
+        <a href="{{ url_for('view_themes') }}" class="btn btn-primary">AIのテーマ提案を見る</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .surveys-container {
+        max-width: 900px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+    
+    .section-intro {
+        margin-bottom: 2rem;
+        color: #6c757d;
+    }
+    
+    .survey-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+    }
+    
+    .survey-card {
+        background-color: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .survey-card.completed {
+        border-left: 4px solid #28a745;
+    }
+    
+    .survey-card.pending {
+        border-left: 4px solid #ffc107;
+    }
+    
+    .survey-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .survey-header h3 {
+        margin: 0;
+        color: #333;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: bold;
+    }
+    
+    .status-badge.completed {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .status-badge.pending {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .survey-description {
+        margin-bottom: 1.5rem;
+        color: #6c757d;
+    }
+    
+    .survey-actions {
+        margin-bottom: 0.5rem;
+    }
+    
+    .survey-submitted-at {
+        font-size: 0.875rem;
+        color: #6c757d;
+        text-align: right;
+    }
+    
+    .surveys-complete {
+        margin-top: 3rem;
+        padding: 1.5rem;
+        background-color: #d4edda;
+        border-radius: 8px;
+        text-align: center;
+    }
+    
+    .surveys-complete p {
+        margin-bottom: 1rem;
+        color: #155724;
+        font-weight: bold;
+    }
+    
+    @media (max-width: 768px) {
+        .survey-cards {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}

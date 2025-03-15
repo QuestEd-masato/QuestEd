@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block title %}カリキュラム作成 - {{ class_obj.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>カリキュラム作成 - {{ class_obj.name }}</h1>
+    
+    <div class="mb-3">
+        <a href="{{ url_for('view_curriculums', class_id=class_obj.id) }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> カリキュラム一覧に戻る
+        </a>
+    </div>
+    
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h2 class="h5 mb-0">カリキュラム設定</h2>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{{ url_for('generate_curriculum', class_id=class_obj.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label for="title" class="form-label">カリキュラムタイトル <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="description" class="form-label">説明</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="main_theme_id" class="form-label">大テーマ</label>
+                            <select class="form-select" id="main_theme_id" name="main_theme_id">
+                                <option value="">-- 選択してください --</option>
+                                {% for theme in main_themes %}
+                                <option value="{{ theme.id }}">{{ theme.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label for="total_hours" class="form-label">総時間数</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="total_hours" name="total_hours" min="1" value="35">
+                                <span class="input-group-text">時間</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="has_fieldwork" name="has_fieldwork" onchange="toggleFieldwork()">
+                            <label class="form-check-label" for="has_fieldwork">
+                                フィールドワークを含む
+                            </label>
+                        </div>
+                        
+                        <div class="form-group mb-3" id="fieldwork_count_container" style="display: none;">
+                            <label for="fieldwork_count" class="form-label">フィールドワーク回数</label>
+                            <input type="number" class="form-control" id="fieldwork_count" name="fieldwork_count" min="1" value="1">
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="has_presentation" name="has_presentation" checked onchange="togglePresentation()">
+                            <label class="form-check-label" for="has_presentation">
+                                発表会を含む
+                            </label>
+                        </div>
+                        
+                        <div class="form-group mb-3" id="presentation_format_container">
+                            <label for="presentation_format" class="form-label">発表形式</label>
+                            <select class="form-select" id="presentation_format" name="presentation_format">
+                                <option value="プレゼンテーション">プレゼンテーション</option>
+                                <option value="ポスター発表">ポスター発表</option>
+                                <option value="成果物展示">成果物展示</option>
+                                <option value="ディスカッション">ディスカッション</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="group_work_level" class="form-label">グループ活動の度合い</label>
+                            <select class="form-select" id="group_work_level" name="group_work_level">
+                                <option value="個人中心">個人中心</option>
+                                <option value="ハイブリッド" selected>ハイブリッド</option>
+                                <option value="グループ中心">グループ中心</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="external_collaboration" name="external_collaboration">
+                            <label class="form-check-label" for="external_collaboration">
+                                外部連携（地域・企業など）
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> カリキュラムはAIが自動生成します。生成後に編集することもできます。
+                </div>
+                
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-magic"></i> カリキュラムを生成
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleFieldwork() {
+        const hasFieldwork = document.getElementById('has_fieldwork').checked;
+        const countContainer = document.getElementById('fieldwork_count_container');
+        countContainer.style.display = hasFieldwork ? 'block' : 'none';
+    }
+    
+    function togglePresentation() {
+        const hasPresentation = document.getElementById('has_presentation').checked;
+        const formatContainer = document.getElementById('presentation_format_container');
+        formatContainer.style.display = hasPresentation ? 'block' : 'none';
+    }
+</script>
+{% endblock %}

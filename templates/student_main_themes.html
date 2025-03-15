@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}大テーマ一覧{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h1>大テーマ一覧</h1>
+  
+  <div class="mb-4">
+    <a href="{{ url_for('student_dashboard') }}" class="btn btn-secondary">
+      <i class="fas fa-arrow-left"></i> ダッシュボードに戻る
+    </a>
+    <a href="{{ url_for('view_themes') }}" class="btn btn-info">
+      <i class="fas fa-list"></i> 個人テーマ一覧を見る
+    </a>
+  </div>
+  
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-info">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">所属クラスの大テーマ</h5>
+    </div>
+    <div class="card-body">
+      {% if themes_with_classes %}
+        <div class="row">
+          {% for item in themes_with_classes %}
+            <div class="col-md-6 mb-4">
+              <div class="card h-100">
+                <div class="card-header">
+                  {{ item.class_name }}
+                </div>
+                <div class="card-body">
+                  <h5 class="card-title">{{ item.theme.title }}</h5>
+                  <p class="card-text">{{ item.theme.description }}</p>
+                </div>
+                <div class="card-footer">
+                  <a href="{{ url_for('create_personal_theme', theme_id=item.theme.id) }}" class="btn btn-outline-primary">
+                    <i class="fas fa-plus"></i> 自分でテーマを作成
+                  </a>
+                  <a href="{{ url_for('generate_theme', theme_id=item.theme.id) }}" class="btn btn-outline-success">
+                    <i class="fas fa-robot"></i> AIにテーマを提案してもらう
+                  </a>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="alert alert-warning">
+          所属クラスの大テーマがまだ設定されていません。教師に確認してください。
+        </div>
+      {% endif %}
+    </div>
+  </div>
+  
+  <div class="alert alert-info">
+    <h5>大テーマと個人テーマについて</h5>
+    <p>大テーマは、クラス全体で共有される探究学習の方向性です。</p>
+    <p>あなた自身の個人テーマは、この大テーマに沿った形で設定します。</p>
+    <p>自分で直接個人テーマを作成するか、AIにアンケート回答を基にテーマを提案してもらうことができます。</p>
+  </div>
+</div>
+{% endblock %}

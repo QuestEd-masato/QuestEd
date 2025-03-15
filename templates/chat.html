@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}AIチャットボット | QuestEd{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-message {
+        margin-bottom: 15px;
+    }
+    .user-message {
+        text-align: right;
+    }
+    .message-content {
+        padding: 10px;
+        border-radius: 10px;
+        display: inline-block;
+        max-width: 80%;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    .user-message .message-content {
+        background-color: #007bff;
+        color: white;
+    }
+    .ai-message .message-content {
+        background-color: #f8f9fa;
+        color: #212529;
+        border: 1px solid #e9ecef;
+    }
+    .step-select, .function-select {
+        text-align: left;
+        margin-bottom: 4px;
+        transition: all 0.2s ease;
+        border-radius: 5px;
+        border: none;
+    }
+    .step-select.active, .function-select.active {
+        background-color: #007bff;
+        color: white;
+        font-weight: bold;
+    }
+    .step-select:hover, .function-select:hover {
+        background-color: #e9ecef;
+    }
+    .step-select.active:hover, .function-select.active:hover {
+        background-color: #0069d9;
+    }
+    .sidebar-card {
+        margin-bottom: 20px;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .loading-message .message-content {
+        background-color: #e9ecef;
+    }
+    #current-step {
+        padding: 6px 12px;
+        font-size: 0.9rem;
+        border-radius: 20px;
+    }
+    #chat-container {
+        height: 400px;
+        overflow-y: auto; 
+        border: 1px solid #e9ecef;
+        padding: 15px;
+        border-radius: 10px;
+        background-color: #fcfcfc;
+    }
+    #message-input {
+        border-radius: 20px 0 0 20px;
+        padding: 10px 15px;
+    }
+    .input-group-append button {
+        border-radius: 0 20px 20px 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- チャットインターフェース -->
+    <div class="row">
+        {% if current_user.role == 'student' %}
+        <!-- 学生用サイドバー -->
+        <div class="col-md-3">
+            <!-- 学習ステップカード -->
+            <div class="card sidebar-card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">学習ステップ</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for step in learning_steps %}
+                            <button class="list-group-item list-group-item-action step-select" 
+                                   data-step="{{ step.id }}">
+                                {{ step.name }}
+                            </button>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% elif current_user.role == 'teacher' %}
+        <!-- 教師用サイドバー -->
+        <div class="col-md-3">
+            <!-- 教師向け機能 -->
+            <div class="card sidebar-card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">教師支援機能</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for func in teacher_functions %}
+                        <button class="list-group-item list-group-item-action function-select" 
+                                data-function="{{ func.id }}">
+                            {{ func.name }}
+                            {% if func.id in ['activity_summary', 'evaluation'] %}
+                                <span class="badge badge-success float-right">実装済み</span>
+                            {% else %}
+                                <span class="badge badge-warning float-right">開発中</span>
+                            {% endif %}
+                        </button>
+                    {% endfor %}    
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- メインチャットエリア -->
+        <div class="col-md-{% if current_user.role in ['student', 'teacher'] %}9{% else %}12{% endif %}">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="mb-0">AIアシスタント</h3>
+                        {% if theme %}
+                        <p class="mb-0"><small>現在のテーマ: {{ theme.title }}</small></p>
+                        {% endif %}
+                    </div>
+                    <span class="badge {% if current_user.role == 'teacher' %}badge-success{% else %}badge-primary{% endif %}" id="current-step">自由質問</span>
+                </div>
+                <div class="card-body">
+                    <!-- チャットメッセージ表示エリア -->
+                    <div id="chat-container" class="mb-3">
+                        {% for chat in chat_history %}
+                            <div class="chat-message {% if chat.is_user %}user-message{% else %}ai-message{% endif %}">
+                                <div class="message-content">
+                                    {{ chat.message|nl2br }}
+                                </div>
+                                <div>
+                                    <small class="text-muted">{{ chat.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- フォーム送信 -->
+                    <form id="chat-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <!-- hidden フィールドの id と name が正しく設定されているか確認 -->
+                        <input type="hidden" id="selected-step" name="step" value="free">
+                        <input type="hidden" id="selected-function" name="function" value="">
+                        <div class="input-group">
+                            <textarea name="message" id="message-input" class="form-control" rows="2" placeholder="メッセージを入力..."></textarea>
+                            <div class="input-group-append">
+                                <button type="submit" class="btn btn-primary">送信</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+{% endblock %}

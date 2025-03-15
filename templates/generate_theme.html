@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}AIによるテーマ提案{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h1>AIによるテーマ提案</h1>
+  
+  <div class="mb-4">
+    <a href="{{ url_for('student_view_main_themes') }}" class="btn btn-secondary">
+      <i class="fas fa-arrow-left"></i> 大テーマ一覧に戻る
+    </a>
+  </div>
+  
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-info">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  
+  <div class="card mb-4">
+    <div class="card-header bg-info text-white">
+      <h5 class="mb-0">大テーマ</h5>
+    </div>
+    <div class="card-body">
+      <h4>{{ main_theme.title }}</h4>
+      <p>{{ main_theme.description }}</p>
+    </div>
+  </div>
+  
+  <div class="card">
+    <div class="card-header bg-success text-white">
+      <h5 class="mb-0">AIにテーマを提案してもらう</h5>
+    </div>
+    <div class="card-body">
+      <p class="mb-3">
+        あなたの興味関心アンケートと思考特性アンケートの回答を基に、AIがあなたに合った個人テーマを提案します。
+        生成されたテーマは後から編集することもできます。
+      </p>
+      
+      <div class="alert alert-warning">
+        <p><strong>ご注意：</strong></p>
+        <ul>
+          <li>テーマ生成には30秒ほどかかる場合があります。生成中は画面を閉じないでください。</li>
+          <li>アンケートの回答内容によって、提案されるテーマの質が変わります。</li>
+          <li>生成されたテーマは参考として活用し、必要に応じて編集してください。</li>
+        </ul>
+      </div>
+      
+      <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-success btn-lg">
+            <i class="fas fa-robot"></i> AIにテーマを提案してもらう
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <div class="alert alert-info mt-4">
+    <h5>AIによるテーマ提案について</h5>
+    <p>AIは以下の情報を元にテーマを提案します：</p>
+    <ul>
+      <li>あなたの興味関心アンケートの回答</li>
+      <li>あなたの思考特性アンケートの回答</li>
+      <li>クラスの大テーマ</li>
+    </ul>
+    <p>複数のテーマ案が生成され、自動的に1つが選択されますが、後から変更することができます。</p>
+  </div>
+</div>
+{% endblock %}

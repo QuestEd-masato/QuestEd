@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+
+{% block title %}マイルストーン作成 | QuestEd{% endblock %}
+
+{% block content %}
+<div class="create-milestone-container">
+    <h2>マイルストーンの作成</h2>
+    
+    <div class="class-info">
+        <h3>クラス: {{ class_.name }}</h3>
+        {% if class_.description %}
+        <p>{{ class_.description }}</p>
+        {% endif %}
+    </div>
+    
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div class="form-group">
+            <label for="title">タイトル <span class="required">*</span></label>
+            <input type="text" id="title" name="title" required>
+            <small class="form-text text-muted">例: 中間報告、テーマ発表会、最終レポート提出など</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="description">説明</label>
+            <textarea id="description" name="description" rows="4" placeholder="マイルストーンの内容や要件を詳しく説明してください"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="due_date">期限日 <span class="required">*</span></label>
+            <input type="date" id="due_date" name="due_date" required min="{{ now.strftime('%Y-%m-%d') }}">
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">マイルストーンを作成</button>
+            <a href="{{ url_for('view_class', class_id=class_.id) }}" class="btn btn-secondary">キャンセル</a>
+        </div>
+    </form>
+    
+    <div class="help-section">
+        <h3>マイルストーンについて</h3>
+        <ul>
+            <li>マイルストーンは探究学習の節目となる重要なポイントです。</li>
+            <li>学生はマイルストーンに対して進捗状況や成果物を提出できます。</li>
+            <li>期限を設定することで、学生の計画的な活動を促せます。</li>
+            <li>マイルストーンごとに学生の提出物を評価・フィードバックできます。</li>
+            <li>クラス全体の進捗状況を把握するのに役立ちます。</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .create-milestone-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    h2 {
+        margin-bottom: 1.5rem;
+        color: #333;
+    }
+    
+    .class-info {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+    }
+    
+    .class-info h3 {
+        color: #0056b3;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+    
+    .required {
+        color: #dc3545;
+    }
+    
+    input[type="text"],
+    input[type="date"],
+    textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+    }
+    
+    .form-text {
+        display: block;
+        margin-top: 0.25rem;
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .help-section {
+        margin-top: 2rem;
+        padding: 1.5rem;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        border-left: 4px solid #0056b3;
+    }
+    
+    .help-section h3 {
+        color: #0056b3;
+        margin-bottom: 1rem;
+    }
+    
+    .help-section ul {
+        padding-left: 1.5rem;
+    }
+    
+    .help-section li {
+        margin-bottom: 0.5rem;
+    }
+    
+    @media (max-width: 768px) {
+        .create-milestone-container {
+            padding: 1rem;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+        }
+        
+        .form-actions button,
+        .form-actions a {
+            width: 100%;
+            text-align: center;
+        }
+    }
+</style>
+{% endblock %}

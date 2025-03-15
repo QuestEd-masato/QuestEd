@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}QuestEd | クラス管理{% endblock %}
+
+{% block content %}
+<div class="classes-container">
+    <h1>クラス管理</h1>
+    
+    <div class="class-controls">
+        <a href="{{ url_for('create_class') }}" class="btn primary">新しいクラスを作成</a>
+    </div>
+    
+    {% if classes %}
+        <div class="classes-grid">
+            {% for class in classes %}
+            <div class="class-card">
+                <h2>{{ class.name }}</h2>
+                <div class="class-actions">
+                    <a href="{{ url_for('class_details', class_id=class.id) }}" class="btn">詳細を見る</a>
+                    <a href="{{ url_for('edit_class', class_id=class.id) }}" class="btn">編集</a>
+                    <a href="{{ url_for('delete_class', class_id=class.id) }}" class="btn danger" onclick="return confirm('このクラスを削除してもよろしいですか？');">削除</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="no-classes">
+            <p>まだクラスがありません。「新しいクラスを作成」ボタンからクラスを作成しましょう。</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

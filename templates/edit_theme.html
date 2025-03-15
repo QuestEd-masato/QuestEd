@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block title %}テーマ編集{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h1>テーマ編集</h1>
+  
+  <div class="mb-4">
+    <a href="{{ url_for('view_themes') }}" class="btn btn-secondary">
+      <i class="fas fa-arrow-left"></i> テーマ一覧に戻る
+    </a>
+  </div>
+  
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-info">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  
+  {% if main_theme %}
+  <div class="card mb-4">
+    <div class="card-header bg-info text-white">
+      <h5 class="mb-0">関連する大テーマ</h5>
+    </div>
+    <div class="card-body">
+      <h4>{{ main_theme.title }}</h4>
+      <p>{{ main_theme.description }}</p>
+    </div>
+  </div>
+  {% endif %}
+  
+  <div class="card">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">テーマ編集</h5>
+    </div>
+    <div class="card-body">
+      <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        
+        <div class="form-group mb-3">
+          <label for="title">テーマタイトル <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="title" name="title" value="{{ theme.title }}" required>
+          <small class="form-text text-muted">あなたの探究テーマを簡潔に表すタイトルをつけてください。</small>
+        </div>
+        
+        <div class="form-group mb-3">
+          <label for="question">探究の問い <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="question" name="question" value="{{ theme.question }}" required>
+          <small class="form-text text-muted">あなたが探究を通じて明らかにしたい問いを具体的に書いてください。</small>
+        </div>
+        
+        <div class="form-group mb-3">
+          <label for="description">テーマの説明</label>
+          <textarea class="form-control" id="description" name="description" rows="5">{{ theme.description }}</textarea>
+          <small class="form-text text-muted">
+            このテーマについての説明や、取り組みたい理由、研究方法などを記載してください。
+          </small>
+        </div>
+        
+        <div class="form-group mb-3">
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> 変更を保存
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  {% if theme.is_ai_generated %}
+  <div class="alert alert-info mt-4">
+    <h5>AIが提案したテーマについて</h5>
+    <p>このテーマはあなたのアンケート回答を基にAIが提案したものです。
+       あなた自身の興味・関心やクラスの大テーマに沿って自由に編集してください。</p>
+    
+    {% if theme.rationale %}
+    <div class="mb-2">
+      <strong>選定理由：</strong> {{ theme.rationale }}
+    </div>
+    {% endif %}
+    
+    {% if theme.approach %}
+    <div class="mb-2">
+      <strong>アプローチ方法：</strong> {{ theme.approach }}
+    </div>
+    {% endif %}
+    
+    {% if theme.potential %}
+    <div class="mb-2">
+      <strong>発展可能性：</strong> {{ theme.potential }}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

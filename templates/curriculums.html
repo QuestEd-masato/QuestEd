@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}カリキュラム一覧 - {{ class_obj.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>{{ class_obj.name }} - カリキュラム一覧</h1>
+    
+    <div class="d-flex justify-content-between mb-4">
+        <a href="{{ url_for('view_class', class_id=class_obj.id) }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> クラスに戻る
+        </a>
+        <a href="{{ url_for('create_curriculum_form', class_id=class_obj.id) }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> 新しいカリキュラムを作成
+        </a>
+            <a href="{{ url_for('import_curriculum', class_id=class_obj.id) }}" class="btn btn-success">
+                <i class="fas fa-file-import"></i> CSVからインポート
+        </a>
+    </div>
+    
+    {% if curriculums %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>タイトル</th>
+                        <th>総時間数</th>
+                        <th>作成日</th>
+                        <th>最終更新日</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for curriculum in curriculums %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('view_curriculum', curriculum_id=curriculum.id) }}">
+                                {{ curriculum.title }}
+                            </a>
+                        </td>
+                        <td>{{ curriculum.total_hours }}時間</td>
+                        <td>{{ curriculum.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ curriculum.updated_at.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('view_curriculum', curriculum_id=curriculum.id) }}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-eye"></i> 表示
+                                </a>
+                                <a href="{{ url_for('edit_curriculum', curriculum_id=curriculum.id) }}" class="btn btn-sm btn-warning">
+                                    <i class="fas fa-edit"></i> 編集
+                                </a>
+                                <a href="{{ url_for('export_curriculum', curriculum_id=curriculum.id) }}" class="btn btn-sm btn-success">
+                                    <i class="fas fa-file-csv"></i> CSV
+                                </a>
+                                <a href="{{ url_for('delete_curriculum', curriculum_id=curriculum.id) }}" 
+                                   class="btn btn-sm btn-danger"
+                                   onclick="return confirm('このカリキュラムを削除してもよろしいですか？')">
+                                    <i class="fas fa-trash"></i> 削除
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> このクラスのカリキュラムはまだありません。「新しいカリキュラムを作成」ボタンをクリックして作成してください。
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

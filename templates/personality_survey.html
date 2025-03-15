@@ -1,0 +1,768 @@
+{% extends 'base.html' %}
+
+{% block title %}性格診断アンケート | QuestEd{% endblock %}
+
+{% block content %}
+<div class="survey-container">
+    <h2>性格診断アンケート</h2>
+    <p class="survey-intro">あなたの学習スタイルや取り組み方の特徴を知るために、以下の質問に答えてください。各質問に対して、自分に最も当てはまる選択肢を選んでください。</p>
+    
+    <form method="POST" action="{{ url_for('personality_survey') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div class="survey-section">
+            <h3>開放性 (Openness)</h3>
+            <p class="trait-description">新しい体験や考え方への興味や受容性</p>
+            
+            <div class="question-item">
+                <p class="question-text">1. 私は新しいアイデアや概念に興味がある。</p>
+                <div class="rating-options">
+                    <label class="rating-option">
+                        <input type="radio" name="openness_1" value="1" required>
+                        <span>まったく当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="openness_1" value="2">
+                        <span>あまり当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="openness_1" value="3">
+                        <span>どちらともいえない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="openness_1" value="4">
+                        <span>やや当てはまる</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="openness_1" value="5">
+                        <span>非常に当てはまる</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="question-item">
+                <p class="question-text">2. 私は抽象的な概念や理論について考えるのが好きだ。</p>
+                <div class="rating-options">
+                    <label class="rating-option">
+                        <input type="radio" name="openness_2" value="1" required>
+                        <span>まったく当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="openness_2" value="2">
+                        <span>あまり当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="openness_2" value="3">
+                        <span>どちらともいえない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="openness_2" value="4">
+                        <span>やや当てはまる</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="openness_2" value="5">
+                        <span>非常に当てはまる</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="question-item">
+                <p class="question-text">3. 私は芸術や美に関心がある。</p>
+                <div class="rating-options">
+                    <label class="rating-option">
+                        <input type="radio" name="openness_3" value="1" required>
+                        <span>まったく当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="openness_3" value="2">
+                        <span>あまり当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="openness_3" value="3">
+                        <span>どちらともいえない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="openness_3" value="4">
+                        <span>やや当てはまる</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="openness_3" value="5">
+                        <span>非常に当てはまる</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="question-item">
+                <p class="question-text">4. 私は想像力が豊かである。</p>
+                <div class="rating-options">
+                    <label class="rating-option">
+                        <input type="radio" name="openness_4" value="1" required>
+                        <span>まったく当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="openness_4" value="2">
+                        <span>あまり当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="openness_4" value="3">
+                        <span>どちらともいえない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="openness_4" value="4">
+                        <span>やや当てはまる</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="openness_4" value="5">
+                        <span>非常に当てはまる</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="survey-section">
+            <h3>誠実性 (Conscientiousness)</h3>
+            <p class="trait-description">計画性、責任感、目標達成への意欲</p>
+            
+            <div class="question-item">
+                <p class="question-text">1. 私は物事を計画的に進めるのが得意だ。</p>
+                <div class="rating-options">
+                    <label class="rating-option">
+                        <input type="radio" name="conscientiousness_1" value="1" required>
+                        <span>まったく当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="conscientiousness_1" value="2">
+                        <span>あまり当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="conscientiousness_1" value="3">
+                        <span>どちらともいえない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="conscientiousness_1" value="4">
+                        <span>やや当てはまる</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="conscientiousness_1" value="5">
+                        <span>非常に当てはまる</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="question-item">
+                <p class="question-text">2. 私は細部まで注意を払い、綿密に作業する。</p>
+                <div class="rating-options">
+                    <label class="rating-option">
+                        <input type="radio" name="conscientiousness_2" value="1" required>
+                        <span>まったく当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="conscientiousness_2" value="2">
+                        <span>あまり当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="conscientiousness_2" value="3">
+                        <span>どちらともいえない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="conscientiousness_2" value="4">
+                        <span>やや当てはまる</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="conscientiousness_2" value="5">
+                        <span>非常に当てはまる</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="question-item">
+                <p class="question-text">3. 私は物事をしっかりとやり遂げる。</p>
+                <div class="rating-options">
+                    <label class="rating-option">
+                        <input type="radio" name="conscientiousness_3" value="1" required>
+                        <span>まったく当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="conscientiousness_3" value="2">
+                        <span>あまり当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="conscientiousness_3" value="3">
+                        <span>どちらともいえない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="conscientiousness_3" value="4">
+                        <span>やや当てはまる</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="conscientiousness_3" value="5">
+                        <span>非常に当てはまる</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="question-item">
+                <p class="question-text">4. 私は目標に向かって努力し続けることができる。</p>
+                <div class="rating-options">
+                    <label class="rating-option">
+                        <input type="radio" name="conscientiousness_4" value="1" required>
+                        <span>まったく当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="conscientiousness_4" value="2">
+                        <span>あまり当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="conscientiousness_4" value="3">
+                        <span>どちらともいえない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="conscientiousness_4" value="4">
+                        <span>やや当てはまる</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="conscientiousness_4" value="5">
+                        <span>非常に当てはまる</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="survey-section">
+            <h3>外向性 (Extraversion)</h3>
+            <p class="trait-description">社交性、活動性、対人関係における積極性</p>
+            
+            <div class="question-item">
+                <p class="question-text">1. 私は人と話すのが好きだ。</p>
+                <div class="rating-options">
+                    <label class="rating-option">
+                        <input type="radio" name="extraversion_1" value="1" required>
+                        <span>まったく当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="extraversion_1" value="2">
+                        <span>あまり当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="extraversion_1" value="3">
+                        <span>どちらともいえない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="extraversion_1" value="4">
+                        <span>やや当てはまる</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="extraversion_1" value="5">
+                        <span>非常に当てはまる</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="question-item">
+                <p class="question-text">2. 私は活発で、よく動く方だ。</p>
+                <div class="rating-options">
+                    <label class="rating-option">
+                        <input type="radio" name="extraversion_2" value="1" required>
+                        <span>まったく当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="extraversion_2" value="2">
+                        <span>あまり当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="extraversion_2" value="3">
+                        <span>どちらともいえない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="extraversion_2" value="4">
+                        <span>やや当てはまる</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="extraversion_2" value="5">
+                        <span>非常に当てはまる</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="question-item">
+                <p class="question-text">3. 私は集団の中で目立つのが好きだ。</p>
+                <div class="rating-options">
+                    <label class="rating-option">
+                        <input type="radio" name="extraversion_3" value="1" required>
+                        <span>まったく当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="extraversion_3" value="2">
+                        <span>あまり当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="extraversion_3" value="3">
+                        <span>どちらともいえない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="extraversion_3" value="4">
+                        <span>やや当てはまる</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="extraversion_3" value="5">
+                        <span>非常に当てはまる</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="question-item">
+                <p class="question-text">4. 私は新しい人と出会うのが好きだ。</p>
+                <div class="rating-options">
+                    <label class="rating-option">
+                        <input type="radio" name="extraversion_4" value="1" required>
+                        <span>まったく当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="extraversion_4" value="2">
+                        <span>あまり当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="extraversion_4" value="3">
+                        <span>どちらともいえない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="extraversion_4" value="4">
+                        <span>やや当てはまる</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="extraversion_4" value="5">
+                        <span>非常に当てはまる</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="survey-section">
+            <h3>協調性 (Agreeableness)</h3>
+            <p class="trait-description">他者への思いやり、協力的な姿勢</p>
+            
+            <div class="question-item">
+                <p class="question-text">1. 私は人の気持ちに共感しやすい。</p>
+                <div class="rating-options">
+                    <label class="rating-option">
+                        <input type="radio" name="agreeableness_1" value="1" required>
+                        <span>まったく当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="agreeableness_1" value="2">
+                        <span>あまり当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="agreeableness_1" value="3">
+                        <span>どちらともいえない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="agreeableness_1" value="4">
+                        <span>やや当てはまる</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="agreeableness_1" value="5">
+                        <span>非常に当てはまる</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="question-item">
+                <p class="question-text">2. 私は人を信頼する方だ。</p>
+                <div class="rating-options">
+                    <label class="rating-option">
+                        <input type="radio" name="agreeableness_2" value="1" required>
+                        <span>まったく当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="agreeableness_2" value="2">
+                        <span>あまり当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="agreeableness_2" value="3">
+                        <span>どちらともいえない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="agreeableness_2" value="4">
+                        <span>やや当てはまる</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="agreeableness_2" value="5">
+                        <span>非常に当てはまる</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="question-item">
+                <p class="question-text">3. 私は協力的で、人と一緒に取り組むのが好きだ。</p>
+                <div class="rating-options">
+                    <label class="rating-option">
+                        <input type="radio" name="agreeableness_3" value="1" required>
+                        <span>まったく当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="agreeableness_3" value="2">
+                        <span>あまり当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="agreeableness_3" value="3">
+                        <span>どちらともいえない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="agreeableness_3" value="4">
+                        <span>やや当てはまる</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="agreeableness_3" value="5">
+                        <span>非常に当てはまる</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="question-item">
+                <p class="question-text">4. 私は思いやりがあり、人に優しくする。</p>
+                <div class="rating-options">
+                    <label class="rating-option">
+                        <input type="radio" name="agreeableness_4" value="1" required>
+                        <span>まったく当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="agreeableness_4" value="2">
+                        <span>あまり当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="agreeableness_4" value="3">
+                        <span>どちらともいえない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="agreeableness_4" value="4">
+                        <span>やや当てはまる</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="agreeableness_4" value="5">
+                        <span>非常に当てはまる</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="survey-section">
+            <h3>情緒安定性 (Emotional Stability)</h3>
+            <p class="trait-description">感情のコントロール、ストレスへの対処能力</p>
+            
+            <div class="question-item">
+                <p class="question-text">1. 私はストレスに対して落ち着いて対応できる。</p>
+                <div class="rating-options">
+                    <label class="rating-option">
+                        <input type="radio" name="emotional_stability_1" value="1" required>
+                        <span>まったく当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="emotional_stability_1" value="2">
+                        <span>あまり当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="emotional_stability_1" value="3">
+                        <span>どちらともいえない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="emotional_stability_1" value="4">
+                        <span>やや当てはまる</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="emotional_stability_1" value="5">
+                        <span>非常に当てはまる</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="question-item">
+                <p class="question-text">2. 私は感情の波が小さい方だ。</p>
+                <div class="rating-options">
+                    <label class="rating-option">
+                        <input type="radio" name="emotional_stability_2" value="1" required>
+                        <span>まったく当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="emotional_stability_2" value="2">
+                        <span>あまり当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="emotional_stability_2" value="3">
+                        <span>どちらともいえない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="emotional_stability_2" value="4">
+                        <span>やや当てはまる</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="emotional_stability_2" value="5">
+                        <span>非常に当てはまる</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="question-item">
+                <p class="question-text">3. 私は物事を心配しすぎない。</p>
+                <div class="rating-options">
+                    <label class="rating-option">
+                        <input type="radio" name="emotional_stability_3" value="1" required>
+                        <span>まったく当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="emotional_stability_3" value="2">
+                        <span>あまり当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="emotional_stability_3" value="3">
+                        <span>どちらともいえない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="emotional_stability_3" value="4">
+                        <span>やや当てはまる</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="emotional_stability_3" value="5">
+                        <span>非常に当てはまる</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="question-item">
+                <p class="question-text">4. 私は困難な状況でも前向きでいられる。</p>
+                <div class="rating-options">
+                    <label class="rating-option">
+                        <input type="radio" name="emotional_stability_4" value="1" required>
+                        <span>まったく当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="emotional_stability_4" value="2">
+                        <span>あまり当てはまらない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="emotional_stability_4" value="3">
+                        <span>どちらともいえない</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="emotional_stability_4" value="4">
+                        <span>やや当てはまる</span>
+                    </label>
+                    <label class="rating-option">
+                        <input type="radio" name="emotional_stability_4" value="5">
+                        <span>非常に当てはまる</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="survey-results" {% if not survey %}style="display: none;"{% endif %}>
+            <h3>あなたの性格特性プロフィール</h3>
+            
+            {% if survey %}
+            <div class="traits-grid">
+                <div class="trait-box">
+                    <h4>開放性</h4>
+                    <div class="trait-score">{{ survey.openness }}/20</div>
+                    <div class="trait-level">{{ survey.get_trait_level('openness') }}</div>
+                </div>
+                
+                <div class="trait-box">
+                    <h4>誠実性</h4>
+                    <div class="trait-score">{{ survey.conscientiousness }}/20</div>
+                    <div class="trait-level">{{ survey.get_trait_level('conscientiousness') }}</div>
+                </div>
+                
+                <div class="trait-box">
+                    <h4>外向性</h4>
+                    <div class="trait-score">{{ survey.extraversion }}/20</div>
+                    <div class="trait-level">{{ survey.get_trait_level('extraversion') }}</div>
+                </div>
+                
+                <div class="trait-box">
+                    <h4>協調性</h4>
+                    <div class="trait-score">{{ survey.agreeableness }}/20</div>
+                    <div class="trait-level">{{ survey.get_trait_level('agreeableness') }}</div>
+                </div>
+                
+                <div class="trait-box">
+                    <h4>情緒安定性</h4>
+                    <div class="trait-score">{{ survey.emotional_stability }}/20</div>
+                    <div class="trait-level">{{ survey.get_trait_level('emotional_stability') }}</div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">回答を保存</button>
+            <a href="{{ url_for('surveys') }}" class="btn btn-secondary">キャンセル</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .survey-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+    
+    .survey-intro {
+        margin-bottom: 2rem;
+        color: #6c757d;
+    }
+    
+    .survey-section {
+        background-color: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .survey-section h3 {
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+        color: #0056b3;
+    }
+    
+    .trait-description {
+        color: #6c757d;
+        font-style: italic;
+        margin-bottom: 1.5rem;
+        border-bottom: 1px solid #dee2e6;
+        padding-bottom: 0.5rem;
+    }
+    
+    .question-item {
+        margin-bottom: 1.5rem;
+    }
+    
+    .question-text {
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+    
+    .rating-options {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+    
+    .rating-option {
+        flex: 1 1 calc(20% - 0.5rem);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 0.5rem;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .rating-option:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .rating-option input {
+        margin-bottom: 0.5rem;
+    }
+    
+    .rating-option span {
+        font-size: 0.875rem;
+        line-height: 1.2;
+    }
+    
+    .survey-results {
+        background-color: #e3f2fd;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .survey-results h3 {
+        margin-top: 0;
+        margin-bottom: 1.5rem;
+        color: #0056b3;
+        text-align: center;
+    }
+    
+    .traits-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 1rem;
+    }
+    
+    .trait-box {
+        background-color: white;
+        border-radius: 8px;
+        padding: 1rem;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .trait-box h4 {
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+        color: #333;
+    }
+    
+    .trait-score {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #0056b3;
+        margin-bottom: 0.25rem;
+    }
+    
+    .trait-level {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        font-weight: bold;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        margin-top: 2rem;
+    }
+    
+    @media (max-width: 768px) {
+        .rating-options {
+            flex-direction: column;
+        }
+        
+        .rating-option {
+            flex: 1 1 100%;
+            flex-direction: row;
+            justify-content: space-between;
+        }
+        
+        .rating-option input {
+            margin-bottom: 0;
+            margin-right: 0.5rem;
+        }
+        
+        .traits-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+        }
+        
+        .form-actions button,
+        .form-actions a {
+            width: 100%;
+            text-align: center;
+        }
+    }
+    </style>
+    {% endblock %}

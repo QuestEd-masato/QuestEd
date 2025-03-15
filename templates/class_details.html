@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}{{ class_obj.name }} - クラス詳細{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <h1>{{ class_obj.name }}</h1>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    クラス情報
+                </div>
+                <div class="card-body">
+                    <p><strong>担当教師:</strong> 
+                        {% if class_obj.teacher %}
+                        {{ class_obj.teacher.username }}
+                        {% else %}
+                        <em>未割り当て</em>
+                        {% endif %}
+                    </p>
+                    
+                    {% if class_obj.created_at %}
+                    <p><strong>作成日:</strong> {{ class_obj.created_at.strftime('%Y年%m月%d日') }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if current_user.role == 'teacher' and current_user.id == class_obj.teacher_id %}
+            <div class="mb-4">
+                <a href="{{ url_for('edit_class', class_id=class_obj.id) }}" class="btn btn-primary">クラス情報を編集</a>
+                <a href="{{ url_for('add_students', class_id=class_obj.id) }}" class="btn btn-success">学生を追加</a>
+                <a href="{{ url_for('delete_class', class_id=class_obj.id) }}" class="btn btn-danger" onclick="return confirm('本当にこのクラスを削除しますか？');">クラスを削除</a>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    受講生一覧
+                </div>
+                <div class="card-body">
+                    {% if students %}
+                        <table class="table table-sm table-hover student-table">
+                            <thead>
+                                <tr>
+                                    <th>氏名</th>
+                                    <th>テーマ</th>
+                                    <th>最新学習記録</th>
+                                    {% if current_user.role == 'teacher' and current_user.id == class_obj.teacher_id %}
+                                    <th>操作</th>
+                                    {% endif %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for student_info in students %}
+                                <tr>
+                                    <td><strong>{{ student_info.student.username }}</strong></td>
+                                    <td>
+                                        {% if student_info.selected_theme %}
+                                            <span class="badge bg-info text-dark">{{ student_info.selected_theme.title|truncate(20) }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">未選択</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if student_info.latest_activity %}
+                                            <div class="activity-preview">
+                                                {% if student_info.latest_activity.content %}
+                                                    <span class="activity-content" title="{{ student_info.latest_activity.content }}">{{ student_info.latest_activity.content|truncate(15, true, "...") }}</span>
+                                                    {% if student_info.latest_activity.date and current_user.role == 'teacher' %}
+                                                        <small class="activity-date">{{ student_info.latest_activity.date.strftime('%Y-%m-%d') }}</small>
+                                                    {% endif %}
+                                                {% elif student_info.latest_activity.date %}
+                                                    <span class="activity-date-only">{{ student_info.latest_activity.date.strftime('%Y-%m-%d') }}</span>
+                                                {% else %}
+                                                    <span class="text-muted">内容なし</span>
+                                                {% endif %}
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted">記録なし</span>
+                                        {% endif %}
+                                    </td>
+                                    {% if current_user.role == 'teacher' and current_user.id == class_obj.teacher_id %}
+                                    <td>
+                                        <form method="POST" action="{{ url_for('remove_student', class_id=class_obj.id, student_id=student_info.student.id) }}" onsubmit="return confirm('この学生をクラスから削除してもよろしいですか？');" class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-sm btn-danger">削除</button>
+                                        </form>
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p class="text-center">このクラスにはまだ学生がいません。</p>
+                    {% endif %}
+                </div>    
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        <a href="{{ url_for('classes') }}" class="btn btn-secondary">クラス一覧に戻る</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .student-table {
+        font-size: 0.9rem;
+    }
+    .student-table th {
+        font-weight: 500;
+    }
+    .student-table td {
+        vertical-align: middle;
+    }
+    .badge {
+        font-weight: normal;
+        font-size: 0.85rem;
+        padding: 0.35em 0.65em;
+    }
+    .activity-preview {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.2;
+    }
+    .activity-content {
+        font-size: 0.85rem;
+        color: #333;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .activity-date {
+        font-size: 0.75rem;
+        color: #6c757d;
+    }
+    .activity-date-only {
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
