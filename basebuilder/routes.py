@@ -3,13 +3,13 @@ from flask_login import login_required, current_user
 import json
 from datetime import datetime
 from extensions import db
+from app import User, InquiryTheme
 from basebuilder.models import (
     ProblemCategory, BasicKnowledgeItem, KnowledgeThemeRelation,
     AnswerRecord, ProficiencyRecord, LearningPath, PathAssignment
 )
-from app import User, InquiryTheme
 
-basebuilder = Blueprint('basebuilder', __name__)
+basebuilder = Blueprint('basebuilder_module', __name__, url_prefix='/basebuilder')
 
 # BaseBuilder ホームページ
 @basebuilder.route('/basebuilder')

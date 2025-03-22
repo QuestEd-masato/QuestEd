@@ -12,7 +12,7 @@
           <div class="card-body">
             <h5 class="card-title">登録問題数</h5>
             <p class="display-4">{{ problem_count }}</p>
-            <a href="{{ url_for('basebuilder.problems') }}" class="btn btn-sm btn-outline">管理する</a>
+            <a href="{{ url_for('basebuilder_module.problems') }}" class="btn btn-sm btn-outline">管理する</a>
           </div>
         </div>
       </div>
@@ -21,7 +21,7 @@
           <div class="card-body">
             <h5 class="card-title">カテゴリ数</h5>
             <p class="display-4">{{ category_count }}</p>
-            <a href="{{ url_for('basebuilder.categories') }}" class="btn btn-sm btn-outline">管理する</a>
+            <a href="{{ url_for('basebuilder_module.categories') }}" class="btn btn-sm btn-outline">管理する</a>
           </div>
         </div>
       </div>
@@ -30,7 +30,7 @@
           <div class="card-body">
             <h5 class="card-title">学習パス数</h5>
             <p class="display-4">{{ path_count }}</p>
-            <a href="{{ url_for('basebuilder.learning_paths') }}" class="btn btn-sm btn-outline">管理する</a>
+            <a href="{{ url_for('basebuilder_module.learning_paths') }}" class="btn btn-sm btn-outline">管理する</a>
           </div>
         </div>
       </div>
@@ -44,7 +44,7 @@
         {% if classes %}
           <div class="list-group">
             {% for class in classes %}
-              <a href="{{ url_for('basebuilder.analysis', class_id=class.id) }}" class="list-group-item list-group-item-action">
+              <a href="{{ url_for('basebuilder_module.analysis', class_id=class.id) }}" class="list-group-item list-group-item-action">
                 <div class="d-flex w-100 justify-content-between">
                   <h5 class="mb-1">{{ class.name }}</h5>
                   <small>{{ class.students.count() }}人</small>
@@ -88,7 +88,7 @@
                     </td>
                     <td>{{ problem.created_at.strftime('%Y-%m-%d') }}</td>
                     <td>
-                      <a href="{{ url_for('basebuilder.edit_problem', problem_id=problem.id) }}" class="btn btn-sm btn-outline">編集</a>
+                      <a href="{{ url_for('basebuilder_module.edit_problem', problem_id=problem.id) }}" class="btn btn-sm btn-outline">編集</a>
                     </td>
                   </tr>
                 {% endfor %}
@@ -110,10 +110,10 @@
       </div>
       <div class="card-body">
         <div class="d-grid gap-2">
-          <a href="{{ url_for('basebuilder.create_problem') }}" class="btn btn-primary">問題を作成</a>
-          <a href="{{ url_for('basebuilder.create_category') }}" class="btn btn-outline">カテゴリを作成</a>
-          <a href="{{ url_for('basebuilder.create_learning_path') }}" class="btn btn-outline">学習パスを作成</a>
-          <a href="{{ url_for('basebuilder.theme_relations') }}" class="btn btn-outline">テーマと問題を関連付け</a>
+          <a href="{{ url_for('basebuilder_module.create_problem') }}" class="btn btn-primary">問題を作成</a>
+          <a href="{{ url_for('basebuilder_module.create_category') }}" class="btn btn-outline">カテゴリを作成</a>
+          <a href="{{ url_for('basebuilder_module.create_learning_path') }}" class="btn btn-outline">学習パスを作成</a>
+          <a href="{{ url_for('basebuilder_module.theme_relations') }}" class="btn btn-outline">テーマと問題を関連付け</a>
         </div>
       </div>
     </div>
@@ -126,7 +126,7 @@
         <!-- 実際のアプリでは、クラスごとの統計データをここに表示 -->
         <p>各クラスの学生の利用状況概要を表示します。詳細な分析は「クラス別理解度概況」から確認できます。</p>
         <div class="d-grid">
-          <a href="{{ url_for('basebuilder.analysis') }}" class="btn btn-outline">詳細分析へ</a>
+          <a href="{{ url_for('basebuilder_module.analysis') }}" class="btn btn-outline">詳細分析へ</a>
         </div>
       </div>
     </div>

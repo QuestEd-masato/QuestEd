@@ -349,9 +349,9 @@ admin.add_view(AdminModelView(Curriculum, db.session))
 admin.add_view(AdminModelView(RubricTemplate, db.session))
 admin.add_view(AdminModelView(StudentEvaluation, db.session))
 
-# ここにBaseBuilderのBlueprint登録を追加
-from basebuilder.routes import basebuilder
-app.register_blueprint(basebuilder)
+# その後、BaseBuilderモジュールを初期化
+from basebuilder import init_app as init_basebuilder
+init_basebuilder(app)
 
 # ルート定義例
 @app.route('/')

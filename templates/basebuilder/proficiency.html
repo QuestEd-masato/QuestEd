@@ -3,7 +3,7 @@
 {% block basebuilder_content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h1 class="section-title">基礎学力熟練度</h1>
-  <a href="{{ url_for('basebuilder.problems') }}" class="btn btn-primary">
+  <a href="{{ url_for('basebuilder_module.problems') }}" class="btn btn-primary">
     <i class="fas fa-book"></i> 学習を続ける
   </a>
 </div>
@@ -52,7 +52,7 @@
         {% else %}
           <p class="text-muted">まだ熟練度データがありません。問題を解いて熟練度を上げましょう。</p>
           <div class="d-grid gap-2 mt-3">
-            <a href="{{ url_for('basebuilder.problems') }}" class="btn btn-primary">
+            <a href="{{ url_for('basebuilder_module.problems') }}" class="btn btn-primary">
               問題に挑戦する
             </a>
           </div>
@@ -106,14 +106,14 @@
         {% if low_proficiency %}
           <p><strong>{{ low_proficiency.category.name }}</strong> の理解度を高めましょう。</p>
           <div class="d-grid">
-            <a href="{{ url_for('basebuilder.problems', category_id=low_proficiency.category.id) }}" class="btn btn-primary">
+            <a href="{{ url_for('basebuilder_module.problems', category_id=low_proficiency.category.id) }}" class="btn btn-primary">
               この分野を学習する
             </a>
           </div>
         {% else %}
           <p>すべてのカテゴリで良い進捗を示しています！新しい分野に挑戦してみましょう。</p>
           <div class="d-grid">
-            <a href="{{ url_for('basebuilder.categories') }}" class="btn btn-outline">
+            <a href="{{ url_for('basebuilder_module.categories') }}" class="btn btn-outline">
               カテゴリを探す
             </a>
           </div>

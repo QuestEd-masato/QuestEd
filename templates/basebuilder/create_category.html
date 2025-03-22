@@ -5,14 +5,14 @@
   <div class="col-md-8">
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h1 class="section-title">新規カテゴリ作成</h1>
-      <a href="{{ url_for('basebuilder.categories') }}" class="btn btn-outline">
+      <a href="{{ url_for('basebuilder_module.categories') }}" class="btn btn-outline">
         <i class="fas fa-arrow-left"></i> カテゴリ一覧に戻る
       </a>
     </div>
     
     <div class="card">
       <div class="card-body">
-        <form method="POST" action="{{ url_for('basebuilder.create_category') }}">
+        <form method="POST" action="{{ url_for('basebuilder_module.create_category') }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           
           <div class="form-group mb-3">
@@ -39,7 +39,7 @@
           
           <div class="d-grid gap-2">
             <button type="submit" class="btn btn-primary">カテゴリを作成</button>
-            <a href="{{ url_for('basebuilder.categories') }}" class="btn btn-outline">キャンセル</a>
+            <a href="{{ url_for('basebuilder_module.categories') }}" class="btn btn-outline">キャンセル</a>
           </div>
         </form>
       </div>

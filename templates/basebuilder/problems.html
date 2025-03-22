@@ -4,7 +4,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h1 class="section-title">問題一覧</h1>
   {% if current_user.role == 'teacher' %}
-    <a href="{{ url_for('basebuilder.create_problem') }}" class="btn btn-primary">
+    <a href="{{ url_for('basebuilder_module.create_problem') }}" class="btn btn-primary">
       <i class="fas fa-plus"></i> 新規問題
     </a>
   {% endif %}
@@ -16,7 +16,7 @@
     <h5 class="card-title">検索とフィルター</h5>
   </div>
   <div class="card-body">
-    <form method="GET" action="{{ url_for('basebuilder.problems') }}" class="row g-3">
+    <form method="GET" action="{{ url_for('basebuilder_module.problems') }}" class="row g-3">
       <!-- テキスト検索 -->
       <div class="col-md-4">
         <label for="search" class="form-label">キーワード検索</label>
@@ -54,7 +54,7 @@
         <button type="submit" class="btn btn-primary">
           <i class="fas fa-search"></i> 検索
         </button>
-        <a href="{{ url_for('basebuilder.problems') }}" class="btn btn-outline">
+        <a href="{{ url_for('basebuilder_module.problems') }}" class="btn btn-outline">
           <i class="fas fa-redo"></i> リセット
         </a>
       </div>
@@ -107,14 +107,14 @@
                 {% endif %}
                 <td>
                   {% if current_user.role == 'student' %}
-                    <a href="{{ url_for('basebuilder.solve_problem', problem_id=problem.id) }}" class="btn btn-sm btn-primary">
+                    <a href="{{ url_for('basebuilder_module.solve_problem', problem_id=problem.id) }}" class="btn btn-sm btn-primary">
                       問題を解く
                     </a>
                   {% else %}
-                    <a href="{{ url_for('basebuilder.edit_problem', problem_id=problem.id) }}" class="btn btn-sm btn-outline">
+                    <a href="{{ url_for('basebuilder_module.edit_problem', problem_id=problem.id) }}" class="btn btn-sm btn-outline">
                       編集
                     </a>
-                    <form method="POST" action="{{ url_for('basebuilder.delete_problem', problem_id=problem.id) }}" class="d-inline">
+                    <form method="POST" action="{{ url_for('basebuilder_module.delete_problem', problem_id=problem.id) }}" class="d-inline">
                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                       <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('本当にこの問題を削除しますか？')">
                         削除

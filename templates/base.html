@@ -30,44 +30,50 @@
                         <li><a href="{{ url_for('activities') }}">活動記録</a></li>
                         <li><a href="{{ url_for('classes') }}">クラス</a></li>
                         <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="basebuilderDropdown" role="button" 
-                           data-bs-toggle="dropdown" aria-expanded="false">
-                          基礎学力トレーニング
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="basebuilderDropdown">
-                          <li><a class="dropdown-item" href="{{ url_for('basebuilder.index') }}">基礎学力ホーム</a></li>
-                          {% if current_user.role == 'student' %}
-                            <li><a class="dropdown-item" href="{{ url_for('basebuilder.problems') }}">問題に挑戦</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('basebuilder.proficiency') }}">熟練度確認</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('basebuilder.learning_paths') }}">学習パス</a></li>
-                          {% elif current_user.role == 'teacher' %}
-                            <li><a class="dropdown-item" href="{{ url_for('basebuilder.problems') }}">問題管理</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('basebuilder.categories') }}">カテゴリ管理</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('basebuilder.analysis') }}">理解度分析</a></li>
-                          {% endif %}
-                        </ul>
-                      </li>
-                    {% endif %}
-    
-                    {% if current_user.is_authenticated %}
+                           <a class="nav-link dropdown-toggle" href="#" id="basebuilderDropdown" role="button" 
+                              data-bs-toggle="dropdown" aria-expanded="false">
+                               基礎学力トレーニング
+                           </a>
+                           <ul class="dropdown-menu" aria-labelledby="basebuilderDropdown">
+                               <li><a class="dropdown-item" href="{{ url_for('basebuilder_module.index') }}">基礎学力ホーム</a></li>
+                               <li><a class="dropdown-item" href="{{ url_for('basebuilder_module.problems') }}">問題に挑戦</a></li>
+                               <li><a class="dropdown-item" href="{{ url_for('basebuilder_module.proficiency') }}">熟練度確認</a></li>
+                               <li><a class="dropdown-item" href="{{ url_for('basebuilder_module.learning_paths') }}">学習パス</a></li>
+                           </ul>
+                        </li>
+                        <!-- 学生向け共通メニュー -->
                         <li><a href="{{ url_for('todos') }}">To Doリスト</a></li>
-                        <li><a href="{{ url_for('goals') }}">目標管理</a></li> 
+                        <li><a href="{{ url_for('goals') }}">目標管理</a></li>
                     {% elif current_user.role == 'teacher' %}
+                        <!-- 教師向けメニュー -->
                         <li><a href="{{ url_for('teacher_dashboard') }}">ダッシュボード</a></li>
                         <li><a href="{{ url_for('chat_page') }}">AIチャット</a></li> 
                         <li><a href="{{ url_for('classes') }}">クラス管理</a></li>
                         <li><a href="{{ url_for('view_themes') }}">テーマ管理</a></li>
                         <li><a href="{{ url_for('import_users') }}">ユーザー一括登録</a></li>
-                    {% endif %}
-                    <li><a href="{{ url_for('logout') }}">ログアウト</a></li>
-                {% else %}
-                    <li><a href="{{ url_for('login') }}">ログイン</a></li>
-                    <li><a href="{{ url_for('register') }}">登録</a></li>
-                {% endif %}
-            </ul>
-        </nav>
-        <div class="mobile-nav-overlay"></div>
-    </header>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="basebuilderDropdown" role="button" 
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                基礎学力管理
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="basebuilderDropdown">
+                                <li><a class="dropdown-item" href="{{ url_for('basebuilder_module.index') }}">基礎学力ホーム</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('basebuilder_module.problems') }}">問題管理</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('basebuilder_module.categories') }}">カテゴリ管理</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('basebuilder_module.analysis') }}">理解度分析</a></li>
+                            </ul>
+                        </li>
+                  {% endif %}
+                  <!-- 全ユーザー共通メニュー -->
+                  <li><a href="{{ url_for('logout') }}">ログアウト</a></li>
+              {% else %}
+                  <li><a href="{{ url_for('login') }}">ログイン</a></li>
+                  <li><a href="{{ url_for('register') }}">登録</a></li>
+              {% endif %}
+          </ul>
+      </nav>
+      <div class="mobile-nav-overlay"></div>
+  </header>
     
     <main>
         <div class="flash-messages">

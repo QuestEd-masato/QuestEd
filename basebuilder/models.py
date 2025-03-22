@@ -1,5 +1,6 @@
 from datetime import datetime
 from extensions import db
+from app import User
 
 # 問題カテゴリモデル
 class ProblemCategory(db.Model):

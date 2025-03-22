@@ -45,14 +45,14 @@
   <div class="col-md-10">
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h1 class="section-title">新規問題作成</h1>
-      <a href="{{ url_for('basebuilder.problems') }}" class="btn btn-outline">
+      <a href="{{ url_for('basebuilder_module.problems') }}" class="btn btn-outline">
         <i class="fas fa-arrow-left"></i> 問題一覧に戻る
       </a>
     </div>
     
     <div class="card">
       <div class="card-body">
-        <form method="POST" action="{{ url_for('basebuilder.create_problem') }}" id="problem-form">
+        <form method="POST" action="{{ url_for('basebuilder_module.create_problem') }}" id="problem-form">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="choices" id="choices-json" value="[]">
           
@@ -148,7 +148,7 @@
           
           <div class="d-grid gap-2">
             <button type="submit" class="btn btn-primary">問題を作成</button>
-            <a href="{{ url_for('basebuilder.problems') }}" class="btn btn-outline">キャンセル</a>
+            <a href="{{ url_for('basebuilder_module.problems') }}" class="btn btn-outline">キャンセル</a>
           </div>
         </form>
       </div>

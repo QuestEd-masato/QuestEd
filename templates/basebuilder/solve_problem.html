@@ -74,7 +74,7 @@
   <div class="d-flex justify-content-between mb-3">
     <div>
       <span class="badge bg-secondary">{{ problem.category.name }}</span>
-      <span class="problem-difficulty difficulty-{{ problem.difficulty }}">
+      <span class="problem-difficulty difficulty-{{ problem_module.difficulty }}">
         難易度: {{ problem.difficulty }}
       </span>
     </div>
@@ -91,11 +91,11 @@
       <input type="hidden" name="problem_id" value="{{ problem.id }}">
       <input type="hidden" name="answer_time" id="answer-time" value="0">
       
-      {% if problem.answer_type == 'multiple_choice' %}
+      {% if problem_module.answer_type == 'multiple_choice' %}
         <!-- 多肢選択問題 -->
         <div class="choices-container">
-          {% if problem.choices %}
-            {% set choices = problem.choices|tojson|safe|fromjson %}
+          {% if problem_module.choices %}
+            {% set choices = problem_module.choices|tojson|safe|fromjson %}
             {% for choice in choices %}
               <div class="choice-item" data-value="{{ choice.value }}">
                 <input type="radio" name="answer" id="choice-{{ loop.index }}" value="{{ choice.value }}" class="visually-hidden">
@@ -132,7 +132,7 @@
       
       <div class="d-grid gap-2 mt-4">
         <button type="submit" class="btn btn-primary" id="submit-btn">回答する</button>
-        <a href="{{ url_for('basebuilder.problems') }}" class="btn btn-outline">別の問題を選ぶ</a>
+        <a href="{{ url_for('basebuilder_module.problems') }}" class="btn btn-outline">別の問題を選ぶ</a>
       </div>
     </form>
   </div>
@@ -146,8 +146,8 @@
       <p id="explanation-text">{{ problem.explanation }}</p>
     </div>
     <div class="d-grid gap-2 mt-3">
-      <a href="{{ url_for('basebuilder.solve_problem', problem_id=problem.id) }}" class="btn btn-outline">再度挑戦</a>
-      <a href="{{ url_for('basebuilder.problems') }}" class="btn btn-primary">次の問題へ</a>
+      <a href="{{ url_for('basebuilder_module.solve_problem', problem_id=problem.id) }}" class="btn btn-outline">再度挑戦</a>
+      <a href="{{ url_for('basebuilder_module.problems') }}" class="btn btn-primary">次の問題へ</a>
     </div>
   </div>
 </div>
@@ -205,7 +205,7 @@
       document.getElementById('submit-btn').disabled = true;
       
       // 回答を送信
-      fetch('{{ url_for("basebuilder.submit_answer", problem_id=problem.id) }}', {
+      fetch('{{ url_for("basebuilder_module.submit_answer", problem_id=problem.id) }}', {
         method: 'POST',
         body: formData,
         headers: {
