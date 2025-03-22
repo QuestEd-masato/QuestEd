@@ -1,0 +1,131 @@
+{% extends 'basebuilder/layout.html' %}
+
+{% block basebuilder_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="section-title">学習履歴</h1>
+  <a href="{{ url_for('basebuilder.problems') }}" class="btn btn-primary">
+    <i class="fas fa-book"></i> 学習を続ける
+  </a>
+</div>
+
+<div class="row">
+  <!-- 左側 - 解答履歴 -->
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title">解答履歴</h5>
+      </div>
+      <div class="card-body">
+        {% if answer_records %}
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>日時</th>
+                  <th>問題</th>
+                  <th>カテゴリ</th>
+                  <th>解答時間</th>
+                  <th>結果</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for record in answer_records %}
+                  <tr>
+                    <td>{{ record.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ record.problem.title }}</td>
+                    <td>{{ record.problem.category.name }}</td>
+                    <td>
+                      {% if record.answer_time %}
+                        {{ record.answer_time }}秒
+                      {% else %}
+                        -
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if record.is_correct %}
+                        <span class="answer-correct">正解</span>
+                      {% else %}
+                        <span class="answer-incorrect">不正解</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="text-muted">まだ解答履歴がありません。</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  
+  <!-- 右側 - 統計 -->
+  <div class="col-md-4">
+    <div class="card mb-3">
+      <div class="card-header">
+        <h5 class="card-title">統計概要</h5>
+      </div>
+      <div class="card-body">
+        {% if answer_records %}
+          {% set total_count = answer_records|length %}
+          {% set correct_count = answer_records|selectattr('is_correct', 'eq', true)|list|length %}
+          {% set accuracy = (correct_count / total_count * 100)|round|int if total_count > 0 else 0 %}
+          
+          <div class="text-center mb-3">
+            <div class="display-4">{{ accuracy }}%</div>
+            <p class="text-muted">正解率</p>
+          </div>
+          
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              解答数
+              <span class="badge bg-primary rounded-pill">{{ total_count }}</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              正解数
+              <span class="badge bg-success rounded-pill">{{ correct_count }}</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              不正解数
+              <span class="badge bg-danger rounded-pill">{{ total_count - correct_count }}</span>
+            </li>
+          </ul>
+        {% else %}
+          <p class="text-muted">統計データはまだありません。</p>
+        {% endif %}
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title">カテゴリ別正解率</h5>
+      </div>
+      <div class="card-body">
+        {% if category_stats %}
+          {% for category_id, stats in category_stats.items() %}
+            <div class="mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <strong>{{ stats.category.name }}</strong>
+                <span>{{ stats.accuracy|round|int }}%</span>
+              </div>
+              <div class="progress">
+                <div class="progress-bar {% if stats.accuracy >= 80 %}bg-success{% elif stats.accuracy >= 60 %}bg-primary{% elif stats.accuracy >= 40 %}bg-warning{% else %}bg-danger{% endif %}" role="progressbar" style="width: {{ stats.accuracy }}%"></div>
+              </div>
+              <div class="d-flex justify-content-between mt-1">
+                <small class="text-muted">全{{ stats.total }}問</small>
+                <small class="text-muted">
+                  <span class="text-success">{{ stats.correct }}正解</span> / 
+                  <span class="text-danger">{{ stats.incorrect }}不正解</span>
+                </small>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-muted">カテゴリ別のデータはまだありません。</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,154 @@
+{% extends 'basebuilder/layout.html' %}
+
+{% block basebuilder_content %}
+<h1 class="section-title">基礎学力管理ダッシュボード</h1>
+
+<div class="row">
+  <!-- 左側 - 統計概要 -->
+  <div class="col-md-8">
+    <div class="row">
+      <div class="col-md-4">
+        <div class="card mb-3 text-center">
+          <div class="card-body">
+            <h5 class="card-title">登録問題数</h5>
+            <p class="display-4">{{ problem_count }}</p>
+            <a href="{{ url_for('basebuilder.problems') }}" class="btn btn-sm btn-outline">管理する</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card mb-3 text-center">
+          <div class="card-body">
+            <h5 class="card-title">カテゴリ数</h5>
+            <p class="display-4">{{ category_count }}</p>
+            <a href="{{ url_for('basebuilder.categories') }}" class="btn btn-sm btn-outline">管理する</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card mb-3 text-center">
+          <div class="card-body">
+            <h5 class="card-title">学習パス数</h5>
+            <p class="display-4">{{ path_count }}</p>
+            <a href="{{ url_for('basebuilder.learning_paths') }}" class="btn btn-sm btn-outline">管理する</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card mb-3">
+      <div class="card-header">
+        <h5 class="card-title">クラス別理解度概況</h5>
+      </div>
+      <div class="card-body">
+        {% if classes %}
+          <div class="list-group">
+            {% for class in classes %}
+              <a href="{{ url_for('basebuilder.analysis', class_id=class.id) }}" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                  <h5 class="mb-1">{{ class.name }}</h5>
+                  <small>{{ class.students.count() }}人</small>
+                </div>
+                <p class="mb-1">クラス全体の理解度分析を表示します</p>
+              </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted">担当クラスがありません。</p>
+        {% endif %}
+      </div>
+    </div>
+    
+    <div class="card mb-3">
+      <div class="card-header">
+        <h5 class="card-title">最近作成した問題</h5>
+      </div>
+      <div class="card-body">
+        {% if recent_problems %}
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>タイトル</th>
+                  <th>カテゴリ</th>
+                  <th>難易度</th>
+                  <th>作成日</th>
+                  <th>アクション</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for problem in recent_problems %}
+                  <tr>
+                    <td>{{ problem.title }}</td>
+                    <td>{{ problem.category.name }}</td>
+                    <td>
+                      <span class="problem-difficulty difficulty-{{ problem.difficulty }}">
+                        {{ problem.difficulty }}
+                      </span>
+                    </td>
+                    <td>{{ problem.created_at.strftime('%Y-%m-%d') }}</td>
+                    <td>
+                      <a href="{{ url_for('basebuilder.edit_problem', problem_id=problem.id) }}" class="btn btn-sm btn-outline">編集</a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="text-muted">まだ問題を作成していません。</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  
+  <!-- 右側 - アクション領域 -->
+  <div class="col-md-4">
+    <div class="card mb-3">
+      <div class="card-header">
+        <h5 class="card-title">クイックアクション</h5>
+      </div>
+      <div class="card-body">
+        <div class="d-grid gap-2">
+          <a href="{{ url_for('basebuilder.create_problem') }}" class="btn btn-primary">問題を作成</a>
+          <a href="{{ url_for('basebuilder.create_category') }}" class="btn btn-outline">カテゴリを作成</a>
+          <a href="{{ url_for('basebuilder.create_learning_path') }}" class="btn btn-outline">学習パスを作成</a>
+          <a href="{{ url_for('basebuilder.theme_relations') }}" class="btn btn-outline">テーマと問題を関連付け</a>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card mb-3">
+      <div class="card-header">
+        <h5 class="card-title">利用状況</h5>
+      </div>
+      <div class="card-body">
+        <!-- 実際のアプリでは、クラスごとの統計データをここに表示 -->
+        <p>各クラスの学生の利用状況概要を表示します。詳細な分析は「クラス別理解度概況」から確認できます。</p>
+        <div class="d-grid">
+          <a href="{{ url_for('basebuilder.analysis') }}" class="btn btn-outline">詳細分析へ</a>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title">ヘルプとリソース</h5>
+      </div>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item">
+            <i class="fas fa-book"></i> 問題作成のガイドライン
+          </li>
+          <li class="list-group-item">
+            <i class="fas fa-lightbulb"></i> 効果的な学習パスの作り方
+          </li>
+          <li class="list-group-item">
+            <i class="fas fa-chart-bar"></i> 理解度データの読み方
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends 'basebuilder/layout.html' %}
+
+{% block basebuilder_content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1 class="section-title">新規カテゴリ作成</h1>
+      <a href="{{ url_for('basebuilder.categories') }}" class="btn btn-outline">
+        <i class="fas fa-arrow-left"></i> カテゴリ一覧に戻る
+      </a>
+    </div>
+    
+    <div class="card">
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('basebuilder.create_category') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          
+          <div class="form-group mb-3">
+            <label for="name" class="form-label">カテゴリ名 <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="name" name="name" required>
+          </div>
+          
+          <div class="form-group mb-3">
+            <label for="description" class="form-label">説明</label>
+            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+            <div class="form-text">このカテゴリの概要や特徴を説明してください。</div>
+          </div>
+          
+          <div class="form-group mb-4">
+            <label for="parent_id" class="form-label">親カテゴリ</label>
+            <select class="form-control" id="parent_id" name="parent_id">
+              <option value="">なし（トップレベルカテゴリ）</option>
+              {% for category in parent_categories %}
+                <option value="{{ category.id }}">{{ category.name }}</option>
+              {% endfor %}
+            </select>
+            <div class="form-text">新しいカテゴリを既存のカテゴリの子カテゴリにする場合は選択してください。</div>
+          </div>
+          
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary">カテゴリを作成</button>
+            <a href="{{ url_for('basebuilder.categories') }}" class="btn btn-outline">キャンセル</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

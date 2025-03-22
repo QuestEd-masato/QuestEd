@@ -1,0 +1,140 @@
+{% extends 'basebuilder/layout.html' %}
+
+{% block basebuilder_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="section-title">基礎学力熟練度</h1>
+  <a href="{{ url_for('basebuilder.problems') }}" class="btn btn-primary">
+    <i class="fas fa-book"></i> 学習を続ける
+  </a>
+</div>
+
+<div class="row">
+  <!-- 左側 - カテゴリ別熟練度 -->
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title">カテゴリ別熟練度</h5>
+      </div>
+      <div class="card-body">
+        {% if proficiency_records %}
+          <div class="proficiency-overview">
+            {% for record in proficiency_records %}
+              <div class="proficiency-item mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <h6 class="mb-0">{{ record.category.name }}</h6>
+                  <span class="badge {% if record.level >= 80 %}bg-success{% elif record.level >= 50 %}bg-primary{% elif record.level >= 30 %}bg-warning{% else %}bg-danger{% endif %}">
+                    {{ record.level }}%
+                  </span>
+                </div>
+                
+                <div class="proficiency-meter">
+                  <div class="proficiency-bar" style="width: {{ record.level }}%"></div>
+                </div>
+                
+                <div class="d-flex justify-content-between">
+                  <small class="text-muted">最終更新: {{ record.last_updated.strftime('%Y-%m-%d %H:%M') }}</small>
+                  
+                  <small>
+                    {% if record.level >= 80 %}
+                      <span class="text-success">マスター</span>
+                    {% elif record.level >= 50 %}
+                      <span class="text-primary">習熟</span>
+                    {% elif record.level >= 30 %}
+                      <span class="text-warning">練習中</span>
+                    {% else %}
+                      <span class="text-danger">初心者</span>
+                    {% endif %}
+                  </small>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted">まだ熟練度データがありません。問題を解いて熟練度を上げましょう。</p>
+          <div class="d-grid gap-2 mt-3">
+            <a href="{{ url_for('basebuilder.problems') }}" class="btn btn-primary">
+              問題に挑戦する
+            </a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  
+  <!-- 右側 - 統計と次のステップ -->
+  <div class="col-md-4">
+    <div class="card mb-3">
+      <div class="card-header">
+        <h5 class="card-title">総合統計</h5>
+      </div>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            マスターしたカテゴリ
+            <span class="badge bg-success rounded-pill">
+              {{ proficiency_records|selectattr('level', 'ge', 80)|list|length }}
+            </span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            習熟カテゴリ
+            <span class="badge bg-primary rounded-pill">
+              {{ proficiency_records|selectattr('level', 'ge', 50)|selectattr('level', 'lt', 80)|list|length }}
+            </span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            練習中カテゴリ
+            <span class="badge bg-warning rounded-pill">
+              {{ proficiency_records|selectattr('level', 'ge', 30)|selectattr('level', 'lt', 50)|list|length }}
+            </span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            未習得カテゴリ
+            <span class="badge bg-danger rounded-pill">
+              {{ proficiency_records|selectattr('level', 'lt', 30)|list|length }}
+            </span>
+          </li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="card mb-3">
+      <div class="card-header">
+        <h5 class="card-title">次に学ぶことをおすすめ</h5>
+      </div>
+      <div class="card-body">
+        {% set low_proficiency = proficiency_records|selectattr('level', 'lt', 50)|sort(attribute='level')|first %}
+        {% if low_proficiency %}
+          <p><strong>{{ low_proficiency.category.name }}</strong> の理解度を高めましょう。</p>
+          <div class="d-grid">
+            <a href="{{ url_for('basebuilder.problems', category_id=low_proficiency.category.id) }}" class="btn btn-primary">
+              この分野を学習する
+            </a>
+          </div>
+        {% else %}
+          <p>すべてのカテゴリで良い進捗を示しています！新しい分野に挑戦してみましょう。</p>
+          <div class="d-grid">
+            <a href="{{ url_for('basebuilder.categories') }}" class="btn btn-outline">
+              カテゴリを探す
+            </a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title">タグクラウド</h5>
+      </div>
+      <div class="card-body">
+        <div class="tag-cloud">
+          {% for record in proficiency_records %}
+            <span class="category-badge" style="font-size: {{ (record.level / 20 + 0.8)|round(1) }}rem; opacity: {{ (record.level / 100 + 0.5)|round(1) }};">
+              {{ record.category.name }}
+            </span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

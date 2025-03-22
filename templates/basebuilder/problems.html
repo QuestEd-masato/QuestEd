@@ -1,0 +1,135 @@
+{% extends 'basebuilder/layout.html' %}
+
+{% block basebuilder_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="section-title">問題一覧</h1>
+  {% if current_user.role == 'teacher' %}
+    <a href="{{ url_for('basebuilder.create_problem') }}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> 新規問題
+    </a>
+  {% endif %}
+</div>
+
+<!-- 検索・フィルターエリア -->
+<div class="card mb-4">
+  <div class="card-header">
+    <h5 class="card-title">検索とフィルター</h5>
+  </div>
+  <div class="card-body">
+    <form method="GET" action="{{ url_for('basebuilder.problems') }}" class="row g-3">
+      <!-- テキスト検索 -->
+      <div class="col-md-4">
+        <label for="search" class="form-label">キーワード検索</label>
+        <input type="text" class="form-control" id="search" name="search" value="{{ search or '' }}" placeholder="タイトルや問題文で検索">
+      </div>
+      
+      <!-- カテゴリフィルター -->
+      <div class="col-md-4">
+        <label for="category_id" class="form-label">カテゴリ</label>
+        <select class="form-control" id="category_id" name="category_id">
+          <option value="">すべてのカテゴリ</option>
+          {% for category in categories %}
+            <option value="{{ category.id }}" {% if selected_category_id == category.id %}selected{% endif %}>
+              {{ category.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      
+      <!-- 難易度フィルター -->
+      <div class="col-md-4">
+        <label for="difficulty" class="form-label">難易度</label>
+        <select class="form-control" id="difficulty" name="difficulty">
+          <option value="">すべての難易度</option>
+          {% for i in range(1, 6) %}
+            <option value="{{ i }}" {% if selected_difficulty == i %}selected{% endif %}>
+              {{ i }} {% if i == 1 %}（最も簡単）{% elif i == 5 %}（最も難しい）{% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      
+      <!-- ボタン -->
+      <div class="col-12">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-search"></i> 検索
+        </button>
+        <a href="{{ url_for('basebuilder.problems') }}" class="btn btn-outline">
+          <i class="fas fa-redo"></i> リセット
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 問題一覧 -->
+<div class="card">
+  <div class="card-header">
+    <h5 class="card-title">問題一覧</h5>
+  </div>
+  <div class="card-body">
+    {% if problems %}
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>タイトル</th>
+              <th>カテゴリ</th>
+              <th>タイプ</th>
+              <th>難易度</th>
+              {% if current_user.role == 'teacher' %}
+                <th>作成日</th>
+              {% endif %}
+              <th>アクション</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for problem in problems %}
+              <tr>
+                <td>{{ problem.title }}</td>
+                <td>{{ problem.category.name }}</td>
+                <td>
+                  {% if problem.answer_type == 'multiple_choice' %}
+                    選択問題
+                  {% elif problem.answer_type == 'text' %}
+                    記述問題
+                  {% elif problem.answer_type == 'true_false' %}
+                    真偽問題
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="problem-difficulty difficulty-{{ problem.difficulty }}">
+                    {{ problem.difficulty }}
+                  </span>
+                </td>
+                {% if current_user.role == 'teacher' %}
+                  <td>{{ problem.created_at.strftime('%Y-%m-%d') }}</td>
+                {% endif %}
+                <td>
+                  {% if current_user.role == 'student' %}
+                    <a href="{{ url_for('basebuilder.solve_problem', problem_id=problem.id) }}" class="btn btn-sm btn-primary">
+                      問題を解く
+                    </a>
+                  {% else %}
+                    <a href="{{ url_for('basebuilder.edit_problem', problem_id=problem.id) }}" class="btn btn-sm btn-outline">
+                      編集
+                    </a>
+                    <form method="POST" action="{{ url_for('basebuilder.delete_problem', problem_id=problem.id) }}" class="d-inline">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('本当にこの問題を削除しますか？')">
+                        削除
+                      </button>
+                    </form>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-muted">条件に一致する問題が見つかりませんでした。</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

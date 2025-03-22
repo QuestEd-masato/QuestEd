@@ -1,0 +1,148 @@
+{% extends 'basebuilder/layout.html' %}
+
+{% block basebuilder_content %}
+<h1 class="section-title">基礎学力トレーニング</h1>
+
+<div class="row">
+  <!-- 左側 - ステータス概要 -->
+  <div class="col-md-8">
+    <div class="card mb-3">
+      <div class="card-header">
+        <h5 class="card-title">基礎学力の熟練度</h5>
+      </div>
+      <div class="card-body">
+        {% if category_proficiency %}
+          <div class="proficiency-summary">
+            {% for category_name, level in category_proficiency.items() %}
+              <div class="mb-3">
+                <div class="d-flex justify-content-between">
+                  <label>{{ category_name }}</label>
+                  <span>{{ level }}%</span>
+                </div>
+                <div class="proficiency-meter">
+                  <div class="proficiency-bar" style="width: {{ level }}%"></div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted">まだ熟練度データがありません。問題を解いて熟練度を上げましょう。</p>
+        {% endif %}
+        <a href="{{ url_for('basebuilder.proficiency') }}" class="btn btn-outline">詳細を見る</a>
+      </div>
+    </div>
+    
+    <div class="card mb-3">
+      <div class="card-header">
+        <h5 class="card-title">最近の解答履歴</h5>
+      </div>
+      <div class="card-body">
+        {% if recent_answers %}
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>日時</th>
+                  <th>問題</th>
+                  <th>結果</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for answer in recent_answers %}
+                  <tr>
+                    <td>{{ answer.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ answer.problem.title }}</td>
+                    <td>
+                      {% if answer.is_correct %}
+                        <span class="answer-correct">正解</span>
+                      {% else %}
+                        <span class="answer-incorrect">不正解</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <a href="{{ url_for('basebuilder.view_history') }}" class="btn btn-outline">履歴をすべて見る</a>
+        {% else %}
+          <p class="text-muted">まだ解答履歴がありません。</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  
+  <!-- 右側 - アクション領域 -->
+  <div class="col-md-4">
+    <div class="card mb-3">
+      <div class="card-header">
+        <h5 class="card-title">今日のおすすめ</h5>
+      </div>
+      <div class="card-body">
+        <div class="d-grid gap-2">
+          <a href="{{ url_for('basebuilder.problems') }}" class="btn btn-primary">問題を解く</a>
+          <a href="{{ url_for('basebuilder.learning_paths') }}" class="btn btn-outline">学習パスを見る</a>
+        </div>
+      </div>
+    </div>
+    
+    {% if theme %}
+      <div class="card mb-3">
+        <div class="card-header">
+          <h5 class="card-title">探究テーマに関連する問題</h5>
+        </div>
+        <div class="card-body">
+          <p><strong>現在のテーマ:</strong> {{ theme.title }}</p>
+          
+          {% if related_problems %}
+            <div class="related-problems">
+              {% for problem in related_problems %}
+                <div class="problem-card">
+                  <h6>{{ problem.title }}
+                    <span class="problem-difficulty difficulty-{{ problem.difficulty }}">
+                      難易度: {{ problem.difficulty }}
+                    </span>
+                  </h6>
+                  <p class="text-muted">{{ problem.category.name }}</p>
+                  <a href="{{ url_for('basebuilder.solve_problem', problem_id=problem.id) }}" class="btn btn-sm btn-outline">
+                    この問題を解く
+                  </a>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-muted">このテーマに関連する問題はまだありません。</p>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+    
+    {% if assigned_paths %}
+      <div class="card mb-3">
+        <div class="card-header">
+          <h5 class="card-title">割り当てられた学習パス</h5>
+        </div>
+        <div class="card-body">
+          {% for assignment in assigned_paths %}
+            <div class="mb-3">
+              <h6>{{ assignment.path.title }}</h6>
+              {% if assignment.due_date %}
+                <p class="text-muted">期限: {{ assignment.due_date.strftime('%Y-%m-%d') }}</p>
+              {% endif %}
+              <div class="progress mb-2">
+                <div class="progress-bar" role="progressbar" style="width: {{ assignment.progress }}%"
+                     aria-valuenow="{{ assignment.progress }}" aria-valuemin="0" aria-valuemax="100">
+                  {{ assignment.progress }}%
+                </div>
+              </div>
+              <a href="{{ url_for('basebuilder.start_learning_path', assignment_id=assignment.id) }}" class="btn btn-sm btn-outline">
+                続ける
+              </a>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

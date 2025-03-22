@@ -1,0 +1,394 @@
+{% extends 'basebuilder/layout.html' %}
+
+{% block styles %}
+{{ super() }}
+<style>
+  .choices-container {
+    margin-top: 10px;
+  }
+  
+  .choice-item {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  
+  .choice-controls {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+  }
+  
+  .choice-controls button {
+    background: none;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+  }
+  
+  .choice-controls button:hover {
+    color: #343a40;
+  }
+  
+  .correct-choice {
+    background-color: #d1e7dd;
+    border-color: #a3cfbb;
+  }
+</style>
+{% endblock %}
+
+{% block basebuilder_content %}
+<div class="row justify-content-center">
+  <div class="col-md-10">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1 class="section-title">新規問題作成</h1>
+      <a href="{{ url_for('basebuilder.problems') }}" class="btn btn-outline">
+        <i class="fas fa-arrow-left"></i> 問題一覧に戻る
+      </a>
+    </div>
+    
+    <div class="card">
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('basebuilder.create_problem') }}" id="problem-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="choices" id="choices-json" value="[]">
+          
+          <div class="row mb-3">
+            <div class="col-md-8">
+              <div class="form-group">
+                <label for="title" class="form-label">問題タイトル <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="title" name="title" required>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label for="category_id" class="form-label">カテゴリ <span class="text-danger">*</span></label>
+                <select class="form-control" id="category_id" name="category_id" required>
+                  <option value="">カテゴリを選択</option>
+                  {% for category in categories %}
+                    <option value="{{ category.id }}">{{ category.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <div class="form-group mb-3">
+            <label for="question" class="form-label">問題文 <span class="text-danger">*</span></label>
+            <textarea class="form-control" id="question" name="question" rows="4" required></textarea>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="answer_type" class="form-label">問題タイプ <span class="text-danger">*</span></label>
+                <select class="form-control" id="answer_type" name="answer_type" required>
+                  <option value="multiple_choice">選択問題</option>
+                  <option value="text">記述問題</option>
+                  <option value="true_false">真偽問題</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="difficulty" class="form-label">難易度</label>
+                <select class="form-control" id="difficulty" name="difficulty">
+                  <option value="1">1 - 非常に簡単</option>
+                  <option value="2" selected>2 - 簡単</option>
+                  <option value="3">3 - 普通</option>
+                  <option value="4">4 - 難しい</option>
+                  <option value="5">5 - 非常に難しい</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 選択問題用の選択肢エリア -->
+          <div id="multiple-choice-section" class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <label class="form-label">選択肢</label>
+              <button type="button" class="btn btn-sm btn-outline" id="add-choice-btn">
+                <i class="fas fa-plus"></i> 選択肢を追加
+              </button>
+            </div>
+            
+            <div id="choices-container" class="choices-container">
+              <!-- 選択肢がJavaScriptで動的に追加される -->
+            </div>
+          </div>
+          
+          <!-- 記述問題用の正解エリア -->
+          <div id="text-answer-section" class="form-group mb-3" style="display: none;">
+            <label for="correct_answer_text" class="form-label">正解 <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="correct_answer_text" name="correct_answer_text">
+            <div class="form-text">複数の正解がある場合はカンマで区切って入力してください。</div>
+          </div>
+          
+          <!-- 真偽問題用の正解エリア -->
+          <div id="true-false-section" class="form-group mb-3" style="display: none;">
+            <label class="form-label d-block">正解 <span class="text-danger">*</span></label>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="correct_answer_tf" id="true-option" value="true">
+              <label class="form-check-label" for="true-option">正しい (True)</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="correct_answer_tf" id="false-option" value="false">
+              <label class="form-check-label" for="false-option">間違い (False)</label>
+            </div>
+          </div>
+          
+          <div class="form-group mb-4">
+            <label for="explanation" class="form-label">解説</label>
+            <textarea class="form-control" id="explanation" name="explanation" rows="3"></textarea>
+            <div class="form-text">問題の解説や補足情報を入力してください。</div>
+          </div>
+          
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary">問題を作成</button>
+            <a href="{{ url_for('basebuilder.problems') }}" class="btn btn-outline">キャンセル</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // 問題タイプの切り替え処理
+    const answerTypeSelect = document.getElementById('answer_type');
+    const multipleChoiceSection = document.getElementById('multiple-choice-section');
+    const textAnswerSection = document.getElementById('text-answer-section');
+    const trueFalseSection = document.getElementById('true-false-section');
+    
+    // 選択肢の配列
+    let choices = [];
+    const choicesContainer = document.getElementById('choices-container');
+    const choicesJsonInput = document.getElementById('choices-json');
+    
+    // 初期状態では選択問題のUIを表示
+    updateAnswerTypeUI();
+    
+    // 問題タイプが変更されたときの処理
+    answerTypeSelect.addEventListener('change', updateAnswerTypeUI);
+    
+    function updateAnswerTypeUI() {
+      const answerType = answerTypeSelect.value;
+      
+      // すべてのセクションを非表示に
+      multipleChoiceSection.style.display = 'none';
+      textAnswerSection.style.display = 'none';
+      trueFalseSection.style.display = 'none';
+      
+      // 選択した問題タイプに応じたセクションを表示
+      if (answerType === 'multiple_choice') {
+        multipleChoiceSection.style.display = 'block';
+      } else if (answerType === 'text') {
+        textAnswerSection.style.display = 'block';
+      } else if (answerType === 'true_false') {
+        trueFalseSection.style.display = 'block';
+      }
+    }
+    
+    // 選択肢を追加するボタンのイベントハンドラ
+    document.getElementById('add-choice-btn').addEventListener('click', function() {
+      addChoice('', false);
+    });
+    
+    // 選択肢を追加する関数
+    function addChoice(text = '', isCorrect = false) {
+      const choiceId = 'choice-' + Date.now();
+      
+      // 選択肢オブジェクトを作成
+      const choice = {
+        id: choiceId,
+        text: text,
+        value: choiceId,  // 一意の値
+        isCorrect: isCorrect
+      };
+      
+      choices.push(choice);
+      renderChoices();
+    }
+    
+    // 選択肢を削除する関数
+    function removeChoice(choiceId) {
+      choices = choices.filter(choice => choice.id !== choiceId);
+      renderChoices();
+    }
+    
+    // 正解の選択肢を設定する関数
+    function setCorrectChoice(choiceId) {
+      choices.forEach(choice => {
+        choice.isCorrect = (choice.id === choiceId);
+      });
+      renderChoices();
+    }
+    
+    // 選択肢を描画する関数
+    function renderChoices() {
+      // 選択肢コンテナをクリア
+      choicesContainer.innerHTML = '';
+      
+      // 各選択肢のHTML要素を生成
+      choices.forEach(choice => {
+        const choiceElem = document.createElement('div');
+        choiceElem.className = `choice-item ${choice.isCorrect ? 'correct-choice' : ''}`;
+        choiceElem.dataset.id = choice.id;
+        
+        choiceElem.innerHTML = `
+          <div class="row">
+            <div class="col-md-8">
+              <input type="text" class="form-control choice-text" value="${choice.text}" placeholder="選択肢のテキスト">
+            </div>
+            <div class="col-md-4">
+              <div class="d-flex align-items-center">
+                <div class="form-check me-3">
+                  <input class="form-check-input correct-choice-radio" type="radio" name="correct_choice" 
+                         ${choice.isCorrect ? 'checked' : ''}>
+                  <label class="form-check-label">正解</label>
+                </div>
+                <button type="button" class="btn btn-sm btn-danger remove-choice-btn">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        choicesContainer.appendChild(choiceElem);
+      });
+      
+      // 選択肢のJSONを更新
+      updateChoicesJson();
+      
+      // 新しく追加された要素のイベントハンドラを設定
+      setupChoiceEventHandlers();
+    }
+    
+    // 選択肢のイベントハンドラをセットアップする関数
+    function setupChoiceEventHandlers() {
+      // 削除ボタンのイベントハンドラ
+      document.querySelectorAll('.remove-choice-btn').forEach(button => {
+        button.addEventListener('click', function() {
+          const choiceItem = this.closest('.choice-item');
+          const choiceId = choiceItem.dataset.id;
+          removeChoice(choiceId);
+        });
+      });
+      
+      // 正解ラジオボタンのイベントハンドラ
+      document.querySelectorAll('.correct-choice-radio').forEach(radio => {
+        radio.addEventListener('change', function() {
+          if (this.checked) {
+            const choiceItem = this.closest('.choice-item');
+            const choiceId = choiceItem.dataset.id;
+            setCorrectChoice(choiceId);
+          }
+        });
+      });
+      
+      // 選択肢テキストの変更イベントハンドラ
+      document.querySelectorAll('.choice-text').forEach(input => {
+        input.addEventListener('input', function() {
+          const choiceItem = this.closest('.choice-item');
+          const choiceId = choiceItem.dataset.id;
+          const choiceIndex = choices.findIndex(choice => choice.id === choiceId);
+          
+          if (choiceIndex !== -1) {
+            choices[choiceIndex].text = this.value;
+            updateChoicesJson();
+          }
+        });
+      });
+    }
+    
+    // 選択肢のJSONを更新する関数
+    function updateChoicesJson() {
+      choicesJsonInput.value = JSON.stringify(choices);
+    }
+    
+    // 初期状態で2つの選択肢を表示
+    addChoice('', true);
+    addChoice('', false);
+    
+    // フォーム送信時の処理
+    document.getElementById('problem-form').addEventListener('submit', function(e) {
+      const answerType = answerTypeSelect.value;
+      
+      // 問題タイプに応じて正解を設定
+      if (answerType === 'multiple_choice') {
+        // 正解の選択肢があるか確認
+        const correctChoice = choices.find(choice => choice.isCorrect);
+        
+        if (!correctChoice) {
+          e.preventDefault();
+          alert('正解となる選択肢を選択してください。');
+          return;
+        }
+        
+        // 選択肢が少なくとも2つあるか確認
+        if (choices.length < 2) {
+          e.preventDefault();
+          alert('少なくとも2つの選択肢が必要です。');
+          return;
+        }
+        
+        // 選択肢のテキストがすべて入力されているか確認
+        const emptyChoice = choices.find(choice => !choice.text.trim());
+        if (emptyChoice) {
+          e.preventDefault();
+          alert('すべての選択肢にテキストを入力してください。');
+          return;
+        }
+        
+        // hidden inputに正解の値を設定
+        const correctAnswerInput = document.createElement('input');
+        correctAnswerInput.type = 'hidden';
+        correctAnswerInput.name = 'correct_answer';
+        correctAnswerInput.value = correctChoice.value;
+        this.appendChild(correctAnswerInput);
+      } else if (answerType === 'text') {
+        // 記述問題の場合
+        const textAnswer = document.getElementById('correct_answer_text').value;
+        
+        if (!textAnswer.trim()) {
+          e.preventDefault();
+          alert('正解を入力してください。');
+          return;
+        }
+        
+        // hidden inputに正解を設定
+        const correctAnswerInput = document.createElement('input');
+        correctAnswerInput.type = 'hidden';
+        correctAnswerInput.name = 'correct_answer';
+        correctAnswerInput.value = textAnswer;
+        this.appendChild(correctAnswerInput);
+      } else if (answerType === 'true_false') {
+        // 真偽問題の場合
+        const trueOption = document.getElementById('true-option');
+        const falseOption = document.getElementById('false-option');
+        
+        if (!trueOption.checked && !falseOption.checked) {
+          e.preventDefault();
+          alert('正解（真か偽）を選択してください。');
+          return;
+        }
+        
+        // hidden inputに正解を設定
+        const correctAnswerInput = document.createElement('input');
+        correctAnswerInput.type = 'hidden';
+        correctAnswerInput.name = 'correct_answer';
+        correctAnswerInput.value = trueOption.checked ? 'true' : 'false';
+        this.appendChild(correctAnswerInput);
+      }
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,249 @@
+{% extends 'basebuilder/layout.html' %}
+
+{% block styles %}
+{{ super() }}
+<style>
+  .problem-container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .question-area {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+  
+  .answer-area {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    margin-bottom: 20px;
+  }
+  
+  .feedback-area {
+    display: none;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 20px;
+  }
+  
+  .feedback-correct {
+    background-color: #d1e7dd;
+    border: 1px solid #a3cfbb;
+    color: #0f5132;
+  }
+  
+  .feedback-incorrect {
+    background-color: #f8d7da;
+    border: 1px solid #f5c2c7;
+    color: #721c24;
+  }
+  
+  .timer {
+    font-size: 1.2rem;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .choice-item {
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .choice-item:hover {
+    background-color: #f8f9fa;
+  }
+  
+  .choice-item.selected {
+    background-color: #cfe2ff;
+    border-color: #9ec5fe;
+  }
+</style>
+{% endblock %}
+
+{% block basebuilder_content %}
+<div class="problem-container">
+  <h1 class="section-title">問題を解く</h1>
+  
+  <div class="d-flex justify-content-between mb-3">
+    <div>
+      <span class="badge bg-secondary">{{ problem.category.name }}</span>
+      <span class="problem-difficulty difficulty-{{ problem.difficulty }}">
+        難易度: {{ problem.difficulty }}
+      </span>
+    </div>
+    <div class="timer" id="timer">00:00</div>
+  </div>
+  
+  <div class="question-area">
+    <h4>{{ problem.title }}</h4>
+    <p>{{ problem.question }}</p>
+  </div>
+  
+  <div class="answer-area">
+    <form id="answer-form">
+      <input type="hidden" name="problem_id" value="{{ problem.id }}">
+      <input type="hidden" name="answer_time" id="answer-time" value="0">
+      
+      {% if problem.answer_type == 'multiple_choice' %}
+        <!-- 多肢選択問題 -->
+        <div class="choices-container">
+          {% if problem.choices %}
+            {% set choices = problem.choices|tojson|safe|fromjson %}
+            {% for choice in choices %}
+              <div class="choice-item" data-value="{{ choice.value }}">
+                <input type="radio" name="answer" id="choice-{{ loop.index }}" value="{{ choice.value }}" class="visually-hidden">
+                <label for="choice-{{ loop.index }}">
+                  {{ choice.text }}
+                </label>
+              </div>
+            {% endfor %}
+          {% else %}
+            <p class="text-danger">選択肢データが見つかりません。</p>
+          {% endif %}
+        </div>
+        
+      {% elif problem.answer_type == 'true_false' %}
+        <!-- 真偽問題 -->
+        <div class="choices-container">
+          <div class="choice-item" data-value="true">
+            <input type="radio" name="answer" id="choice-true" value="true" class="visually-hidden">
+            <label for="choice-true">正しい (True)</label>
+          </div>
+          <div class="choice-item" data-value="false">
+            <input type="radio" name="answer" id="choice-false" value="false" class="visually-hidden">
+            <label for="choice-false">間違い (False)</label>
+          </div>
+        </div>
+        
+      {% else %}
+        <!-- テキスト入力問題 -->
+        <div class="form-group">
+          <label for="text-answer">回答を入力してください:</label>
+          <input type="text" name="answer" id="text-answer" class="form-control" required>
+        </div>
+      {% endif %}
+      
+      <div class="d-grid gap-2 mt-4">
+        <button type="submit" class="btn btn-primary" id="submit-btn">回答する</button>
+        <a href="{{ url_for('basebuilder.problems') }}" class="btn btn-outline">別の問題を選ぶ</a>
+      </div>
+    </form>
+  </div>
+  
+  <!-- フィードバックエリア（初期状態では非表示） -->
+  <div id="feedback-area" class="feedback-area">
+    <h5 id="feedback-title"></h5>
+    <p id="feedback-message"></p>
+    <div id="explanation-section">
+      <h6>解説:</h6>
+      <p id="explanation-text">{{ problem.explanation }}</p>
+    </div>
+    <div class="d-grid gap-2 mt-3">
+      <a href="{{ url_for('basebuilder.solve_problem', problem_id=problem.id) }}" class="btn btn-outline">再度挑戦</a>
+      <a href="{{ url_for('basebuilder.problems') }}" class="btn btn-primary">次の問題へ</a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // タイマー関連
+    let startTime = Date.now();
+    let timerInterval = setInterval(updateTimer, 1000);
+    const timerElement = document.getElementById('timer');
+    const answerTimeInput = document.getElementById('answer-time');
+    
+    function updateTimer() {
+      const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+      const minutes = Math.floor(elapsedSeconds / 60);
+      const seconds = elapsedSeconds % 60;
+      timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      answerTimeInput.value = elapsedSeconds;
+    }
+    
+    // 選択肢クリックのイベントハンドラ
+    const choiceItems = document.querySelectorAll('.choice-item');
+    choiceItems.forEach(item => {
+      item.addEventListener('click', function() {
+        // 以前の選択をクリア
+        choiceItems.forEach(choice => choice.classList.remove('selected'));
+        
+        // この選択肢を選択状態に
+        this.classList.add('selected');
+        
+        // 関連するラジオボタンをチェック
+        const radio = this.querySelector('input[type="radio"]');
+        if (radio) {
+          radio.checked = true;
+        }
+      });
+    });
+    
+    // フォーム送信のイベントハンドラ
+    const answerForm = document.getElementById('answer-form');
+    answerForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      // タイマーを停止
+      clearInterval(timerInterval);
+      
+      // フォームデータを収集
+      const formData = new FormData(answerForm);
+      
+      // 送信ボタンを無効化
+      document.getElementById('submit-btn').disabled = true;
+      
+      // 回答を送信
+      fetch('{{ url_for("basebuilder.submit_answer", problem_id=problem.id) }}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': '{{ csrf_token() }}'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        // フィードバックエリアを表示
+        const feedbackArea = document.getElementById('feedback-area');
+        feedbackArea.style.display = 'block';
+        
+        // フィードバックの内容を設定
+        const feedbackTitle = document.getElementById('feedback-title');
+        const feedbackMessage = document.getElementById('feedback-message');
+        
+        if (data.is_correct) {
+          feedbackArea.classList.add('feedback-correct');
+          feedbackTitle.textContent = '正解です！';
+          feedbackMessage.textContent = '素晴らしい！';
+        } else {
+          feedbackArea.classList.add('feedback-incorrect');
+          feedbackTitle.textContent = '不正解です';
+          feedbackMessage.textContent = `正解は: ${data.correct_answer}`;
+        }
+        
+        // 回答エリアを非表示にして、フィードバックエリアを表示
+        document.querySelector('.answer-area').style.display = 'none';
+        feedbackArea.scrollIntoView({ behavior: 'smooth' });
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('回答の送信中にエラーが発生しました。もう一度お試しください。');
+        // 送信ボタンを再度有効化
+        document.getElementById('submit-btn').disabled = false;
+      });
+    });
+  });
+</script>
+{% endblock %}
