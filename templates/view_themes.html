@@ -71,6 +71,27 @@
                         </div>
                     {% endif %}
                     
+                    <!-- 関連基礎知識セクションを追加 -->
+                    {% if theme_related_problems and item.theme.id in theme_related_problems %}
+                    <div class="theme-section related-knowledge-section">
+                        <h4>関連する基礎知識</h4>
+                        <div class="related-problems-list">
+                            {% for problem in theme_related_problems[item.theme.id][:3] %}
+                                <div class="related-problem-item">
+                                    <span class="problem-title">{{ problem.title }}</span>
+                                    <span class="problem-difficulty difficulty-{{ problem.difficulty }}">
+                                        難易度: {{ problem.difficulty }}
+                                    </span>
+                                    <a href="{{ url_for('basebuilder.solve_problem', problem_id=problem.id) }}" 
+                                       class="btn btn-sm btn-outline">挑戦する</a>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <a href="{{ url_for('basebuilder.problems', theme_id=item.theme.id) }}" 
+                           class="btn btn-sm">すべての関連問題を見る</a>
+                    </div>
+                    {% endif %}
+                    
                     <div class="theme-actions">
                         {% if not item.theme.is_selected %}
                             <form method="POST" action="{{ url_for('select_theme', theme_id=item.theme.id) }}" class="d-inline">
@@ -319,6 +340,52 @@
         color: #856404;
     }
     
+    /* BaseBuilder関連のCSS */
+    .related-knowledge-section {
+        background-color: #e3f2fd;
+        border-radius: 5px;
+        padding: 0.75rem;
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+        border-left: 3px solid #0056b3;
+    }
+    
+    .related-problems-list {
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .related-problem-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.5rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .related-problem-item:last-child {
+        border-bottom: none;
+    }
+    
+    .problem-title {
+        flex-grow: 1;
+    }
+    
+    .problem-difficulty {
+        display: inline-block;
+        padding: 2px 5px;
+        border-radius: 3px;
+        font-size: 0.8rem;
+        color: #fff;
+        margin: 0 0.5rem;
+    }
+    
+    .difficulty-1 { background-color: #28a745; }  /* 最も簡単 */
+    .difficulty-2 { background-color: #17a2b8; }
+    .difficulty-3 { background-color: #ffc107; color: #343a40; }
+    .difficulty-4 { background-color: #fd7e14; }
+    .difficulty-5 { background-color: #dc3545; }  /* 最も難しい */
+    
     @media (max-width: 768px) {
         .theme-card {
             padding: 1rem;
@@ -338,6 +405,16 @@
         
         .actions-bar {
             flex-direction: column;
+        }
+        
+        .related-problem-item {
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 0.5rem 0;
+        }
+        
+        .related-problem-item .btn {
+            margin-top: 0.5rem;
         }
     }
 </style>

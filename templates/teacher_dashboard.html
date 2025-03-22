@@ -67,6 +67,39 @@
             {% endif %}
         </div>
         
+        <!-- 基礎学力管理セクション -->
+        <div class="dashboard-section basebuilder-management">
+            <div class="section-header">
+                <h3>基礎学力トレーニング管理</h3>
+                <a href="{{ url_for('basebuilder.index') }}" class="btn btn-sm btn-primary">管理ページへ</a>
+           </div>
+    
+           <div class="stats-overview d-flex justify-content-around mb-3">
+               <div class="stat-card text-center">
+                   <div class="stat-value">{{ problem_count }}</div>
+                   <div class="stat-label">問題数</div>
+               </div>
+               <div class="stat-card text-center">
+                   <div class="stat-value">{{ category_count }}</div>
+                   <div class="stat-label">カテゴリ数</div>
+               </div>
+           </div>
+    
+           <div class="quick-actions">
+               <div class="d-grid gap-2">
+                  <a href="{{ url_for('basebuilder.create_problem') }}" class="btn btn-outline">
+                     <i class="fas fa-plus"></i> 新規問題作成
+                  </a>
+                  <a href="{{ url_for('basebuilder.theme_relations') }}" class="btn btn-outline">
+                     <i class="fas fa-link"></i> テーマと問題の関連付け
+                  </a>
+                  <a href="{{ url_for('basebuilder.analysis') }}" class="btn btn-outline">
+                     <i class="fas fa-chart-bar"></i> 理解度分析
+                  </a>
+               </div>
+           </div>
+        </div>
+
         <div class="dashboard-section recent-activities">
             <div class="section-header">
                 <h3>最近の活動記録</h3>

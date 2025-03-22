@@ -19,24 +19,16 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from dotenv import load_dotenv
 from openai import OpenAI
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-#import openai
-from flask_wtf.csrf import CSRFProtect
 import pymysql
 pymysql.install_as_MySQLdb()
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 
-# 管理者専用のModelViewクラスを作成
-class AdminModelView(ModelView):
-    def is_accessible(self):
-        return current_user.is_authenticated and current_user.role == 'teacher'
-    
-    def inaccessible_callback(self, name, **kwargs):
-        return redirect(url_for('login'))
-
 # 環境変数のロード
 load_dotenv()
+
+# OpenAIクライアントの初期化
+client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 # アプリケーション初期化
 app = Flask(__name__)
@@ -47,15 +39,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 最大16MB
 
-@app.template_filter('nl2br')
-def nl2br(value):
-    if value:
-        value = markupsafe.escape(value)
-        value = value.replace('\n', markupsafe.Markup('<br>'))
-    return markupsafe.Markup(value)
 # アップロードフォルダの作成
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
 
 # CSRF保護の初期化
 csrf = CSRFProtect(app)
@@ -71,6 +56,21 @@ login_manager.login_message = 'この機能を使用するにはログインし�
 
 # 管理画面の初期化
 admin = Admin(app, name='QuestEd Admin', template_mode='bootstrap4')
+
+@app.template_filter('nl2br')
+def nl2br(value):
+    if value:
+        value = markupsafe.escape(value)
+        value = value.replace('\n', markupsafe.Markup('<br>'))
+    return markupsafe.Markup(value)
+
+# 管理者専用のModelViewクラスを作成
+class AdminModelView(ModelView):
+    def is_accessible(self):
+        return current_user.is_authenticated and current_user.role == 'teacher'
+    
+    def inaccessible_callback(self, name, **kwargs):
+        return redirect(url_for('login'))
 
 # モデル定義
 class User(UserMixin, db.Model):
@@ -443,9 +443,26 @@ def teacher_dashboard():
             'next_milestone': next_milestone
         }
         classes.append(class_data)
+    # BaseBuilderデータの追加
+    problem_count = 0
+    category_count = 0
     
-    return render_template('teacher_dashboard.html', classes=classes)
-
+    try:
+        from models_basebuilder import BasicKnowledgeItem, ProblemCategory
+        
+        # 教師が作成した問題とカテゴリの数を取得
+        problem_count = BasicKnowledgeItem.query.filter_by(created_by=current_user.id).count()
+        category_count = ProblemCategory.query.filter_by(created_by=current_user.id).count()
+    except:
+        # BaseBuilderモジュールがロードできない場合は何もしない
+        pass
+    
+    return render_template('teacher_dashboard.html', 
+                          classes=classes,
+                          # BaseBuilder関連データを追加
+                          problem_count=problem_count,
+                          category_count=category_count)
+   
 @app.route('/class/<int:class_id>/generate_evaluations', methods=['GET', 'POST'])
 @login_required
 def generate_evaluations(class_id):
@@ -3576,3 +3593,17 @@ def download_curriculum_template():
     )
     
     return response
+
+# アプリケーション起動時のみ実行される部分
+if __name__ == '__main__':
+    # BaseBuilder機能の初期化
+    try:
+        from basebuilder import init_app
+        init_app(app)
+        print("BaseBuilder機能が正常に初期化されました。")
+    except ImportError:
+        print("BaseBuilderモジュールを読み込めませんでした。機能は無効化されています。")
+    except Exception as e:
+        print(f"BaseBuilder初期化エラー: {str(e)}")
+    
+    app.run(debug=True)

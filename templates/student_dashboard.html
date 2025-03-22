@@ -205,6 +205,39 @@
                 </div>
             {% endif %}
         </div>
+        <div class="dashboard-section basebuilder-summary">
+            <h3>基礎学力トレーニング</h3>
+            {% if category_proficiency %}
+               <div class="proficiency-overview mb-3">
+                   <h4>カテゴリ別熟練度</h4>
+                   {% for category_name, level in category_proficiency.items() %}
+                       <div class="mb-2">
+                          <div class="d-flex justify-content-between">
+                              <span>{{ category_name }}</span>
+                              <span>{{ level }}%</span>
+                          </div>
+                          <div class="progress">
+                              <div class="progress-bar 
+                                  {% if level >= 80 %}bg-success
+                                  {% elif level >= 50 %}bg-primary
+                                  {% elif level >= 30 %}bg-warning
+                                  {% else %}bg-danger{% endif %}" 
+                                   style="width: {{ level }}%"></div>
+                              </div>
+                          </div>
+                   {% endfor %}
+               </div>
+            {% else %}
+               <div class="alert alert-info">
+                    まだ熟練度データがありません。問題を解いて熟練度を上げましょう。
+               </div>
+            {% endif %}
+    
+            <div class="section-actions">
+                <a href="{{ url_for('basebuilder.index') }}" class="btn btn-primary">基礎学力ホームへ</a>
+                <a href="{{ url_for('basebuilder.problems') }}" class="btn btn-outline">問題に挑戦</a>
+           </div>
+       </div>
     </div>
 </div>
 {% endblock %}
