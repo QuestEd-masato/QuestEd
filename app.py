@@ -105,6 +105,12 @@ class User(UserMixin, db.Model):
             return False
         return InquiryTheme.query.filter_by(student_id=self.id, is_selected=True).first() is not None
 
+# BaseBuilderモデルのインポート
+from basebuilder.models import (
+    ProblemCategory, BasicKnowledgeItem, KnowledgeThemeRelation,
+    AnswerRecord, ProficiencyRecord, LearningPath, PathAssignment
+)
+
 # 他のモデルの定義（必要に応じてフィールドを拡張してください）
 # Class モデルの定義を拡張
 class Class(db.Model):
@@ -342,6 +348,11 @@ admin.add_view(AdminModelView(GroupMembership, db.session))
 admin.add_view(AdminModelView(Curriculum, db.session))
 admin.add_view(AdminModelView(RubricTemplate, db.session))
 admin.add_view(AdminModelView(StudentEvaluation, db.session))
+
+# ここにBaseBuilderのBlueprint登録を追加
+from basebuilder.routes import basebuilder
+app.register_blueprint(basebuilder)
+
 # ルート定義例
 @app.route('/')
 def index():

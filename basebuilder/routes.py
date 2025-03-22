@@ -1,8 +1,9 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 import json
-from app import db
-from models_basebuilder import (
+from datetime import datetime
+from extensions import db
+from basebuilder.models import (
     ProblemCategory, BasicKnowledgeItem, KnowledgeThemeRelation,
     AnswerRecord, ProficiencyRecord, LearningPath, PathAssignment
 )
