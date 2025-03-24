@@ -2,17 +2,18 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 import json
 from datetime import datetime
-from extensions import db
-from app import User, InquiryTheme
+from app import db, User, InquiryTheme
+
 from basebuilder.models import (
     ProblemCategory, BasicKnowledgeItem, KnowledgeThemeRelation,
     AnswerRecord, ProficiencyRecord, LearningPath, PathAssignment
 )
 
-basebuilder = Blueprint('basebuilder_module', __name__, url_prefix='/basebuilder')
+# Blueprint名をbasebuilderに変更
+basebuilder_module = Blueprint('basebuilder_module', __name__, url_prefix='/basebuilder')
 
 # BaseBuilder ホームページ
-@basebuilder.route('/basebuilder')
+@basebuilder_module.route('/')
 @login_required
 def index():
     if current_user.role == 'student':
@@ -72,7 +73,7 @@ def index():
         path_count = LearningPath.query.filter_by(created_by=current_user.id).count()
         
         # 教師が担当するクラスを取得
-        classes = User.classes_teaching
+        classes = getattr(current_user, 'classes_teaching', [])
         
         # 最近の問題を取得
         recent_problems = BasicKnowledgeItem.query.filter_by(
@@ -92,7 +93,7 @@ def index():
     return redirect(url_for('index'))
 
 # 問題カテゴリ一覧
-@basebuilder.route('/basebuilder/categories')
+@basebuilder_module.route('/categories')
 @login_required
 def categories():
     # トップレベルのカテゴリを取得
@@ -104,12 +105,12 @@ def categories():
     )
 
 # カテゴリの作成と編集
-@basebuilder.route('/basebuilder/category/create', methods=['GET', 'POST'])
+@basebuilder_module.route('/category/create', methods=['GET', 'POST'])
 @login_required
 def create_category():
     if current_user.role != 'teacher':
         flash('この機能は教師のみ利用可能です。')
-        return redirect(url_for('basebuilder.index'))
+        return redirect(url_for('basebuilder_module.index'))
     
     # 親カテゴリの選択肢を取得
     parent_categories = ProblemCategory.query.all()
@@ -147,19 +148,19 @@ def create_category():
         db.session.commit()
         
         flash('カテゴリが作成されました。')
-        return redirect(url_for('basebuilder.categories'))
+        return redirect(url_for('basebuilder_module.categories'))
     
     return render_template(
         'basebuilder/create_category.html',
         parent_categories=parent_categories
     )
 
-@basebuilder.route('/basebuilder/category/<int:category_id>/edit', methods=['GET', 'POST'])
+@basebuilder_module.route('/category/<int:category_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_category(category_id):
     if current_user.role != 'teacher':
         flash('この機能は教師のみ利用可能です。')
-        return redirect(url_for('basebuilder.index'))
+        return redirect(url_for('basebuilder_module.index'))
     
     # カテゴリを取得
     category = ProblemCategory.query.get_or_404(category_id)
@@ -199,7 +200,7 @@ def edit_category(category_id):
         db.session.commit()
         
         flash('カテゴリが更新されました。')
-        return redirect(url_for('basebuilder.categories'))
+        return redirect(url_for('basebuilder_module.categories'))
     
     return render_template(
         'basebuilder/edit_category.html',
@@ -208,7 +209,7 @@ def edit_category(category_id):
     )
 
 # 問題一覧
-@basebuilder.route('/basebuilder/problems')
+@basebuilder_module.route('/problems')
 @login_required
 def problems():
     # クエリパラメータからフィルタリング条件を取得
@@ -248,12 +249,12 @@ def problems():
     )
 
 # 問題の作成と編集
-@basebuilder.route('/basebuilder/problem/create', methods=['GET', 'POST'])
+@basebuilder_module.route('/problem/create', methods=['GET', 'POST'])
 @login_required
 def create_problem():
     if current_user.role != 'teacher':
         flash('この機能は教師のみ利用可能です。')
-        return redirect(url_for('basebuilder.index'))
+        return redirect(url_for('basebuilder_module.index'))
     
     # カテゴリの選択肢を取得
     categories = ProblemCategory.query.all()
@@ -304,19 +305,19 @@ def create_problem():
         db.session.commit()
         
         flash('問題が作成されました。')
-        return redirect(url_for('basebuilder.problems'))
+        return redirect(url_for('basebuilder_module.problems'))
     
     return render_template(
         'basebuilder/create_problem.html',
         categories=categories
     )
 
-@basebuilder.route('/basebuilder/problem/<int:problem_id>/edit', methods=['GET', 'POST'])
+@basebuilder_module.route('/problem/<int:problem_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_problem(problem_id):
     if current_user.role != 'teacher':
         flash('この機能は教師のみ利用可能です。')
-        return redirect(url_for('basebuilder.index'))
+        return redirect(url_for('basebuilder_module.index'))
     
     # 問題を取得
     problem = BasicKnowledgeItem.query.get_or_404(problem_id)
@@ -370,7 +371,7 @@ def edit_problem(problem_id):
         db.session.commit()
         
         flash('問題が更新されました。')
-        return redirect(url_for('basebuilder.problems'))
+        return redirect(url_for('basebuilder_module.problems'))
     
     return render_template(
         'basebuilder/edit_problem.html',
@@ -379,12 +380,12 @@ def edit_problem(problem_id):
     )
 
 # 問題を解く
-@basebuilder.route('/basebuilder/problem/<int:problem_id>/solve', methods=['GET'])
+@basebuilder_module.route('/problem/<int:problem_id>/solve', methods=['GET'])
 @login_required
 def solve_problem(problem_id):
     if current_user.role != 'student':
         flash('この機能は学生のみ利用可能です。')
-        return redirect(url_for('basebuilder.index'))
+        return redirect(url_for('basebuilder_module.index'))
     
     # 問題を取得
     problem = BasicKnowledgeItem.query.get_or_404(problem_id)
@@ -394,7 +395,7 @@ def solve_problem(problem_id):
         problem=problem
     )
 
-@basebuilder.route('/basebuilder/problem/<int:problem_id>/submit', methods=['POST'])
+@basebuilder_module.route('/problem/<int:problem_id>/submit', methods=['POST'])
 @login_required
 def submit_answer(problem_id):
     if current_user.role != 'student':
@@ -475,12 +476,12 @@ def update_proficiency(student_id, category_id, is_correct):
     proficiency.last_updated = datetime.utcnow()
 
 # 熟練度の表示
-@basebuilder.route('/basebuilder/proficiency')
+@basebuilder_module.route('/proficiency')
 @login_required
 def view_proficiency():
     if current_user.role != 'student':
         flash('この機能は学生のみ利用可能です。')
-        return redirect(url_for('basebuilder.index'))
+        return redirect(url_for('basebuilder_module.index'))
     
     # 学生の熟練度記録を取得
     proficiency_records = ProficiencyRecord.query.filter_by(
@@ -517,12 +518,12 @@ def view_proficiency():
     )
 
 # 学習履歴の表示
-@basebuilder.route('/basebuilder/history')
+@basebuilder_module.route('/history')
 @login_required
 def view_history():
     if current_user.role != 'student':
         flash('この機能は学生のみ利用可能です。')
-        return redirect(url_for('basebuilder.index'))
+        return redirect(url_for('basebuilder_module.index'))
     
     # 学生の解答履歴を取得
     answer_records = AnswerRecord.query.filter_by(
@@ -559,15 +560,15 @@ def view_history():
     )
 
 # 教師向け分析ページ
-@basebuilder.route('/basebuilder/analysis')
+@basebuilder_module.route('/analysis')
 @login_required
 def analysis():
     if current_user.role != 'teacher':
         flash('この機能は教師のみ利用可能です。')
-        return redirect(url_for('basebuilder.index'))
+        return redirect(url_for('basebuilder_module.index'))
     
     # 教師が担当するクラスを取得
-    classes = current_user.classes_teaching
+    classes = getattr(current_user, 'classes_teaching', [])
     
     # クエリパラメータからクラスIDを取得
     class_id = request.args.get('class_id', type=int)
@@ -593,12 +594,12 @@ def analysis():
     )
 
 # 生徒別の詳細分析
-@basebuilder.route('/basebuilder/analysis/student/<int:student_id>')
+@basebuilder_module.route('/analysis/student/<int:student_id>')
 @login_required
 def student_analysis(student_id):
     if current_user.role != 'teacher':
         flash('この機能は教師のみ利用可能です。')
-        return redirect(url_for('basebuilder.index'))
+        return redirect(url_for('basebuilder_module.index'))
     
     # 学生を取得
     student = User.query.get_or_404(student_id)
@@ -612,7 +613,7 @@ def student_analysis(student_id):
     
     if not student_in_class:
         flash('この学生の情報を閲覧する権限がありません。')
-        return redirect(url_for('basebuilder.analysis'))
+        return redirect(url_for('basebuilder_module.analysis'))
     
     # 学生の熟練度記録を取得
     proficiency_records = ProficiencyRecord.query.filter_by(
@@ -653,12 +654,12 @@ def student_analysis(student_id):
     )
 
 # テーマと問題の関連付けを管理
-@basebuilder.route('/basebuilder/theme_relations')
+@basebuilder_module.route('/theme_relations')
 @login_required
 def theme_relations():
     if current_user.role != 'teacher':
         flash('この機能は教師のみ利用可能です。')
-        return redirect(url_for('basebuilder.index'))
+        return redirect(url_for('basebuilder_module.index'))
     
     # すべてのテーマを取得
     themes = InquiryTheme.query.all()
@@ -686,7 +687,7 @@ def theme_relations():
         theme_problems=theme_problems
     )
 
-@basebuilder.route('/basebuilder/theme_relation/create', methods=['POST'])
+@basebuilder_module.route('/theme_relation/create', methods=['POST'])
 @login_required
 def create_theme_relation():
     if current_user.role != 'teacher':
@@ -724,7 +725,7 @@ def create_theme_relation():
     
     return jsonify({'success': True, 'message': '関連付けが作成されました。'})
 
-@basebuilder.route('/basebuilder/theme_relation/delete', methods=['POST'])
+@basebuilder_module.route('/theme_relation/delete', methods=['POST'])
 @login_required
 def delete_theme_relation():
     if current_user.role != 'teacher':
@@ -749,12 +750,12 @@ def delete_theme_relation():
     return jsonify({'success': True, 'message': '関連付けが削除されました。'})
 
 # 問題を削除
-@basebuilder.route('/basebuilder/problem/<int:problem_id>/delete', methods=['POST'])
+@basebuilder_module.route('/problem/<int:problem_id>/delete', methods=['POST'])
 @login_required
 def delete_problem(problem_id):
     if current_user.role != 'teacher':
         flash('この機能は教師のみ利用可能です。')
-        return redirect(url_for('basebuilder.index'))
+        return redirect(url_for('basebuilder_module.index'))
     
     # 問題を取得
     problem = BasicKnowledgeItem.query.get_or_404(problem_id)
@@ -762,7 +763,7 @@ def delete_problem(problem_id):
     # 作成者本人か確認
     if problem.created_by != current_user.id:
         flash('この問題を削除する権限がありません。')
-        return redirect(url_for('basebuilder.problems'))
+        return redirect(url_for('basebuilder_module.problems'))
     
     # 問題に関連する解答記録を削除（外部キー制約がある場合）
     AnswerRecord.query.filter_by(problem_id=problem_id).delete()
@@ -775,10 +776,11 @@ def delete_problem(problem_id):
     db.session.commit()
     
     flash('問題が削除されました。')
-    return redirect(url_for('basebuilder.problems'))
+    return redirect(url_for('basebuilder_module.problems'))
 
 # 学習パスの管理
-@basebuilder.route('/basebuilder/learning_paths')
+# 学習パスの管理（続き）
+@basebuilder_module.route('/learning_paths')
 @login_required
 def learning_paths():
     if current_user.role == 'student':
@@ -804,14 +806,14 @@ def learning_paths():
         )
     
     # その他のロールの場合
-    return redirect(url_for('basebuilder.index'))
+    return redirect(url_for('basebuilder_module.index'))
 
-@basebuilder.route('/basebuilder/learning_path/create', methods=['GET', 'POST'])
+@basebuilder_module.route('/learning_path/create', methods=['GET', 'POST'])
 @login_required
 def create_learning_path():
     if current_user.role != 'teacher':
         flash('この機能は教師のみ利用可能です。')
-        return redirect(url_for('basebuilder.index'))
+        return redirect(url_for('basebuilder_module.index'))
     
     if request.method == 'POST':
         title = request.form.get('title')
@@ -841,7 +843,7 @@ def create_learning_path():
         db.session.commit()
         
         flash('学習パスが作成されました。')
-        return redirect(url_for('basebuilder.learning_paths'))
+        return redirect(url_for('basebuilder_module.learning_paths'))
     
     # 問題カテゴリを取得（ステップ作成用）
     categories = ProblemCategory.query.all()
@@ -851,12 +853,12 @@ def create_learning_path():
         categories=categories
     )
 
-@basebuilder.route('/basebuilder/learning_path/<int:path_id>/edit', methods=['GET', 'POST'])
+@basebuilder_module.route('/learning_path/<int:path_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_learning_path(path_id):
     if current_user.role != 'teacher':
         flash('この機能は教師のみ利用可能です。')
-        return redirect(url_for('basebuilder.index'))
+        return redirect(url_for('basebuilder_module.index'))
     
     # 学習パスを取得
     path = LearningPath.query.get_or_404(path_id)
@@ -864,7 +866,7 @@ def edit_learning_path(path_id):
     # 作成者本人か確認
     if path.created_by != current_user.id:
         flash('この学習パスを編集する権限がありません。')
-        return redirect(url_for('basebuilder.learning_paths'))
+        return redirect(url_for('basebuilder_module.learning_paths'))
     
     if request.method == 'POST':
         title = request.form.get('title')
@@ -892,7 +894,7 @@ def edit_learning_path(path_id):
         db.session.commit()
         
         flash('学習パスが更新されました。')
-        return redirect(url_for('basebuilder.learning_paths'))
+        return redirect(url_for('basebuilder_module.learning_paths'))
     
     # 問題カテゴリを取得（ステップ作成用）
     categories = ProblemCategory.query.all()
@@ -903,18 +905,18 @@ def edit_learning_path(path_id):
         categories=categories
     )
 
-@basebuilder.route('/basebuilder/learning_path/<int:path_id>/assign', methods=['GET', 'POST'])
+@basebuilder_module.route('/learning_path/<int:path_id>/assign', methods=['GET', 'POST'])
 @login_required
 def assign_learning_path(path_id):
     if current_user.role != 'teacher':
         flash('この機能は教師のみ利用可能です。')
-        return redirect(url_for('basebuilder.index'))
+        return redirect(url_for('basebuilder_module.index'))
     
     # 学習パスを取得
     path = LearningPath.query.get_or_404(path_id)
     
     # 教師のクラスを取得
-    classes = current_user.classes_teaching
+    classes = getattr(current_user, 'classes_teaching', [])
     
     if request.method == 'POST':
         class_id = request.form.get('class_id', type=int)
@@ -967,7 +969,7 @@ def assign_learning_path(path_id):
         db.session.commit()
         
         flash('学習パスが割り当てられました。')
-        return redirect(url_for('basebuilder.learning_paths'))
+        return redirect(url_for('basebuilder_module.learning_paths'))
     
     return render_template(
         'basebuilder/assign_learning_path.html',
@@ -976,12 +978,12 @@ def assign_learning_path(path_id):
     )
 
 # 学習パスを開始・進行する
-@basebuilder.route('/basebuilder/learning_path/<int:assignment_id>/start')
+@basebuilder_module.route('/learning_path/<int:assignment_id>/start')
 @login_required
 def start_learning_path(assignment_id):
     if current_user.role != 'student':
         flash('この機能は学生のみ利用可能です。')
-        return redirect(url_for('basebuilder.index'))
+        return redirect(url_for('basebuilder_module.index'))
     
     # 割り当てを取得
     assignment = PathAssignment.query.get_or_404(assignment_id)
@@ -989,7 +991,7 @@ def start_learning_path(assignment_id):
     # 自分の割り当てか確認
     if assignment.student_id != current_user.id:
         flash('この学習パスを開始する権限がありません。')
-        return redirect(url_for('basebuilder.learning_paths'))
+        return redirect(url_for('basebuilder_module.learning_paths'))
     
     # 学習パスを取得
     path = assignment.path
@@ -1014,7 +1016,7 @@ def start_learning_path(assignment_id):
         progress=progress
     )
 
-@basebuilder.route('/basebuilder/learning_path/<int:assignment_id>/update_progress', methods=['POST'])
+@basebuilder_module.route('/learning_path/<int:assignment_id>/update_progress', methods=['POST'])
 @login_required
 def update_path_progress(assignment_id):
     if current_user.role != 'student':

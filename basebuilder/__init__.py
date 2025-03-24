@@ -3,8 +3,8 @@ def init_app(app):
     """BaseBuilderモジュールをアプリケーションに初期化する"""
     
     # Blueprintの登録 - ここでBlueprintを登録します
-    from basebuilder.routes import basebuilder
-    app.register_blueprint(basebuilder)
+    from basebuilder.routes import basebuilder_module
+    app.register_blueprint(basebuilder_module)
     
     # 管理画面へのモデル追加
     with app.app_context():
@@ -35,22 +35,19 @@ def init_app(app):
         from flask_login import current_user
         
         # ナビゲーション項目を追加
-        nav_items = [
-            {'url': '/basebuilder', 'name': '基礎学力ホーム'},
-         # ...
-        ]
+        nav_items = []
         
         if current_user.is_authenticated:
             if current_user.role == 'student':
                 nav_items = [
-                    {'url': '/basebuilder', 'name': '基礎学力ホーム'},
+                    {'url': '/basebuilder/', 'name': '基礎学力ホーム'},
                     {'url': '/basebuilder/proficiency', 'name': '熟練度'},
                     {'url': '/basebuilder/history', 'name': '学習履歴'},
                     {'url': '/basebuilder/learning_paths', 'name': '学習パス'}
                 ]
             elif current_user.role == 'teacher':
                 nav_items = [
-                    {'url': '/basebuilder', 'name': '基礎学力ホーム'},
+                    {'url': '/basebuilder/', 'name': '基礎学力ホーム'},
                     {'url': '/basebuilder/categories', 'name': 'カテゴリ管理'},
                     {'url': '/basebuilder/problems', 'name': '問題管理'},
                     {'url': '/basebuilder/theme_relations', 'name': 'テーマ関連付け'},

@@ -1,0 +1,67 @@
+{% extends 'basebuilder/layout.html' %}
+
+{% block basebuilder_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="section-title">割り当てられた学習パス</h1>
+  <a href="{{ url_for('basebuilder_module.index') }}" class="btn btn-outline">
+    <i class="fas fa-arrow-left"></i> ダッシュボードに戻る
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    {% if assigned_paths %}
+      <div class="learning-paths-list">
+        {% for assignment in assigned_paths %}
+          <div class="learning-path-item mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5>{{ assignment.path.title }}</h5>
+              <div>
+                {% if assignment.completed %}
+                  <span class="badge bg-success">完了</span>
+                {% else %}
+                  <span class="badge bg-primary">進行中</span>
+                {% endif %}
+              </div>
+            </div>
+            
+            {% if assignment.path.description %}
+              <p class="text-muted">{{ assignment.path.description }}</p>
+            {% endif %}
+            
+            <div class="progress mb-2">
+              <div class="progress-bar" role="progressbar" style="width: {{ assignment.progress }}%"
+                   aria-valuenow="{{ assignment.progress }}" aria-valuemin="0" aria-valuemax="100">
+                {{ assignment.progress }}%
+              </div>
+            </div>
+            
+            <div class="d-flex justify-content-between align-items-center">
+              {% if assignment.due_date %}
+                <small class="text-muted">期限: {{ assignment.due_date.strftime('%Y-%m-%d') }}</small>
+              {% else %}
+                <small class="text-muted">期限なし</small>
+              {% endif %}
+              
+              <div>
+                <a href="{{ url_for('basebuilder_module.start_learning_path', assignment_id=assignment.id) }}" class="btn btn-primary btn-sm">
+                  {% if assignment.progress > 0 %}続ける{% else %}開始する{% endif %}
+                </a>
+              </div>
+            </div>
+          </div>
+          
+          {% if not loop.last %}
+            <hr>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="text-center py-4">
+        <p class="text-muted">割り当てられた学習パスはありません。</p>
+        <p>先生が学習パスを割り当てると、ここに表示されます。</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

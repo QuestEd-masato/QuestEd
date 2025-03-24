@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200">
+  <!-- 背景 - 透明 -->
+  <rect width="400" height="200" fill="transparent"/>
+  
+  <!-- グラデーション定義 -->
+  <defs>
+    <!-- テキストのメインカラーグラデーション -->
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2980b9"/>
+      <stop offset="50%" stop-color="#3498db"/>
+      <stop offset="100%" stop-color="#1a5276"/>
+    </linearGradient>
+    
+    <!-- Qのコンパスのグラデーション -->
+    <radialGradient id="compassFill" cx="50%" cy="50%" r="50%" fx="35%" fy="35%">
+      <stop offset="0%" stop-color="#f9f9f9"/>
+      <stop offset="100%" stop-color="#e6e6e6"/>
+    </radialGradient>
+    
+    <radialGradient id="compassRing" cx="50%" cy="50%" r="50%" fx="40%" fy="40%">
+      <stop offset="0%" stop-color="#e74c3c"/>
+      <stop offset="70%" stop-color="#c0392b"/>
+      <stop offset="100%" stop-color="#922b21"/>
+    </radialGradient>
+    
+    <!-- 道のグラデーション -->
+    <linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3498db"/>
+      <stop offset="50%" stop-color="#2980b9"/>
+      <stop offset="100%" stop-color="#1a5276"/>
+    </linearGradient>
+    
+    <!-- 星のグラデーション -->
+    <linearGradient id="starGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f1c40f"/>
+      <stop offset="100%" stop-color="#f39c12"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- 背景エフェクト -->
+  <rect x="40" y="50" width="320" height="100" rx="50" ry="50" fill="#f9f9f9" opacity="0.15"/>
+  
+  <!-- Qの部分をコンパスに - 位置調整してuと被らないように -->
+  <circle cx="70" cy="95" r="35" fill="url(#compassFill)" stroke="url(#compassRing)" stroke-width="5" filter="drop-shadow(2px 2px 3px rgba(0,0,0,0.2))"/>
+  
+  <!-- コンパスの目盛り -->
+  <path d="M70,70 L70,75 M70,115 L70,120 M45,95 L50,95 M90,95 L95,95" stroke="#34495e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M57,82 L60,85 M80,82 L77,85 M57,108 L60,105 M80,108 L77,105" stroke="#34495e" stroke-width="1" stroke-linecap="round" opacity="0.8"/>
+  
+  <!-- コンパスのN/S/E/W表示 -->
+  <text x="70" y="69" font-family="Arial, sans-serif" font-size="9" font-weight="bold" text-anchor="middle" fill="#34495e">N</text>
+  <text x="70" y="125" font-family="Arial, sans-serif" font-size="9" font-weight="bold" text-anchor="middle" fill="#34495e">S</text>
+  <text x="98" y="98" font-family="Arial, sans-serif" font-size="9" font-weight="bold" text-anchor="middle" fill="#34495e">E</text>
+  <text x="42" y="98" font-family="Arial, sans-serif" font-size="9" font-weight="bold" text-anchor="middle" fill="#34495e">W</text>
+  
+  <!-- コンパスの針 -->
+  <path d="M70,78 L70,112" stroke="#34495e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M70,78 L70,95" stroke="#c0392b" stroke-width="3" stroke-linecap="round"/>
+  <path d="M52,95 L88,95" stroke="#34495e" stroke-width="1.5" stroke-linecap="round"/>
+  <circle cx="70" cy="95" r="3" fill="#34495e"/>
+  
+  <!-- Qのテール部分（コンパスから伸びる） - Qだと分かるように追加 -->
+  <path d="M92,113 L105,125" stroke="url(#compassRing)" stroke-width="5" stroke-linecap="round" filter="drop-shadow(1px 1px 2px rgba(0,0,0,0.2))"/>
+  
+  <!-- 探究の道 - 地図上の道らしいデザイン -->
+  <path d="M113,125 C145,140 175,105 210,115" fill="transparent" stroke="#e6e6e6" stroke-width="8" stroke-linecap="round"/>
+  <path d="M113,125 C145,140 175,105 210,115" fill="transparent" stroke="url(#pathGradient)" stroke-width="5" stroke-linecap="round" stroke-dasharray="0" filter="drop-shadow(1px 1px 2px rgba(0,0,0,0.2))"/>
+  
+  <!-- 道に沿った小さな地点マーカー -->
+  <circle cx="145" cy="132" r="4" fill="#e74c3c" stroke="#ffffff" stroke-width="1"/>
+  <circle cx="175" cy="110" r="4" fill="#e74c3c" stroke="#ffffff" stroke-width="1"/>
+  
+  <!-- 道の先の目標地点 -->
+  <circle cx="210" cy="115" r="6" fill="#f1c40f" stroke="#e67e22" stroke-width="1.5"/>
+  <path d="M210,115 L203,110 M210,115 L205,123" stroke="#e67e22" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- QuestEd ロゴテキスト - uの位置を調整してQと被らないように -->
+  <text x="95" y="120" font-family="Arial, sans-serif" font-size="65" font-weight="bold" fill="url(#logoGradient)" letter-spacing="1" filter="drop-shadow(1.5px 1.5px 2px rgba(0,0,0,0.2))">uest<tspan fill="#34495e">Ed</tspan></text>
+  
+  <!-- 小さな星 - 発見のシンボル -->
+  <path d="M260,95 L263,87 L266,95 L274,97 L266,99 L263,107 L260,99 L252,97 Z" 
+        fill="url(#starGradient)" stroke="#e67e22" stroke-width="0.5" filter="drop-shadow(1px 1px 1px rgba(0,0,0,0.15))"/>
+  
+  <!-- 高級感を出す微妙な装飾 -->
+  <path d="M50,140 L300,140" stroke="#e0e0e0" stroke-width="0.75" opacity="0.5"/>
+  
+  <!-- タグライン -->
+  <text x="200" y="160" font-family="Helvetica, Arial, sans-serif" font-size="16" font-weight="300" text-anchor="middle" fill="#7f8c8d" letter-spacing="1">探究×AIで未来をつくる</text>
+</svg>
