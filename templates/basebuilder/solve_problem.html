@@ -74,7 +74,7 @@
   <div class="d-flex justify-content-between mb-3">
     <div>
       <span class="badge bg-secondary">{{ problem.category.name }}</span>
-      <span class="problem-difficulty difficulty-{{ problem_module.difficulty }}">
+      <span class="problem-difficulty difficulty-{{ problem.difficulty }}">
         難易度: {{ problem.difficulty }}
       </span>
     </div>
@@ -91,11 +91,11 @@
       <input type="hidden" name="problem_id" value="{{ problem.id }}">
       <input type="hidden" name="answer_time" id="answer-time" value="0">
       
-      {% if problem_module.answer_type == 'multiple_choice' %}
+      {% if problem.answer_type == 'multiple_choice' %}
         <!-- 多肢選択問題 -->
         <div class="choices-container">
-          {% if problem_module.choices %}
-            {% set choices = problem_module.choices|tojson|safe|fromjson %}
+          {% if problem.choices %}
+            {% set choices = problem.choices|tojson|safe|fromjson %}
             {% for choice in choices %}
               <div class="choice-item" data-value="{{ choice.value }}">
                 <input type="radio" name="answer" id="choice-{{ loop.index }}" value="{{ choice.value }}" class="visually-hidden">

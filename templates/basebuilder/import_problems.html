@@ -1,0 +1,68 @@
+{% extends 'basebuilder/layout.html' %}
+
+{% block basebuilder_content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1 class="section-title">問題インポート</h1>
+      <a href="{{ url_for('basebuilder_module.problems') }}" class="btn btn-outline">
+        <i class="fas fa-arrow-left"></i> 問題一覧に戻る
+      </a>
+    </div>
+    
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5 class="card-title">CSVテンプレートのダウンロード</h5>
+      </div>
+      <div class="card-body">
+        <p>問題データをインポートするには、以下のCSVテンプレートをダウンロードし、必要事項を入力してください。</p>
+        <div class="d-grid gap-2 d-md-flex">
+          <a href="{{ url_for('basebuilder_module.download_problem_template', template_type='example') }}" class="btn btn-primary">
+            <i class="fas fa-download"></i> サンプル入り テンプレート
+          </a>
+          <a href="{{ url_for('basebuilder_module.download_problem_template', template_type='empty') }}" class="btn btn-outline">
+            <i class="fas fa-download"></i> 空のテンプレート
+          </a>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title">CSVファイルのインポート</h5>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('basebuilder_module.import_problems') }}" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          
+          <div class="form-group mb-3">
+            <label for="csv_file" class="form-label">問題データのCSVファイル</label>
+            <input type="file" class="form-control" id="csv_file" name="csv_file" accept=".csv" required>
+            <div class="form-text">
+              CSVファイル（UTF-8形式）をアップロードしてください。
+            </div>
+          </div>
+          
+          <div class="mt-4">
+            <h6>入力時の注意点</h6>
+            <ul>
+              <li>問題タイトル(title)、カテゴリ(category)、問題文(question)、問題タイプ(answer_type)、正解(correct_answer)は必須です。</li>
+              <li>answer_typeは「multiple_choice」（選択問題）、「text」（記述問題）、「true_false」（真偽問題）のいずれかを指定します。</li>
+              <li>選択問題の場合は、choice_1、choice_2などの列に選択肢を記入し、correct_answerには正解の選択肢のID（例: choice_1）を入力します。</li>
+              <li>新しいカテゴリを指定すると、自動的に作成されます。</li>
+              <li>難易度(difficulty)は1〜5の整数で指定します（省略時は2）。</li>
+            </ul>
+          </div>
+          
+          <div class="d-grid gap-2 mt-4">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-upload"></i> インポート実行
+            </button>
+            <a href="{{ url_for('basebuilder_module.problems') }}" class="btn btn-outline">キャンセル</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

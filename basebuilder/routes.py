@@ -1,8 +1,9 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, Response
 from flask_login import login_required, current_user
 import json
 from datetime import datetime
 from app import db, User, InquiryTheme
+from basebuilder import exporters
 
 from basebuilder.models import (
     ProblemCategory, BasicKnowledgeItem, KnowledgeThemeRelation,
@@ -1047,3 +1048,83 @@ def update_path_progress(assignment_id):
         'progress': progress,
         'completed': assignment.completed
     })
+
+# routes.py に追加
+
+# 問題テンプレートのダウンロード用ルート
+@basebuilder_module.route('/problems/template/<template_type>')
+@login_required
+def download_problem_template(template_type):
+    if current_user.role != 'teacher':
+        flash('この機能は教師のみ利用可能です。')
+        return redirect(url_for('basebuilder_module.index'))
+    
+    # template_typeに応じたテンプレートを生成
+    if template_type == 'example':
+        csv_content = exporters.generate_problem_csv_template()
+        filename = 'problem_template_with_examples.csv'
+    else:
+        csv_content = exporters.generate_problem_csv_empty_template()
+        filename = 'problem_template.csv'
+    
+    # BOMを追加してExcelでの文字化けを防止
+    csv_content_with_bom = '\ufeff' + csv_content
+    
+    # レスポンスを作成
+    response = Response(
+        csv_content_with_bom,
+        mimetype='text/csv; charset=utf-8',
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'}
+    )
+    
+    return response
+
+# 問題インポート用ルート
+@basebuilder_module.route('/problems/import', methods=['GET', 'POST'])
+@login_required
+def import_problems():
+    if current_user.role != 'teacher':
+        flash('この機能は教師のみ利用可能です。')
+        return redirect(url_for('basebuilder_module.index'))
+    
+    if request.method == 'POST':
+        # CSVファイルがアップロードされたか確認
+        if 'csv_file' not in request.files:
+            flash('CSVファイルが選択されていません。')
+            return redirect(request.url)
+        
+        file = request.files['csv_file']
+        if file.filename == '':
+            flash('CSVファイルが選択されていません。')
+            return redirect(request.url)
+        
+        if file and file.filename.endswith('.csv'):
+            try:
+                # ファイルを読み込む
+                csv_content = file.read().decode('utf-8-sig')  # BOMを考慮
+                
+                # 問題をインポート
+                from basebuilder import importers
+                success_count, error_count, errors = importers.import_problems_from_csv(
+                    csv_content, db, ProblemCategory, BasicKnowledgeItem, current_user.id
+                )
+                
+                # 結果を表示
+                if success_count > 0:
+                    flash(f'{success_count}個の問題がインポートされました。')
+                
+                if error_count > 0:
+                    for error in errors:
+                        flash(error, 'error')
+                
+                return redirect(url_for('basebuilder_module.problems'))
+            
+            except Exception as e:
+                flash(f'CSVファイルの処理中にエラーが発生しました: {str(e)}')
+                return redirect(request.url)
+        else:
+            flash('CSVファイルの形式が正しくありません。')
+            return redirect(request.url)
+    
+    # GETリクエストの場合、インポートフォームを表示
+    return render_template('basebuilder/import_problems.html')

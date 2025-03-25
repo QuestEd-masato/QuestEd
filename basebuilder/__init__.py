@@ -14,6 +14,9 @@ def init_app(app):
             ProblemCategory, BasicKnowledgeItem, KnowledgeThemeRelation,
             AnswerRecord, ProficiencyRecord, LearningPath, PathAssignment
         )
+        # 新しく追加したモジュールをインポート
+        from basebuilder import exporters
+        from basebuilder import importers
         
         class BaseBuilderModelView(ModelView):
             def is_accessible(self):

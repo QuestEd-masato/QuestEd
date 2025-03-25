@@ -64,6 +64,12 @@ def nl2br(value):
         value = value.replace('\n', markupsafe.Markup('<br>'))
     return markupsafe.Markup(value)
 
+@app.template_filter('fromjson')
+def fromjson_filter(value):
+    """JSON文字列をPythonオブジェクトに変換"""
+    import json
+    return json.loads(value)
+
 # 管理者専用のModelViewクラスを作成
 class AdminModelView(ModelView):
     def is_accessible(self):
