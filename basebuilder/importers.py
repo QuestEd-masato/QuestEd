@@ -2,12 +2,13 @@
 import csv
 import json
 from io import StringIO
-from datetime import datetime
+from datetime import datetime, timedelta, date
 
 def validate_problem_csv(csv_content, current_user_id):
     """
     問題CSVデータを検証し、有効なデータと問題点を返す
-    
+    (単語インポート機能に置き換え)
+
     Args:
         csv_content: CSVファイルの内容（文字列）
         current_user_id: インポート実行ユーザーのID
@@ -196,6 +197,79 @@ def import_problems_from_csv(csv_content, db, ProblemCategory, BasicKnowledgeIte
     except Exception as e:
         db.session.rollback()
         errors.append(f"データベースへの保存中にエラーが発生しました: {str(e)}")
+        return 0, len(valid_problems), errors
+    
+    return success_count, error_count, errors
+
+def import_text_from_csv(csv_content, title, description, category_id, db, TextSet, BasicKnowledgeItem, current_user_id):
+    """
+    CSVファイルから問題をインポートし、テキストセットとして保存する
+    
+    Args:
+        csv_content: CSVファイルの内容（文字列）
+        title: テキストセットのタイトル
+        description: テキストセットの説明
+        category_id: カテゴリID
+        db: SQLAlchemyのdbオブジェクト
+        TextSet: TextSetモデルクラス
+        BasicKnowledgeItem: BasicKnowledgeItemモデルクラス
+        current_user_id: インポート実行ユーザーのID
+        
+    Returns:
+        tuple: (success_count, error_count, errors)
+    """
+    # CSVデータの検証
+    valid_problems, errors = validate_problem_csv(csv_content, current_user_id)
+    
+    success_count = 0
+    error_count = len(errors)
+    
+    # 有効なデータがない場合は終了
+    if not valid_problems:
+        return success_count, error_count, errors
+    
+    try:
+        # 新しいテキストセットを作成
+        new_text_set = TextSet(
+            title=title,
+            description=description,
+            category_id=category_id,
+            created_by=current_user_id
+        )
+        db.session.add(new_text_set)
+        db.session.flush()  # IDを取得するためにフラッシュ
+        
+        # 各問題をテキストセットに追加
+        for i, problem_data in enumerate(valid_problems):
+            try:
+                # 問題の作成
+                new_problem = BasicKnowledgeItem(
+                    category_id=category_id,
+                    title=problem_data['title'],
+                    question=problem_data['question'],
+                    answer_type=problem_data['answer_type'],
+                    correct_answer=problem_data['correct_answer'],
+                    explanation=problem_data.get('explanation', ''),
+                    difficulty=problem_data.get('difficulty', 2),
+                    choices=problem_data.get('choices'),
+                    created_by=current_user_id,
+                    text_set_id=new_text_set.id,
+                    order_in_text=i+1
+                )
+                
+                db.session.add(new_problem)
+                success_count += 1
+                
+            except Exception as e:
+                errors.append(f"問題 '{problem_data['title']}' の追加中にエラーが発生しました: {str(e)}")
+                error_count += 1
+        
+        # 変更をコミット
+        db.session.commit()
+        
+    except Exception as e:
+        db.session.rollback()
+        errors.append(f"テキストセットの作成中にエラーが発生しました: {str(e)}")
         return 0, len(valid_problems), errors
     
     return success_count, error_count, errors

@@ -1,7 +1,8 @@
+# basebuilder/models.py
 from datetime import datetime
 from app import db, User
 
-# 問題カテゴリモデル
+# 問題カテゴリモデル → 単語カテゴリモデルに変更
 class ProblemCategory(db.Model):
     __tablename__ = 'problem_categories'
     id = db.Column(db.Integer, primary_key=True)
@@ -16,17 +17,17 @@ class ProblemCategory(db.Model):
     subcategories = db.relationship('ProblemCategory', backref=db.backref('parent', remote_side=[id]))
     creator = db.relationship('User', backref=db.backref('created_categories', lazy=True))
 
-# 基礎知識問題モデル
+# 基礎知識問題モデル → 単語モデルに変更
 class BasicKnowledgeItem(db.Model):
     __tablename__ = 'basic_knowledge_items'
     id = db.Column(db.Integer, primary_key=True)
     category_id = db.Column(db.Integer, db.ForeignKey('problem_categories.id'), nullable=False)
-    title = db.Column(db.String(200), nullable=False)
-    question = db.Column(db.Text, nullable=False)
-    answer_type = db.Column(db.String(20), nullable=False)  # 'multiple_choice', 'text', 'true_false'
-    correct_answer = db.Column(db.Text, nullable=False)
-    choices = db.Column(db.Text)  # JSONとして選択肢を保存（multiple_choiceの場合）
-    explanation = db.Column(db.Text)
+    title = db.Column(db.String(200), nullable=False)  # 単語
+    question = db.Column(db.Text, nullable=False)      # 意味
+    answer_type = db.Column(db.String(20), nullable=False, default='text')  # 常に'text'として扱う
+    correct_answer = db.Column(db.Text, nullable=False) # 別の表記など
+    choices = db.Column(db.Text)  # 例文をJSONとして保存
+    explanation = db.Column(db.Text)  # 発音記号や追加情報
     difficulty = db.Column(db.Integer, default=2)  # 1-5のスケール
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -51,7 +52,7 @@ class KnowledgeThemeRelation(db.Model):
     theme = db.relationship('InquiryTheme', backref=db.backref('knowledge_relations', lazy=True))
     creator = db.relationship('User', backref=db.backref('created_relations', lazy=True))
 
-# 解答履歴モデル
+# 解答履歴モデル → 単語学習記録モデルに変更
 class AnswerRecord(db.Model):
     __tablename__ = 'answer_records'
     id = db.Column(db.Integer, primary_key=True)
@@ -65,14 +66,15 @@ class AnswerRecord(db.Model):
     # リレーションシップ
     student = db.relationship('User', backref=db.backref('answer_records', lazy=True))
 
-# 熟練度記録モデル
+# 熟練度記録モデル → 単語熟練度記録モデルに変更
 class ProficiencyRecord(db.Model):
     __tablename__ = 'proficiency_records'
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey('problem_categories.id'), nullable=False)
-    level = db.Column(db.Integer, default=0)  # 0-100のスケール
+    level = db.Column(db.Integer, default=0)  # 0-5のスケール → ポイントとして使用
     last_updated = db.Column(db.DateTime, default=datetime.utcnow)
+    review_date = db.Column(db.Date)  # 次回復習日を追加
     
     # リレーションシップ
     student = db.relationship('User', backref=db.backref('proficiency_records', lazy=True))
@@ -81,7 +83,7 @@ class ProficiencyRecord(db.Model):
     # ユニーク制約（学生+カテゴリの組み合わせは一意）
     __table_args__ = (db.UniqueConstraint('student_id', 'category_id'),)
 
-# 学習パスモデル
+# 学習パスモデル（そのまま利用）
 class LearningPath(db.Model):
     __tablename__ = 'learning_paths'
     id = db.Column(db.Integer, primary_key=True)
@@ -96,7 +98,7 @@ class LearningPath(db.Model):
     creator = db.relationship('User', backref=db.backref('created_paths', lazy=True))
     assignments = db.relationship('PathAssignment', backref='path', lazy=True)
 
-# 学習パス割り当てモデル
+# 学習パス割り当てモデル（そのまま利用）
 class PathAssignment(db.Model):
     __tablename__ = 'path_assignments'
     id = db.Column(db.Integer, primary_key=True)

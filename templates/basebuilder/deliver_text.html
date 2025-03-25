@@ -1,0 +1,74 @@
+{% extends 'basebuilder/layout.html' %}
+
+{% block basebuilder_content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1 class="section-title">テキスト配信</h1>
+      <a href="{{ url_for('basebuilder_module.text_sets') }}" class="btn btn-outline">
+        <i class="fas fa-arrow-left"></i> テキスト一覧に戻る
+      </a>
+    </div>
+    
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5 class="card-title">テキスト情報</h5>
+      </div>
+      <div class="card-body">
+        <h4>{{ text_set.title }}</h4>
+        <p>カテゴリ: {{ text_set.category.name }}</p>
+        {% if text_set.description %}
+          <p>{{ text_set.description }}</p>
+        {% endif %}
+        <p>問題数: {{ text_set.problems|length }}問</p>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title">配信先クラスを選択</h5>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('basebuilder_module.deliver_text', text_id=text_set.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          
+          <div class="form-group mb-3">
+            <label class="form-label">クラス <span class="text-danger">*</span></label>
+            {% if classes %}
+              <div class="mb-3">
+                {% for class in classes %}
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="class_ids" id="class-{{ class.id }}" value="{{ class.id }}">
+                    <label class="form-check-label" for="class-{{ class.id }}">
+                      {{ class.name }} ({{ class.students.count() }}名)
+                    </label>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="alert alert-warning">
+                担当するクラスがありません。クラスを作成してから再度お試しください。
+              </div>
+            {% endif %}
+          </div>
+          
+          <div class="form-group mb-4">
+            <label for="due_date" class="form-label">提出期限</label>
+            <input type="date" class="form-control" id="due_date" name="due_date">
+            <div class="form-text">
+              期限を設定する場合は日付を選択してください。省略可能です。
+            </div>
+          </div>
+
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary" {% if not classes %}disabled{% endif %}>
+              <i class="fas fa-paper-plane"></i> テキストを配信
+            </button>
+            <a href="{{ url_for('basebuilder_module.text_sets') }}" class="btn btn-outline">キャンセル</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

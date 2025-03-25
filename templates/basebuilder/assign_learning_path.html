@@ -1,0 +1,262 @@
+{% extends 'basebuilder/layout.html' %}
+
+{% block basebuilder_content %}
+<div class="row justify-content-center">
+  <div class="col-md-10">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1 class="section-title">学習パスの割り当て</h1>
+      <a href="{{ url_for('basebuilder_module.learning_paths') }}" class="btn btn-outline">
+        <i class="fas fa-arrow-left"></i> 学習パス一覧に戻る
+      </a>
+    </div>
+    
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5 class="card-title">学習パス情報</h5>
+      </div>
+      <div class="card-body">
+        <h4>{{ path.title }}</h4>
+        {% if path.description %}
+          <p>{{ path.description }}</p>
+        {% endif %}
+        
+        <div class="row mt-4">
+          <div class="col-md-4">
+            <div class="card bg-light">
+              <div class="card-body">
+                <h6 class="card-title">ステップ数</h6>
+                <p class="card-text fs-4">{{ path.steps|fromjson|length }}</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card bg-light">
+              <div class="card-body">
+                <h6 class="card-title">作成日</h6>
+                <p class="card-text">{{ path.created_at.strftime('%Y-%m-%d') }}</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card bg-light">
+              <div class="card-body">
+                <h6 class="card-title">ステータス</h6>
+                <p class="card-text">
+                  {% if path.is_active %}
+                    <span class="badge bg-success">有効</span>
+                  {% else %}
+                    <span class="badge bg-secondary">無効</span>
+                  {% endif %}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title">学生への割り当て</h5>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('basebuilder_module.assign_learning_path', path_id=path.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          
+          <div class="mb-3">
+            <label for="class_id" class="form-label">クラス選択</label>
+            <select class="form-control" id="class_id" name="class_id">
+              <option value="">クラスを選択してください</option>
+              {% for class_obj in classes %}
+                <option value="{{ class_obj.id }}">{{ class_obj.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">学生選択</label>
+            <div class="card student-selection-container" style="max-height: 300px; overflow-y: auto;">
+              <div class="card-body">
+                <div id="loading-students" class="text-center py-3">
+                  <p class="text-muted">クラスを選択すると、学生一覧が表示されます。</p>
+                </div>
+                
+                <div id="student-list" style="display: none;">
+                  <div class="mb-2">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="select-all-students">
+                      <label class="form-check-label" for="select-all-students">
+                        <strong>すべての学生を選択</strong>
+                      </label>
+                    </div>
+                  </div>
+                  <hr>
+                  
+                  <div id="student-checkboxes">
+                    <!-- ここに学生のチェックボックスが動的に追加されます -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <label for="due_date" class="form-label">期限日（オプション）</label>
+            <input type="date" class="form-control" id="due_date" name="due_date">
+            <div class="form-text">期限を設定しない場合は空のままにしてください。</div>
+          </div>
+          
+          <div class="d-grid gap-2 mt-4">
+            <button type="submit" class="btn btn-primary" id="assign-button" disabled>
+              学習パスを割り当てる
+            </button>
+            <a href="{{ url_for('basebuilder_module.learning_paths') }}" class="btn btn-outline">キャンセル</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const classSelect = document.getElementById('class_id');
+    const studentList = document.getElementById('student-list');
+    const loadingMessage = document.getElementById('loading-students');
+    const studentCheckboxes = document.getElementById('student-checkboxes');
+    const selectAllCheckbox = document.getElementById('select-all-students');
+    const assignButton = document.getElementById('assign-button');
+    
+    // クラス選択時の処理
+    classSelect.addEventListener('change', function() {
+      const classId = this.value;
+      
+      // 選択されていない場合
+      if (!classId) {
+        studentList.style.display = 'none';
+        loadingMessage.style.display = 'block';
+        assignButton.disabled = true;
+        return;
+      }
+      
+      // ローディング表示
+      studentList.style.display = 'none';
+      loadingMessage.style.display = 'block';
+      loadingMessage.innerHTML = '<p class="text-muted">学生情報を読み込んでいます...</p>';
+      
+      // APIで学生データを取得
+      fetch(`/basebuilder/api/class/${classId}/students`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('学生データの取得に失敗しました。');
+          }
+          return response.json();
+        })
+        .then(data => {
+          // 学生チェックボックスを生成
+          studentCheckboxes.innerHTML = '';
+          
+          if (data.students && data.students.length > 0) {
+            data.students.forEach(student => {
+              // 学生ごとのチェックボックスを作成
+              const checkbox = document.createElement('div');
+              checkbox.className = 'form-check';
+              checkbox.innerHTML = `
+                <input class="form-check-input student-checkbox" type="checkbox" name="student_ids" id="student-${student.id}" value="${student.id}">
+                <label class="form-check-label" for="student-${student.id}">
+                  ${student.username}
+                  ${student.assignment_exists ? ' <span class="badge bg-warning">既に割り当て済み</span>' : ''}
+                </label>
+              `;
+              studentCheckboxes.appendChild(checkbox);
+            });
+            
+            // チェックボックスのイベントリスナー
+            setupCheckboxEvents();
+            
+            // 学生リストを表示
+            studentList.style.display = 'block';
+            loadingMessage.style.display = 'none';
+            
+            // ボタンを有効化
+            updateAssignButtonState();
+          } else {
+            // 学生がいない場合
+            loadingMessage.innerHTML = '<p class="text-muted">このクラスに学生はいません。</p>';
+            loadingMessage.style.display = 'block';
+            studentList.style.display = 'none';
+            assignButton.disabled = true;
+          }
+        })
+        .catch(error => {
+          console.error('エラー:', error);
+          loadingMessage.innerHTML = `<p class="text-danger">エラーが発生しました: ${error.message}</p>`;
+          loadingMessage.style.display = 'block';
+          studentList.style.display = 'none';
+          assignButton.disabled = true;
+        });
+    });
+    
+    // 全選択チェックボックスのイベント
+    selectAllCheckbox.addEventListener('change', function() {
+      const isChecked = this.checked;
+      document.querySelectorAll('.student-checkbox').forEach(checkbox => {
+        checkbox.checked = isChecked;
+      });
+      updateAssignButtonState();
+    });
+    
+    // チェックボックスのイベントを設定
+    function setupCheckboxEvents() {
+      document.querySelectorAll('.student-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+          updateSelectAllCheckbox();
+          updateAssignButtonState();
+        });
+      });
+    }
+    
+    // 全選択チェックボックスの状態を更新
+    function updateSelectAllCheckbox() {
+      const checkboxes = document.querySelectorAll('.student-checkbox');
+      const checkedBoxes = document.querySelectorAll('.student-checkbox:checked');
+      
+      if (checkboxes.length === 0) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+      } else if (checkedBoxes.length === 0) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+      } else if (checkedBoxes.length === checkboxes.length) {
+        selectAllCheckbox.checked = true;
+        selectAllCheckbox.indeterminate = false;
+      } else {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = true;
+      }
+    }
+    
+    // 割り当てボタンの状態を更新
+    function updateAssignButtonState() {
+      const checkedBoxes = document.querySelectorAll('.student-checkbox:checked');
+      assignButton.disabled = checkedBoxes.length === 0;
+    }
+    
+    // フォーム送信前の検証
+    document.querySelector('form').addEventListener('submit', function(e) {
+      const checkedBoxes = document.querySelectorAll('.student-checkbox:checked');
+      
+      if (checkedBoxes.length === 0) {
+        e.preventDefault();
+        alert('少なくとも1人の学生を選択してください。');
+        return false;
+      }
+      
+      return true;
+    });
+  });
+</script>
+{% endblock %}

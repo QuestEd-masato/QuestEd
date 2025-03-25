@@ -1,0 +1,422 @@
+{% extends 'basebuilder/layout.html' %}
+
+{% block styles %}
+{{ super() }}
+<style>
+  .step-container {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+  }
+  
+  .step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .step-content {
+    margin-top: 10px;
+  }
+  
+  .draggable-handle {
+    cursor: move;
+    padding: 5px;
+    margin-right: 5px;
+    color: #6c757d;
+  }
+  
+  .step-actions {
+    display: flex;
+    gap: 5px;
+  }
+  
+  .step-actions button {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  #steps-container {
+    min-height: 50px;
+  }
+  
+  .empty-message {
+    padding: 20px;
+    text-align: center;
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    color: #6c757d;
+  }
+</style>
+{% endblock %}
+
+{% block basebuilder_content %}
+<div class="row justify-content-center">
+  <div class="col-md-10">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1 class="section-title">学習パス作成</h1>
+      <a href="{{ url_for('basebuilder_module.learning_paths') }}" class="btn btn-outline">
+        <i class="fas fa-arrow-left"></i> 学習パス一覧に戻る
+      </a>
+    </div>
+    
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5 class="card-title">基本情報</h5>
+      </div>
+      <div class="card-body">
+        <form id="learning-path-form" method="POST" action="{{ url_for('basebuilder_module.create_learning_path') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="steps" id="steps-data" value="[]">
+          
+          <div class="row mb-3">
+            <div class="col-md-12">
+              <div class="form-group">
+                <label for="title" class="form-label">学習パスのタイトル <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="title" name="title" required>
+              </div>
+            </div>
+          </div>
+          
+          <div class="form-group mb-3">
+            <label for="description" class="form-label">説明</label>
+            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+            <div class="form-text">この学習パスの目的や内容について説明してください。</div>
+          </div>
+          
+          <div class="card mt-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h5 class="card-title mb-0">学習ステップ</h5>
+              <button type="button" class="btn btn-sm btn-primary" id="add-step-btn">
+                <i class="fas fa-plus"></i> ステップを追加
+              </button>
+            </div>
+            <div class="card-body">
+              <div id="steps-container">
+                <div class="empty-message" id="empty-steps-message">
+                  <i class="fas fa-info-circle fa-2x mb-3"></i>
+                  <p>「ステップを追加」ボタンをクリックして学習ステップを追加してください。</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="d-grid gap-2 mt-4">
+            <button type="submit" class="btn btn-primary">学習パスを作成</button>
+            <a href="{{ url_for('basebuilder_module.learning_paths') }}" class="btn btn-outline">キャンセル</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ステップ追加モーダル -->
+<div class="modal fade" id="stepModal" tabindex="-1" aria-labelledby="stepModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="stepModalLabel">学習ステップ追加</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="step-form">
+          <div class="mb-3">
+            <label for="step-title" class="form-label">ステップタイトル <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="step-title" required>
+          </div>
+          <div class="mb-3">
+            <label for="step-description" class="form-label">説明</label>
+            <textarea class="form-control" id="step-description" rows="2"></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="step-type" class="form-label">ステップタイプ <span class="text-danger">*</span></label>
+            <select class="form-control" id="step-type">
+              <option value="category">カテゴリから選ぶ</option>
+              <option value="problem">特定の問題を選ぶ</option>
+              <option value="text">テキスト（説明のみ）</option>
+            </select>
+          </div>
+          
+          <!-- カテゴリ選択欄 -->
+          <div id="category-selection" class="step-type-content">
+            <div class="mb-3">
+              <label for="step-category" class="form-label">カテゴリ <span class="text-danger">*</span></label>
+              <select class="form-control" id="step-category">
+                <option value="">カテゴリを選択してください</option>
+                {% for category in categories %}
+                  <option value="{{ category.id }}">{{ category.name }}</option>
+                  {% if category.subcategories %}
+                    {% for subcategory in category.subcategories %}
+                      <option value="{{ subcategory.id }}">-- {{ subcategory.name }}</option>
+                    {% endfor %}
+                  {% endif %}
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="step-problem-count" class="form-label">問題数</label>
+              <input type="number" class="form-control" id="step-problem-count" min="1" value="5">
+              <div class="form-text">このステップで解く問題の数を指定します。</div>
+            </div>
+          </div>
+          
+          <!-- 問題選択欄 -->
+          <div id="problem-selection" class="step-type-content" style="display: none;">
+            <div class="mb-3">
+              <label for="step-problem" class="form-label">問題 <span class="text-danger">*</span></label>
+              <select class="form-control" id="step-problem">
+                <option value="">問題を選択してください</option>
+                <!-- ここにJavaScriptで問題リストを動的に追加 -->
+              </select>
+            </div>
+          </div>
+          
+          <!-- テキストのみ欄 -->
+          <div id="text-content" class="step-type-content" style="display: none;">
+            <div class="mb-3">
+              <label for="step-content-text" class="form-label">内容 <span class="text-danger">*</span></label>
+              <textarea class="form-control" id="step-content-text" rows="4"></textarea>
+              <div class="form-text">学習者に表示する説明やアドバイスを入力してください。</div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-bs-dismiss="modal">キャンセル</button>
+        <button type="button" class="btn btn-primary" id="save-step-btn">追加</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // ステップデータを管理する配列
+    let steps = [];
+    
+    // DOM要素
+    const stepsContainer = document.getElementById('steps-container');
+    const emptyStepsMessage = document.getElementById('empty-steps-message');
+    const stepsDataInput = document.getElementById('steps-data');
+    const addStepBtn = document.getElementById('add-step-btn');
+    const stepForm = document.getElementById('step-form');
+    const saveStepBtn = document.getElementById('save-step-btn');
+    
+    // モーダル関連
+    const stepModal = new bootstrap.Modal(document.getElementById('stepModal'));
+    const stepType = document.getElementById('step-type');
+    const categorySelection = document.getElementById('category-selection');
+    const problemSelection = document.getElementById('problem-selection');
+    const textContent = document.getElementById('text-content');
+    
+    // ステップタイプの切り替え
+    stepType.addEventListener('change', function() {
+      // すべての選択欄を非表示
+      categorySelection.style.display = 'none';
+      problemSelection.style.display = 'none';
+      textContent.style.display = 'none';
+      
+      // 選択されたタイプの欄を表示
+      switch(this.value) {
+        case 'category':
+          categorySelection.style.display = 'block';
+          break;
+        case 'problem':
+          problemSelection.style.display = 'block';
+          break;
+        case 'text':
+          textContent.style.display = 'block';
+          break;
+      }
+    });
+    
+    // ステップ追加ボタンクリック時の処理
+    addStepBtn.addEventListener('click', function() {
+      // フォームをリセット
+      stepForm.reset();
+      
+      // デフォルトのステップタイプを表示
+      stepType.value = 'category';
+      categorySelection.style.display = 'block';
+      problemSelection.style.display = 'none';
+      textContent.style.display = 'none';
+      
+      // モーダルを表示
+      stepModal.show();
+    });
+    
+    // ステップ保存ボタンクリック時の処理
+    saveStepBtn.addEventListener('click', function() {
+      // バリデーション
+      const stepTitle = document.getElementById('step-title').value;
+      if (!stepTitle) {
+        alert('ステップタイトルを入力してください。');
+        return;
+      }
+      
+      // 選択されたステップタイプに基づいて必要なデータを取得
+      const type = stepType.value;
+      let stepData = {
+        id: 'step_' + Date.now(),
+        title: stepTitle,
+        description: document.getElementById('step-description').value,
+        type: type
+      };
+      
+      switch(type) {
+        case 'category':
+          const categoryId = document.getElementById('step-category').value;
+          const problemCount = document.getElementById('step-problem-count').value;
+          
+          if (!categoryId) {
+            alert('カテゴリを選択してください。');
+            return;
+          }
+          
+          stepData.category_id = categoryId;
+          stepData.category_name = document.getElementById('step-category').options[document.getElementById('step-category').selectedIndex].text;
+          stepData.problem_count = problemCount;
+          break;
+          
+        case 'problem':
+          const problemId = document.getElementById('step-problem').value;
+          
+          if (!problemId) {
+            alert('問題を選択してください。');
+            return;
+          }
+          
+          stepData.problem_id = problemId;
+          stepData.problem_title = document.getElementById('step-problem').options[document.getElementById('step-problem').selectedIndex].text;
+          break;
+          
+        case 'text':
+          const contentText = document.getElementById('step-content-text').value;
+          
+          if (!contentText) {
+            alert('内容を入力してください。');
+            return;
+          }
+          
+          stepData.content = contentText;
+          break;
+      }
+      
+      // ステップを追加
+      steps.push(stepData);
+      
+      // ステップリストを更新
+      renderSteps();
+      
+      // モーダルを閉じる
+      stepModal.hide();
+    });
+    
+    // ステップリストを描画する関数
+    function renderSteps() {
+      // 空メッセージの表示/非表示
+      if (steps.length === 0) {
+        emptyStepsMessage.style.display = 'block';
+      } else {
+        emptyStepsMessage.style.display = 'none';
+      }
+      
+      // ステップコンテナをクリア
+      stepsContainer.innerHTML = '';
+      if (steps.length === 0) {
+        stepsContainer.appendChild(emptyStepsMessage);
+        stepsDataInput.value = JSON.stringify([]);
+        return;
+      }
+      
+      // 各ステップをレンダリング
+      steps.forEach((step, index) => {
+        const stepElement = document.createElement('div');
+        stepElement.className = 'step-container';
+        stepElement.dataset.id = step.id;
+        
+        let stepContent = '';
+        
+        switch(step.type) {
+          case 'category':
+            stepContent = `
+              <div>
+                <strong>カテゴリ:</strong> ${step.category_name}<br>
+                <strong>問題数:</strong> ${step.problem_count}問
+              </div>
+            `;
+            break;
+            
+          case 'problem':
+            stepContent = `
+              <div>
+                <strong>問題:</strong> ${step.problem_title}
+              </div>
+            `;
+            break;
+            
+          case 'text':
+            stepContent = `
+              <div>
+                <strong>内容:</strong> ${step.content.substring(0, 100)}${step.content.length > 100 ? '...' : ''}
+              </div>
+            `;
+            break;
+        }
+        
+        stepElement.innerHTML = `
+          <div class="step-header">
+            <div>
+              <span class="draggable-handle"><i class="fas fa-grip-vertical"></i></span>
+              <span class="badge bg-primary">ステップ ${index + 1}</span>
+              <strong>${step.title}</strong>
+            </div>
+            <div class="step-actions">
+              <button type="button" class="btn btn-sm btn-outline-danger delete-step" data-id="${step.id}">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+          <div class="step-content">
+            ${step.description ? `<p>${step.description}</p>` : ''}
+            ${stepContent}
+          </div>
+        `;
+        
+        stepsContainer.appendChild(stepElement);
+      });
+      
+      // 削除ボタンにイベントリスナーを追加
+      document.querySelectorAll('.delete-step').forEach(button => {
+        button.addEventListener('click', function() {
+          const stepId = this.dataset.id;
+          steps = steps.filter(step => step.id !== stepId);
+          renderSteps();
+        });
+      });
+      
+      // 隠しフィールドにステップデータをJSON形式で設定
+      stepsDataInput.value = JSON.stringify(steps);
+    }
+    
+    // フォーム送信時の処理
+    document.getElementById('learning-path-form').addEventListener('submit', function(e) {
+      if (steps.length === 0) {
+        e.preventDefault();
+        alert('少なくとも1つの学習ステップを追加してください。');
+        return;
+      }
+    });
+    
+    // ページ読み込み時に空メッセージを表示
+    renderSteps();
+  });
+</script>
+{% endblock %}

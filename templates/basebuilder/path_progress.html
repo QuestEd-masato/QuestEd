@@ -1,0 +1,203 @@
+{% extends 'basebuilder/layout.html' %}
+
+{% block styles %}
+{{ super() }}
+<style>
+  .progress-card {
+    margin-bottom: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .progress-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .progress-bar-container {
+    height: 30px;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    position: relative;
+  }
+  
+  .progress-stats {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 5px;
+    color: #6c757d;
+  }
+  
+  .completion-date {
+    font-size: 0.9rem;
+    color: #28a745;
+  }
+  
+  .due-date {
+    font-size: 0.9rem;
+    color: #dc3545;
+  }
+  
+  .student-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #5da8e8;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    margin-right: 10px;
+  }
+  
+  .student-info {
+    display: flex;
+    align-items: center;
+  }
+  
+  .class-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+  
+  .stat-card {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid #dee2e6;
+  }
+  
+  .stat-card h3 {
+    margin-top: 5px;
+    margin-bottom: 0;
+  }
+  
+  .stat-card p {
+    color: #6c757d;
+    margin-bottom: 0;
+  }
+  
+  .path-title {
+    font-size: 1.75rem;
+    margin-bottom: 0.5rem;
+  }
+</style>
+{% endblock %}
+
+{% block basebuilder_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="section-title">学習パス進捗 - {{ path.title }}</h1>
+  <a href="{{ url_for('basebuilder_module.learning_paths') }}" class="btn btn-outline">
+    <i class="fas fa-arrow-left"></i> 学習パス一覧に戻る
+  </a>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    {% if path.description %}
+      <p>{{ path.description }}</p>
+    {% endif %}
+    
+    <div class="row mt-3">
+      <div class="col-md-3">
+        <div class="stat-card">
+          <small class="text-muted">ステップ数</small>
+          <h3>{{ steps|length }}</h3>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stat-card">
+          <small class="text-muted">割り当て数</small>
+          <h3>{{ assignments|length }}</h3>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stat-card">
+          <small class="text-muted">完了数</small>
+          <h3>{{ assignments|selectattr('completed', 'eq', true)|list|length }}</h3>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stat-card">
+          <small class="text-muted">平均進捗</small>
+          <h3>{{ avg_progress|round|int }}%</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="card-title">生徒の進捗状況</h5>
+  </div>
+  <div class="card-body">
+    {% if assignments %}
+      {% for assignment in assignments %}
+        <div class="progress-card card">
+          <div class="card-header">
+            <div class="student-info">
+              <div class="student-avatar">
+                {{ assignment.student.username[0]|upper }}
+              </div>
+              <div>
+                <h5 class="mb-0">{{ assignment.student.username }}</h5>
+                <small class="text-muted">{{ classes_dict[assignment.student.id] }}</small>
+              </div>
+            </div>
+            <div>
+              {% if assignment.completed %}
+                <span class="badge bg-success">完了</span>
+              {% else %}
+                <span class="badge bg-primary">進行中</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="progress progress-bar-container">
+              <div class="progress-bar {% if assignment.completed %}bg-success{% endif %}" 
+                   role="progressbar" style="width: {{ assignment.progress }}%;" 
+                   aria-valuenow="{{ assignment.progress }}" aria-valuemin="0" aria-valuemax="100">
+                {{ assignment.progress }}%
+              </div>
+            </div>
+            
+            <div class="progress-stats">
+              <div>
+                {% if assignment.completed %}
+                  <span class="completion-date">
+                    <i class="fas fa-check-circle"></i> 
+                    {{ assignment.updated_at.strftime('%Y-%m-%d %H:%M') }} に完了
+                  </span>
+                {% endif %}
+              </div>
+              
+              <div>
+                {% if assignment.due_date %}
+                  <span class="due-date">
+                    <i class="fas fa-calendar-alt"></i> 
+                    期限: {{ assignment.due_date.strftime('%Y-%m-%d') }}
+                  </span>
+                {% else %}
+                  <span class="text-muted">期限なし</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="text-center py-4">
+        <p class="text-muted">この学習パスはまだ誰にも割り当てられていません。</p>
+        <a href="{{ url_for('basebuilder_module.assign_learning_path', path_id=path.id) }}" class="btn btn-primary mt-2">
+          <i class="fas fa-user-plus"></i> 生徒に割り当てる
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

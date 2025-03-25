@@ -44,6 +44,7 @@ def init_app(app):
             if current_user.role == 'student':
                 nav_items = [
                     {'url': '/basebuilder/', 'name': '基礎学力ホーム'},
+                    {'url': '/basebuilder/my_texts', 'name': 'テキスト一覧'},
                     {'url': '/basebuilder/proficiency', 'name': '熟練度'},
                     {'url': '/basebuilder/history', 'name': '学習履歴'},
                     {'url': '/basebuilder/learning_paths', 'name': '学習パス'}
@@ -51,6 +52,7 @@ def init_app(app):
             elif current_user.role == 'teacher':
                 nav_items = [
                     {'url': '/basebuilder/', 'name': '基礎学力ホーム'},
+                    {'url': '/basebuilder/text_sets', 'name': 'テキスト管理'},
                     {'url': '/basebuilder/categories', 'name': 'カテゴリ管理'},
                     {'url': '/basebuilder/problems', 'name': '問題管理'},
                     {'url': '/basebuilder/theme_relations', 'name': 'テーマ関連付け'},

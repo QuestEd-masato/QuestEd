@@ -54,24 +54,69 @@
     border: 1px solid #dee2e6;
     border-radius: 4px;
     cursor: pointer;
+    transition: all 0.2s ease;
   }
   
   .choice-item:hover {
     background-color: #f8f9fa;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
   }
   
   .choice-item.selected {
     background-color: #cfe2ff;
     border-color: #9ec5fe;
   }
+  
+  .proficiency-indicator {
+    display: flex;
+    margin-bottom: 15px;
+  }
+  
+  .proficiency-dot {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    margin-right: 5px;
+    background-color: #dee2e6;
+  }
+  
+  .proficiency-dot.active {
+    background-color: #0d6efd;
+  }
+  
+  .example-text {
+    font-style: italic;
+    color: #6c757d;
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+  }
+  
+  .session-progress {
+    margin-bottom: 20px;
+  }
 </style>
 {% endblock %}
 
 {% block basebuilder_content %}
 <div class="problem-container">
-  <h1 class="section-title">問題を解く</h1>
-  
-  <div class="d-flex justify-content-between mb-3">
+  {% if in_session and learning_session is defined and learning_session %}
+    <div class="session-progress">
+      <h6>学習セッション: {{ learning_session.current_attempt + 1 }} / {{ learning_session.max_attempts }}</h6>
+      <div class="progress">
+        <div class="progress-bar" role="progressbar" 
+             style="width: {{ (learning_session.current_attempt / learning_session.max_attempts * 100)|round|int }}%" 
+             aria-valuenow="{{ learning_session.current_attempt }}" 
+             aria-valuemin="0" 
+             aria-valuemax="{{ learning_session.max_attempts }}">
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
       <span class="badge bg-secondary">{{ problem.category.name }}</span>
       <span class="problem-difficulty difficulty-{{ problem.difficulty }}">
@@ -81,9 +126,35 @@
     <div class="timer" id="timer">00:00</div>
   </div>
   
+  <!-- 熟練度表示 -->
+  <div class="proficiency-indicator">
+    {% for i in range(6) %}
+      <div class="proficiency-dot {% if proficiency_record and proficiency_record.level >= i %}active{% endif %}"></div>
+    {% endfor %}
+    <span class="ms-2 text-muted">熟練度: {{ proficiency_record.level if proficiency_record else 0 }}/5</span>
+  </div>
+  
   <div class="question-area">
-    <h4>{{ problem.title }}</h4>
-    <p>{{ problem.question }}</p>
+    <h3>{{ problem.question }}</h3> <!-- 意味を表示 -->
+    
+    {% if problem.choices %}
+      {% if condition %}
+        {% set example_data = problem.choices|fromjson %}
+        {% if example_data and example_data|length > 0 and example_data[0].text %}
+          <div class="example-text">
+            <strong>例文:</strong> {{ example_data[0].text }}
+          </div>
+        {% endif %}
+      {% else %}
+        <!-- fromjsonフィルターがエラーを起こした場合のフォールバック -->
+      {% endif %}
+    {% endif %}
+    
+    {% if problem.explanation %}
+      <div class="pronunciation mt-2">
+        <small>{{ problem.explanation }}</small>
+      </div>
+    {% endif %}
   </div>
   
   <div class="answer-area">
@@ -91,48 +162,52 @@
       <input type="hidden" name="problem_id" value="{{ problem.id }}">
       <input type="hidden" name="answer_time" id="answer-time" value="0">
       
-      {% if problem.answer_type == 'multiple_choice' %}
-        <!-- 多肢選択問題 -->
+      {% if is_choice_mode %}
+        <!-- 選択問題（熟練度0-2ポイント） -->
         <div class="choices-container">
-          {% if problem.choices %}
-            {% set choices = problem.choices|tojson|safe|fromjson %}
-            {% for choice in choices %}
-              <div class="choice-item" data-value="{{ choice.value }}">
-                <input type="radio" name="answer" id="choice-{{ loop.index }}" value="{{ choice.value }}" class="visually-hidden">
-                <label for="choice-{{ loop.index }}">
-                  {{ choice.text }}
-                </label>
+          {% if all_choices %}
+            {% for choice in all_choices %}
+              <div class="choice-item" data-value="{{ choice }}">
+                <input type="radio" name="answer" id="choice-{{ loop.index }}" 
+                       value="{{ choice }}" class="visually-hidden">
+                <label for="choice-{{ loop.index }}">{{ choice }}</label>
               </div>
             {% endfor %}
           {% else %}
-            <p class="text-danger">選択肢データが見つかりません。</p>
+            <!-- 選択肢が提供されていない場合のフォールバック -->
+            <div class="choice-item" data-value="{{ problem.title }}">
+              <input type="radio" name="answer" id="choice-1" value="{{ problem.title }}" class="visually-hidden">
+              <label for="choice-1">{{ problem.title }}</label>
+            </div>
+            
+            {% for choice in dummy_choices %}
+              <div class="choice-item" data-value="{{ choice }}">
+                <input type="radio" name="answer" id="choice-{{ loop.index + 1 }}" 
+                       value="{{ choice }}" class="visually-hidden">
+                <label for="choice-{{ loop.index + 1 }}">{{ choice }}</label>
+              </div>
+            {% endfor %}
           {% endif %}
         </div>
-        
-      {% elif problem.answer_type == 'true_false' %}
-        <!-- 真偽問題 -->
-        <div class="choices-container">
-          <div class="choice-item" data-value="true">
-            <input type="radio" name="answer" id="choice-true" value="true" class="visually-hidden">
-            <label for="choice-true">正しい (True)</label>
-          </div>
-          <div class="choice-item" data-value="false">
-            <input type="radio" name="answer" id="choice-false" value="false" class="visually-hidden">
-            <label for="choice-false">間違い (False)</label>
-          </div>
-        </div>
-        
       {% else %}
-        <!-- テキスト入力問題 -->
+        <!-- 入力問題（熟練度3-5ポイント） -->
         <div class="form-group">
-          <label for="text-answer">回答を入力してください:</label>
-          <input type="text" name="answer" id="text-answer" class="form-control" required>
+          <label for="text-answer">答えを入力してください:</label>
+          <input type="text" name="answer" id="text-answer" class="form-control" required autocomplete="off">
         </div>
       {% endif %}
       
       <div class="d-grid gap-2 mt-4">
         <button type="submit" class="btn btn-primary" id="submit-btn">回答する</button>
-        <a href="{{ url_for('basebuilder_module.problems') }}" class="btn btn-outline">別の問題を選ぶ</a>
+        {% if in_session and learning_session is defined and learning_session %}
+          <a href="{{ url_for('basebuilder_module.next_problem') }}" class="btn btn-outline-secondary">
+            スキップする
+          </a>
+        {% else %}
+          <a href="{{ url_for('basebuilder_module.problems') }}" class="btn btn-outline-secondary">
+            単語一覧に戻る
+          </a>
+        {% endif %}
       </div>
     </form>
   </div>
@@ -141,17 +216,42 @@
   <div id="feedback-area" class="feedback-area">
     <h5 id="feedback-title"></h5>
     <p id="feedback-message"></p>
-    <div id="explanation-section">
-      <h6>解説:</h6>
-      <p id="explanation-text">{{ problem.explanation }}</p>
+    
+    <div id="explanation-section" class="mt-3">
+      {% if problem.explanation %}
+      <div class="pronunciation mb-3">
+        <strong>発音・補足情報:</strong>
+        <p>{{ problem.explanation }}</p>
+      </div>
+      {% endif %}
+      
+      {% if problem.choices %}
+        {% if problem.choices|default('{}') != '{}' %}
+          {% set example_data = problem.choices|fromjson %}
+          {% if example_data and example_data|length > 0 and example_data[0].text %}
+            <div class="example-text">
+              <strong>例文:</strong> {{ example_data[0].text }}
+            </div>
+          {% endif %}
+        {% else %}
+          <!-- fromjsonフィルターがエラーを起こした場合や空の場合のフォールバック -->
+        {% endif %}
+      {% endif %}
     </div>
+    
     <div class="d-grid gap-2 mt-3">
-      <a href="{{ url_for('basebuilder_module.solve_problem', problem_id=problem.id) }}" class="btn btn-outline">再度挑戦</a>
-      <a href="{{ url_for('basebuilder_module.problems') }}" class="btn btn-primary">次の問題へ</a>
+      {% if in_session and learning_session is defined and learning_session %}
+        <a href="{{ url_for('basebuilder_module.next_problem') }}" class="btn btn-primary">
+          次の単語へ
+        </a>
+      {% else %}
+        <a href="{{ url_for('basebuilder_module.start_session') }}" class="btn btn-primary">
+          学習セッションを開始
+        </a>
+      {% endif %}
     </div>
   </div>
 </div>
-
 {% endblock %}
 
 {% block scripts %}
@@ -190,6 +290,12 @@
       });
     });
     
+    // テキスト入力の自動フォーカス
+    const textInput = document.getElementById('text-answer');
+    if (textInput) {
+      textInput.focus();
+    }
+    
     // フォーム送信のイベントハンドラ
     const answerForm = document.getElementById('answer-form');
     answerForm.addEventListener('submit', function(e) {
@@ -200,6 +306,13 @@
       
       // フォームデータを収集
       const formData = new FormData(answerForm);
+      
+      // 回答が入力されているか確認
+      const answer = formData.get('answer');
+      if (!answer) {
+        alert('回答を入力または選択してください。');
+        return;
+      }
       
       // 送信ボタンを無効化
       document.getElementById('submit-btn').disabled = true;
@@ -213,7 +326,12 @@
           'X-CSRFToken': '{{ csrf_token() }}'
         }
       })
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('サーバーエラー: ' + response.status);
+        }
+        return response.json();
+      })
       .then(data => {
         // フィードバックエリアを表示
         const feedbackArea = document.getElementById('feedback-area');
@@ -225,12 +343,22 @@
         
         if (data.is_correct) {
           feedbackArea.classList.add('feedback-correct');
+          feedbackArea.classList.remove('feedback-incorrect');
           feedbackTitle.textContent = '正解です！';
-          feedbackMessage.textContent = '素晴らしい！';
+          feedbackMessage.innerHTML = `<strong>${data.correct_answer}</strong> - 熟練度が上がりました（${data.proficiency_level}/5）`;
         } else {
           feedbackArea.classList.add('feedback-incorrect');
+          feedbackArea.classList.remove('feedback-correct');
           feedbackTitle.textContent = '不正解です';
-          feedbackMessage.textContent = `正解は: ${data.correct_answer}`;
+          feedbackMessage.innerHTML = `正解は: <strong>${data.correct_answer}</strong>`;
+        }
+        
+        // 次へボタンのURLを更新
+        if (data.next_url) {
+          const nextButton = feedbackArea.querySelector('.btn-primary');
+          if (nextButton) {
+            nextButton.href = data.next_url;
+          }
         }
         
         // 回答エリアを非表示にして、フィードバックエリアを表示
@@ -239,7 +367,7 @@
       })
       .catch(error => {
         console.error('Error:', error);
-        alert('回答の送信中にエラーが発生しました。もう一度お試しください。');
+        alert('回答の送信中にエラーが発生しました: ' + error.message);
         // 送信ボタンを再度有効化
         document.getElementById('submit-btn').disabled = false;
       });

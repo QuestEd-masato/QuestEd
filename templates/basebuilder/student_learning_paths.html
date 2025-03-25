@@ -58,10 +58,47 @@
       </div>
     {% else %}
       <div class="text-center py-4">
+        <i class="fas fa-road fa-3x text-muted mb-3"></i>
         <p class="text-muted">割り当てられた学習パスはありません。</p>
         <p>先生が学習パスを割り当てると、ここに表示されます。</p>
       </div>
     {% endif %}
   </div>
 </div>
+
+<!-- 最近完了した学習パス -->
+{% if completed_paths %}
+  <div class="card mt-4">
+    <div class="card-header">
+      <h5 class="card-title">完了した学習パス</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>タイトル</th>
+              <th>完了日時</th>
+              <th>アクション</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for assignment in completed_paths %}
+              <tr>
+                <td>{{ assignment.path.title }}</td>
+                <td>{{ assignment.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>
+                  <a href="{{ url_for('basebuilder_module.start_learning_path', assignment_id=assignment.id) }}" class="btn btn-sm btn-outline">
+                    <i class="fas fa-eye"></i> 確認する
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
 {% endblock %}

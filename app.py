@@ -68,7 +68,16 @@ def nl2br(value):
 def fromjson_filter(value):
     """JSON文字列をPythonオブジェクトに変換"""
     import json
-    return json.loads(value)
+    if not value:
+        return []
+    try:
+        # 文字列が単一引用符を使用している場合、二重引用符に置換
+        if isinstance(value, str) and "'" in value and '"' not in value:
+            value = value.replace("'", '"')
+        return json.loads(value)
+    except json.JSONDecodeError:
+        print(f"JSONパースエラー: {value}")
+        return []
 
 # 管理者専用のModelViewクラスを作成
 class AdminModelView(ModelView):

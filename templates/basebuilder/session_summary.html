@@ -1,0 +1,98 @@
+{% extends 'basebuilder/layout.html' %}
+
+{% block basebuilder_content %}
+<div class="container">
+  <h1 class="section-title">学習セッション完了</h1>
+  
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5 class="card-title">セッションサマリー</h5>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="stats-card text-center p-3 mb-3 bg-light rounded">
+            <h2>{{ correct_count }}</h2>
+            <p class="text-success">正解</p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="stats-card text-center p-3 mb-3 bg-light rounded">
+            <h2>{{ incorrect_count }}</h2>
+            <p class="text-danger">不正解</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="progress mb-3">
+        <div class="progress-bar bg-success" role="progressbar" style="width: {{ (correct_count / total_attempts * 100)|round|int }}%" 
+             aria-valuenow="{{ correct_count }}" aria-valuemin="0" aria-valuemax="{{ total_attempts }}">
+          {{ (correct_count / total_attempts * 100)|round|int }}%
+        </div>
+      </div>
+      
+      <p>解答回数: {{ total_attempts }} / {{ max_attempts }}</p>
+      <p>学習した単語: {{ completed_problems|length }}語</p>
+    </div>
+  </div>
+  
+  <div class="card">
+    <div class="card-header">
+      <h5 class="card-title">学習した単語</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>単語</th>
+              <th>意味</th>
+              <th>結果</th>
+              <th>熟練度</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for problem in completed_problems %}
+              {% set records = answer_records|selectattr('problem_id', 'eq', problem.id)|list %}
+              {% set latest_record = records|sort(attribute='timestamp')|last %}
+              {% set proficiency = namespace(level=0) %}
+              {% for record in proficiency_records if record.category_id == problem.category_id %}
+                {% set proficiency.level = record.level %}
+              {% endfor %}
+              
+              <tr>
+                <td>{{ problem.title }}</td>
+                <td>{{ problem.question }}</td>
+                <td>
+                  {% if latest_record and latest_record.is_correct %}
+                    <span class="badge bg-success">正解</span>
+                  {% else %}
+                    <span class="badge bg-danger">不正解</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="progress" style="height: 20px;">
+                    <div class="progress-bar bg-info" role="progressbar" style="width: {{ proficiency.level * 20 }}%" 
+                         aria-valuenow="{{ proficiency.level }}" aria-valuemin="0" aria-valuemax="5">
+                      {{ proficiency.level }}
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  
+  <div class="d-grid gap-2 mt-4">
+    <a href="{{ url_for('basebuilder_module.start_session') }}" class="btn btn-primary">
+      新しいセッションを開始
+    </a>
+    <a href="{{ url_for('basebuilder_module.view_proficiency') }}" class="btn btn-outline-secondary">
+      熟練度を確認する
+    </a>
+  </div>
+</div>
+{% endblock %}

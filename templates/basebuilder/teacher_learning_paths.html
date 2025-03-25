@@ -1,0 +1,156 @@
+{% extends 'basebuilder/layout.html' %}
+
+{% block basebuilder_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="section-title">学習パス管理</h1>
+  <a href="{{ url_for('basebuilder_module.create_learning_path') }}" class="btn btn-primary">
+    <i class="fas fa-plus"></i> 新規学習パス
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="card-title">作成した学習パス</h5>
+  </div>
+  <div class="card-body">
+    {% if paths %}
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>タイトル</th>
+              <th>ステップ数</th>
+              <th>作成日</th>
+              <th>状態</th>
+              <th>アクション</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for path in paths %}
+              {% set steps = path.steps|fromjson if path.steps else [] %}
+              <tr>
+                <td>{{ path.title }}</td>
+                <td>{{ steps|length }}</td>
+                <td>{{ path.created_at.strftime('%Y-%m-%d') }}</td>
+                <td>
+                  {% if path.is_active %}
+                    <span class="badge bg-success">有効</span>
+                  {% else %}
+                    <span class="badge bg-secondary">無効</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="btn-group" role="group">
+                    <a href="{{ url_for('basebuilder_module.edit_learning_path', path_id=path.id) }}" class="btn btn-sm btn-outline">
+                      <i class="fas fa-edit"></i> 編集
+                    </a>
+                    <a href="{{ url_for('basebuilder_module.assign_learning_path', path_id=path.id) }}" class="btn btn-sm btn-primary">
+                      <i class="fas fa-user-plus"></i> 割り当て
+                    </a>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="confirmDelete({{ path.id }})">
+                      <i class="fas fa-trash"></i> 削除
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="text-center py-5">
+        <i class="fas fa-road fa-3x text-muted mb-3"></i>
+        <p class="text-muted">学習パスがまだ作成されていません。</p>
+        <a href="{{ url_for('basebuilder_module.create_learning_path') }}" class="btn btn-primary mt-2">
+          最初の学習パスを作成
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card mt-4">
+  <div class="card-header">
+    <h5 class="card-title">割り当て状況</h5>
+  </div>
+  <div class="card-body">
+    {% if assignment_stats %}
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>学習パス</th>
+              <th>割り当て数</th>
+              <th>完了数</th>
+              <th>平均進捗</th>
+              <th>詳細</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for path_id, stats in assignment_stats.items() %}
+              <tr>
+                <td>{{ stats.path_title }}</td>
+                <td>{{ stats.assignment_count }}</td>
+                <td>{{ stats.completed_count }}</td>
+                <td>
+                  <div class="progress" style="height: 20px;">
+                    <div class="progress-bar" role="progressbar" style="width: {{ stats.avg_progress }}%;" 
+                         aria-valuenow="{{ stats.avg_progress }}" aria-valuemin="0" aria-valuemax="100">
+                      {{ stats.avg_progress }}%
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <a href="{{ url_for('basebuilder_module.path_progress', path_id=path_id) }}" class="btn btn-sm btn-outline">
+                    <i class="fas fa-chart-bar"></i> 詳細を見る
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-muted text-center py-3">学習パスの割り当てデータがありません。</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- 削除確認モーダル -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteModalLabel">学習パス削除の確認</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>この学習パスを削除してもよろしいですか？</p>
+        <p class="text-danger">この操作は取り消せません。また、この学習パスに関連する割り当ても削除されます。</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-bs-dismiss="modal">キャンセル</button>
+        <form id="delete-form" method="POST" action="">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-danger">削除</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  function confirmDelete(pathId) {
+    // 削除フォームのアクションURLを設定
+    const deleteForm = document.getElementById('delete-form');
+    deleteForm.action = `/basebuilder/learning_path/${pathId}/delete`;
+    
+    // モーダルを表示
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    deleteModal.show();
+  }
+</script>
+{% endblock %}

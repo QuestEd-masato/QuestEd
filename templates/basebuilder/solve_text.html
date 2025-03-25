@@ -1,0 +1,374 @@
+{% extends 'basebuilder/layout.html' %}
+
+{% block styles %}
+{{ super() }}
+<style>
+  .problem-card {
+    margin-bottom: 2rem;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  .problem-header {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+  }
+  
+  .problem-body {
+    padding: 1.5rem;
+  }
+  
+  .problem-footer {
+    padding: 1rem;
+    border-top: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+  }
+  
+  .answer-section {
+    margin-top: 1.5rem;
+  }
+  
+  .feedback-area {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    border-radius: 0.25rem;
+  }
+  
+  .feedback-correct {
+    background-color: #d1e7dd;
+    border: 1px solid #a3cfbb;
+  }
+  
+  .feedback-incorrect {
+    background-color: #f8d7da;
+    border: 1px solid #f5c2c7;
+  }
+  
+  .choice-item {
+    margin-bottom: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    cursor: pointer;
+  }
+  
+  .choice-item:hover {
+    background-color: #f8f9fa;
+  }
+  
+  .choice-item.selected {
+    background-color: #cfe2ff;
+    border-color: #9ec5fe;
+  }
+  
+  .answer-timer {
+    font-size: 1.2rem;
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+</style>
+{% endblock %}
+
+{% block basebuilder_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="section-title">{{ text_set.title }}</h1>
+  <a href="{{ url_for('basebuilder_module.my_texts') }}" class="btn btn-outline">
+    <i class="fas fa-arrow-left"></i> テキスト一覧に戻る
+  </a>
+</div>
+
+<div class="progress mb-4" style="height: 20px;">
+  <div class="progress-bar" role="progressbar" style="width: {{ (progress[text_set.id].percent) }}%;" 
+       aria-valuenow="{{ progress[text_set.id].percent }}" aria-valuemin="0" aria-valuemax="100">
+    {{ progress[text_set.id].percent }}% 完了
+  </div>
+</div>
+
+{% if delivery.due_date %}
+  <div class="alert {% if delivery.due_date < now.date() %}alert-danger{% else %}alert-warning{% endif %} mb-4">
+    このテキストの提出期限: {{ delivery.due_date.strftime('%Y-%m-%d') }}
+  </div>
+{% endif %}
+
+<div id="problems-container">
+  {% for problem in problems %}
+    <div class="problem-card" id="problem-{{ problem.id }}">
+      <div class="problem-header">
+        <span class="badge bg-secondary">問題 {{ loop.index }}/{{ problems|length }}</span>
+        <span class="problem-difficulty difficulty-{{ problem.difficulty }}">難易度: {{ problem.difficulty }}</span>
+        
+        {% if answers[problem.id] %}
+          {% if answers[problem.id].is_correct %}
+            <span class="badge bg-success float-end">正解済み</span>
+          {% else %}
+            <span class="badge bg-danger float-end">不正解</span>
+          {% endif %}
+        {% endif %}
+      </div>
+      
+      <div class="problem-body">
+        <h4>{{ problem.title }}</h4>
+        <p>{{ problem.question }}</p>
+        
+        {% if not answers[problem.id] %}
+          <div class="answer-section" id="answer-section-{{ problem.id }}">
+            <div class="answer-timer" id="timer-{{ problem.id }}">00:00</div>
+            
+            <form id="answer-form-{{ problem.id }}" class="answer-form">
+              <input type="hidden" name="problem_id" value="{{ problem.id }}">
+              <input type="hidden" name="answer_time" id="answer-time-{{ problem.id }}" value="0">
+              
+              {% if problem.answer_type == 'multiple_choice' %}
+                <!-- 多肢選択問題 -->
+                <div class="choices-container">
+                  {% if problem.choices %}
+                    {% set choices = problem.choices|tojson|safe|fromjson %}
+                    {% for choice in choices %}
+                      <div class="choice-item" data-value="{{ choice.value }}" data-form="{{ problem.id }}">
+                        <input type="radio" name="answer" id="choice-{{ problem.id }}-{{ loop.index }}" value="{{ choice.value }}" class="visually-hidden">
+                        <label for="choice-{{ problem.id }}-{{ loop.index }}">
+                          {{ choice.text }}
+                        </label>
+                      </div>
+                    {% endfor %}
+                  {% else %}
+                    <p class="text-danger">選択肢データが見つかりません。</p>
+                  {% endif %}
+                </div>
+                
+              {% elif problem.answer_type == 'true_false' %}
+                <!-- 真偽問題 -->
+                <div class="choices-container">
+                  <div class="choice-item" data-value="true" data-form="{{ problem.id }}">
+                    <input type="radio" name="answer" id="choice-{{ problem.id }}-true" value="true" class="visually-hidden">
+                    <label for="choice-{{ problem.id }}-true">正しい (True)</label>
+                  </div>
+                  <div class="choice-item" data-value="false" data-form="{{ problem.id }}">
+                    <input type="radio" name="answer" id="choice-{{ problem.id }}-false" value="false" class="visually-hidden">
+                    <label for="choice-{{ problem.id }}-false">間違い (False)</label>
+                  </div>
+                </div>
+                
+              {% else %}
+                <!-- テキスト入力問題 -->
+                <div class="form-group">
+                  <label for="text-answer-{{ problem.id }}">回答を入力してください:</label>
+                  <input type="text" name="answer" id="text-answer-{{ problem.id }}" class="form-control" required>
+                </div>
+              {% endif %}
+              
+              <div class="d-grid gap-2 mt-4">
+                <button type="submit" class="btn btn-primary submit-btn" data-problem-id="{{ problem.id }}">回答する</button>
+              </div>
+            </form>
+          </div>
+          
+          <div class="feedback-area" id="feedback-{{ problem.id }}" style="display: none;">
+            <h5 id="feedback-title-{{ problem.id }}"></h5>
+            <p id="feedback-message-{{ problem.id }}"></p>
+            
+            <div id="explanation-section-{{ problem.id }}">
+              <h6>解説:</h6>
+              <p>{{ problem.explanation }}</p>
+            </div>
+          </div>
+        {% else %}
+          <!-- 既に解答済みの場合 -->
+          <div class="feedback-area {% if answers[problem.id].is_correct %}feedback-correct{% else %}feedback-incorrect{% endif %}">
+            <h5>{% if answers[problem.id].is_correct %}正解です！{% else %}不正解です{% endif %}</h5>
+            
+            {% if not answers[problem.id].is_correct %}
+              <p>正解: {{ problem.correct_answer }}</p>
+              <p>あなたの回答: {{ answers[problem.id].student_answer }}</p>
+            {% endif %}
+            
+            {% if problem.explanation %}
+              <div>
+                <h6>解説:</h6>
+                <p>{{ problem.explanation }}</p>
+              </div>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+      
+      <div class="problem-footer">
+        <div class="d-flex justify-content-between">
+          {% if not loop.first %}
+            <button class="btn btn-outline btn-prev" data-target="{{ loop.index0 - 1 }}">
+              <i class="fas fa-arrow-left"></i> 前の問題
+            </button>
+          {% else %}
+            <div></div>
+          {% endif %}
+          
+          {% if not loop.last %}
+            <button class="btn btn-outline btn-next" data-target="{{ loop.index0 + 1 }}">
+              次の問題 <i class="fas fa-arrow-right"></i>
+            </button>
+          {% else %}
+            <a href="{{ url_for('basebuilder_module.my_texts') }}" class="btn btn-primary">
+              <i class="fas fa-check"></i> 完了
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <div class="alert alert-warning">
+      このテキストには問題が登録されていません。
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const problems = document.querySelectorAll('.problem-card');
+    const timers = {};
+    
+    // 最初の問題以外を非表示
+    for (let i = 1; i < problems.length; i++) {
+      problems[i].style.display = 'none';
+    }
+    
+    // 前へ・次へボタンのイベントハンドラ
+    document.querySelectorAll('.btn-prev, .btn-next').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const targetIndex = parseInt(this.dataset.target);
+        
+        // 現在の問題を非表示
+        problems.forEach(problem => {
+          problem.style.display = 'none';
+        });
+        
+        // 対象の問題を表示
+        problems[targetIndex].style.display = 'block';
+        
+        // スクロールを問題の先頭に
+        problems[targetIndex].scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+    
+    // 選択肢クリックのイベントハンドラ
+    document.querySelectorAll('.choice-item').forEach(item => {
+      item.addEventListener('click', function() {
+        const formId = this.dataset.form;
+        
+        // 同じフォーム内の他の選択肢の選択状態をクリア
+        document.querySelectorAll(`.choice-item[data-form="${formId}"]`).forEach(choice => {
+          choice.classList.remove('selected');
+        });
+        
+        // この選択肢を選択状態に
+        this.classList.add('selected');
+        
+        // ラジオボタンをチェック
+        const radio = this.querySelector('input[type="radio"]');
+        if (radio) {
+          radio.checked = true;
+        }
+      });
+    });
+    
+    // タイマー初期化
+    document.querySelectorAll('.answer-timer').forEach(timer => {
+      const problemId = timer.id.split('-')[1];
+      const startTime = Date.now();
+      
+      timers[problemId] = {
+        element: timer,
+        startTime: startTime,
+        interval: setInterval(() => {
+          const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+          const minutes = Math.floor(elapsedSeconds / 60);
+          const seconds = elapsedSeconds % 60;
+          
+          timer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+          
+          // 解答時間を更新
+          document.getElementById(`answer-time-${problemId}`).value = elapsedSeconds;
+        }, 1000)
+      };
+    });
+    
+    // フォーム送信のイベントハンドラ
+    document.querySelectorAll('.answer-form').forEach(form => {
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const problemId = this.querySelector('input[name="problem_id"]').value;
+        
+        // タイマーを停止
+        if (timers[problemId]) {
+          clearInterval(timers[problemId].interval);
+        }
+        
+        // 送信ボタンを無効化
+        const submitBtn = this.querySelector('.submit-btn');
+        submitBtn.disabled = true;
+        
+        // フォームデータを収集
+        const formData = new FormData(this);
+        
+        // 回答を送信
+        fetch(`{{ url_for('basebuilder_module.submit_answer', problem_id=0) }}`.replace('0', problemId), {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': '{{ csrf_token() }}'
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          // フィードバックエリアを表示
+          const feedbackArea = document.getElementById(`feedback-${problemId}`);
+          feedbackArea.style.display = 'block';
+          
+          // 回答フォームを非表示
+          document.getElementById(`answer-section-${problemId}`).style.display = 'none';
+          
+          // フィードバックの内容を設定
+          const feedbackTitle = document.getElementById(`feedback-title-${problemId}`);
+          const feedbackMessage = document.getElementById(`feedback-message-${problemId}`);
+          
+          if (data.is_correct) {
+            feedbackArea.classList.add('feedback-correct');
+            feedbackTitle.textContent = '正解です！';
+            feedbackMessage.textContent = '素晴らしい！';
+          } else {
+            feedbackArea.classList.add('feedback-incorrect');
+            feedbackTitle.textContent = '不正解です';
+            feedbackMessage.textContent = `正解は: ${data.correct_answer}`;
+          }
+          
+          // 問題カードのヘッダーにバッジを追加
+          const problemHeader = document.querySelector(`#problem-${problemId} .problem-header`);
+          const badge = document.createElement('span');
+          badge.className = `badge ${data.is_correct ? 'bg-success' : 'bg-danger'} float-end`;
+          badge.textContent = data.is_correct ? '正解' : '不正解';
+          problemHeader.appendChild(badge);
+          
+          // スクロールを調整
+          feedbackArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          
+          // 進捗状況を更新（ページ再読み込みが簡単）
+          setTimeout(() => {
+            location.reload();
+          }, 2000);
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('回答の送信中にエラーが発生しました。もう一度お試しください。');
+          submitBtn.disabled = false;
+        });
+      });
+    });
+  });
+</script>
+{% endblock %}

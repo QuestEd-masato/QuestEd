@@ -1,9 +1,11 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, Response
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, Response, session
 from flask_login import login_required, current_user
 import json
-from datetime import datetime
+import random
+from datetime import datetime, timedelta
 from app import db, User, InquiryTheme
 from basebuilder import exporters
+from sqlalchemy import func
 
 from basebuilder.models import (
     ProblemCategory, BasicKnowledgeItem, KnowledgeThemeRelation,
@@ -14,32 +16,65 @@ from basebuilder.models import (
 basebuilder_module = Blueprint('basebuilder_module', __name__, url_prefix='/basebuilder')
 
 # BaseBuilder ホームページ
+# basebuilder/routes.py の index 関数（学生向け部分）を修正
+
 @basebuilder_module.route('/')
 @login_required
 def index():
     if current_user.role == 'student':
         # 学生向けダッシュボード
         
+        # 今日の日付
+        today = datetime.now().date()
+        
         # 学生の熟練度記録を取得
-        proficiency_records = ProficiencyRecord.query.filter_by(student_id=current_user.id).all()
+        proficiency_records = ProficiencyRecord.query.filter_by(
+            student_id=current_user.id
+        ).all()
+        
+        # 今日学習すべき単語数を取得
+        today_words = ProficiencyRecord.query.filter(
+            ProficiencyRecord.student_id == current_user.id,
+            ProficiencyRecord.review_date <= today
+        ).count()
+        
+        # 熟練度レベル別の単語数をカウント
+        proficiency_counts = {
+            'mastered': 0,  # レベル5
+            'learning': 0,  # レベル1-4
+            'new': 0        # レベル0
+        }
+        
+        for record in proficiency_records:
+            if record.level == 5:
+                proficiency_counts['mastered'] += 1
+            elif record.level > 0:
+                proficiency_counts['learning'] += 1
+            else:
+                proficiency_counts['new'] += 1
         
         # カテゴリごとの熟練度を整理
         category_proficiency = {}
         for record in proficiency_records:
             category_proficiency[record.category.name] = record.level
         
-        # 学生の解答記録を最新の10件取得
+        # 学生の最近の解答履歴を取得（最新10件）
         recent_answers = AnswerRecord.query.filter_by(
             student_id=current_user.id
         ).order_by(AnswerRecord.timestamp.desc()).limit(10).all()
         
         # 学生の選択した探究テーマを取得
-        theme = InquiryTheme.query.filter_by(student_id=current_user.id, is_selected=True).first()
+        theme = InquiryTheme.query.filter_by(
+            student_id=current_user.id, 
+            is_selected=True
+        ).first()
         
         # テーマに関連する問題を取得
         related_problems = []
         if theme:
-            theme_relations = KnowledgeThemeRelation.query.filter_by(theme_id=theme.id).all()
+            theme_relations = KnowledgeThemeRelation.query.filter_by(
+                theme_id=theme.id
+            ).all()
             related_problem_ids = [relation.problem_id for relation in theme_relations]
             related_problems = BasicKnowledgeItem.query.filter(
                 BasicKnowledgeItem.id.in_(related_problem_ids),
@@ -58,7 +93,10 @@ def index():
             recent_answers=recent_answers,
             related_problems=related_problems,
             assigned_paths=assigned_paths,
-            theme=theme
+            theme=theme,
+            today_words=today_words,
+            proficiency_counts=proficiency_counts,
+            today=today
         )
     
     elif current_user.role == 'teacher':
@@ -381,6 +419,7 @@ def edit_problem(problem_id):
     )
 
 # 問題を解く
+# 問題を解く
 @basebuilder_module.route('/problem/<int:problem_id>/solve', methods=['GET'])
 @login_required
 def solve_problem(problem_id):
@@ -391,9 +430,82 @@ def solve_problem(problem_id):
     # 問題を取得
     problem = BasicKnowledgeItem.query.get_or_404(problem_id)
     
+    # 学生の熟練度レコードを取得
+    proficiency_record = ProficiencyRecord.query.filter_by(
+        student_id=current_user.id,
+        category_id=problem.category_id
+    ).first()
+    
+    # 熟練度レコードがなければ作成
+    if not proficiency_record:
+        proficiency_record = ProficiencyRecord(
+            student_id=current_user.id,
+            category_id=problem.category_id,
+            level=0,
+            review_date=datetime.now().date()
+        )
+        db.session.add(proficiency_record)
+        db.session.commit()
+    
+    # 熟練度に応じて問題形式を決定（0-2: 選択式、3-5: 入力式）
+    is_choice_mode = proficiency_record.level < 3
+    
+    # 選択式の場合はダミー選択肢を用意
+    dummy_choices = []
+    all_choices = []
+    correct_index = 0
+    
+    if is_choice_mode:
+        # 同じカテゴリから3つのダミー選択肢を取得
+        dummy_words = BasicKnowledgeItem.query.filter(
+            BasicKnowledgeItem.category_id == problem.category_id,
+            BasicKnowledgeItem.id != problem_id,
+            BasicKnowledgeItem.is_active == True
+        ).order_by(func.random()).limit(3).all()
+        
+        dummy_choices = [word.title for word in dummy_words]
+        
+        # ダミー選択肢が足りない場合は他のカテゴリから取得
+        if len(dummy_choices) < 3:
+            other_words = BasicKnowledgeItem.query.filter(
+                BasicKnowledgeItem.category_id != problem.category_id,
+                BasicKnowledgeItem.id != problem_id,
+                BasicKnowledgeItem.is_active == True
+            ).order_by(func.random()).limit(3 - len(dummy_choices)).all()
+            
+            dummy_choices.extend([word.title for word in other_words])
+        
+        # それでも足りない場合は固定の選択肢を追加
+        while len(dummy_choices) < 3:
+            dummy_choices.append(f"選択肢{len(dummy_choices)+1}")
+        
+        # 選択肢をランダムに並べ替え
+        all_choices = [problem.title] + dummy_choices
+        random.shuffle(all_choices)
+        
+        # 正解が配列の何番目にあるかを確認
+        correct_index = all_choices.index(problem.title)
+        
+        # ダミー選択肢を更新（正解を除外）
+        dummy_choices = [choice for choice in all_choices if choice != problem.title]
+    
+    # セッション関連の確認
+    in_session = False
+    learning_session = None
+    if 'learning_session' in session:
+        learning_session = session['learning_session']
+        in_session = (learning_session.get('current_problem_id') == problem_id)
+    
     return render_template(
         'basebuilder/solve_problem.html',
-        problem=problem
+        problem=problem,
+        proficiency_record=proficiency_record,
+        dummy_choices=dummy_choices,
+        all_choices=all_choices if is_choice_mode else None,
+        correct_index=correct_index if is_choice_mode else None,
+        is_choice_mode=is_choice_mode,
+        in_session=in_session,
+        learning_session=learning_session  # 追加: learning_session 変数をテンプレートに渡す
     )
 
 @basebuilder_module.route('/problem/<int:problem_id>/submit', methods=['POST'])
@@ -416,15 +528,17 @@ def submit_answer(problem_id):
     # 回答が正しいかチェック
     is_correct = False
     
-    if problem.answer_type == 'multiple_choice':
-        is_correct = (answer == problem.correct_answer)
-    elif problem.answer_type == 'text':
-        # テキスト回答の場合、正規化して比較
-        student_answer = answer.strip().lower()
-        correct_answer = problem.correct_answer.strip().lower()
-        is_correct = (student_answer == correct_answer)
-    elif problem.answer_type == 'true_false':
-        is_correct = (answer == problem.correct_answer)
+    # 単語学習の場合は大文字小文字を区別せず、空白も無視して比較
+    student_answer = answer.strip().lower()
+    correct_answer = problem.title.strip().lower()
+    
+    # 完全一致の場合
+    if student_answer == correct_answer:
+        is_correct = True
+    else:
+        # 部分的に正解の場合（例：綴りミスが少ない場合）
+        # レーベンシュタイン距離などを使って類似度を測るロジックを追加可能
+        pass
     
     # 解答レコードを作成
     answer_record = AnswerRecord(
@@ -438,43 +552,225 @@ def submit_answer(problem_id):
     db.session.add(answer_record)
     
     # 熟練度を更新
-    update_proficiency(current_user.id, problem.category_id, is_correct)
+    proficiency = update_proficiency(current_user.id, problem.category_id, is_correct)
     
-    db.session.commit()
+    # セッション情報を更新
+    next_url = None
+    if 'learning_session' in session:
+        learning_session = session['learning_session']
+        
+        # 現在の問題がセッションの問題と一致する場合
+        if learning_session['current_problem_id'] == problem_id:
+            # 解答回数をカウントアップ
+            learning_session['current_attempt'] += 1
+            
+            # 完了した問題リストに追加（まだなければ）
+            if problem_id not in learning_session['completed_problems']:
+                learning_session['completed_problems'].append(problem_id)
+            
+            session['learning_session'] = learning_session
+            
+            # 次の問題へのURLを設定
+            next_url = url_for('basebuilder_module.next_problem')
     
     # フィードバックを返す
     return jsonify({
         'is_correct': is_correct,
-        'correct_answer': problem.correct_answer,
-        'explanation': problem.explanation
+        'correct_answer': problem.title,
+        'explanation': problem.explanation,
+        'next_url': next_url,
+        'proficiency_level': proficiency.level if proficiency else 0
     })
+
+@basebuilder_module.route('/start_session')
+@login_required
+def start_session():
+    """新しい学習セッションを開始する"""
+    if current_user.role != 'student':
+        flash('この機能は学生のみ利用可能です。')
+        return redirect(url_for('basebuilder_module.index'))
+    
+    # セッション情報を初期化
+    session['learning_session'] = {
+        'total_problems': 10,  # 1回のセッションで学習する単語数
+        'max_attempts': 15,    # 最大解答回数
+        'current_attempt': 0,  # 現在の解答回数
+        'completed_problems': [],  # 完了した問題ID
+        'current_problem_id': None,  # 現在の問題ID
+        'session_start': datetime.now().isoformat()  # セッション開始時間
+    }
+    
+    # 最初の問題を選択
+    return redirect(url_for('basebuilder_module.next_problem'))
+
+@basebuilder_module.route('/next_problem')
+@login_required
+def next_problem():
+    """学習セッション内で次の問題を選択して表示する"""
+    if current_user.role != 'student':
+        flash('この機能は学生のみ利用可能です。')
+        return redirect(url_for('basebuilder_module.index'))
+    
+    # セッションがない場合は新しいセッションを開始
+    if 'learning_session' not in session:
+        return redirect(url_for('basebuilder_module.start_session'))
+    
+    learning_session = session['learning_session']
+    
+    # 最大解答回数に達したかチェック
+    if learning_session['current_attempt'] >= learning_session['max_attempts']:
+        flash('学習セッションが終了しました。お疲れ様でした！')
+        return redirect(url_for('basebuilder_module.session_summary'))
+    
+    # すべての単語を学習し終えたかチェック
+    if len(learning_session['completed_problems']) >= learning_session['total_problems']:
+        flash('すべての単語を学習しました。お疲れ様でした！')
+        return redirect(url_for('basebuilder_module.session_summary'))
+    
+    # 今日学習すべき単語を優先して取得
+    today = datetime.now().date()
+    
+    # 1. 今日学習すべき単語（review_date <= today）から未学習のものを取得
+    due_problems = db.session.query(BasicKnowledgeItem).join(
+        ProficiencyRecord, 
+        BasicKnowledgeItem.category_id == ProficiencyRecord.category_id
+    ).filter(
+        ProficiencyRecord.student_id == current_user.id,
+        ProficiencyRecord.review_date <= today,
+        ~BasicKnowledgeItem.id.in_(learning_session['completed_problems']),
+        BasicKnowledgeItem.is_active == True
+    ).order_by(func.random()).limit(1).all()
+    
+    # 2. 今日学習すべき単語がない場合は、ランダムに未学習の単語を取得
+    if not due_problems:
+        due_problems = BasicKnowledgeItem.query.filter(
+            ~BasicKnowledgeItem.id.in_(learning_session['completed_problems']),
+            BasicKnowledgeItem.is_active == True
+        ).order_by(func.random()).limit(1).all()
+    
+    # 利用可能な単語がない場合
+    if not due_problems:
+        flash('学習できる単語がありません。新しい単語を追加してください。')
+        return redirect(url_for('basebuilder_module.index'))
+    
+    # 選択した問題をセッションに記録
+    problem = due_problems[0]
+    learning_session['current_problem_id'] = problem.id
+    session['learning_session'] = learning_session
+    
+    # 問題解答ページにリダイレクト
+    return redirect(url_for('basebuilder_module.solve_problem', problem_id=problem.id))
+
+@basebuilder_module.route('/session_summary')
+@login_required
+def session_summary():
+    """学習セッションのサマリーを表示"""
+    if current_user.role != 'student':
+        flash('この機能は学生のみ利用可能です。')
+        return redirect(url_for('basebuilder_module.index'))
+    
+    # セッション情報がない場合
+    if 'learning_session' not in session:
+        flash('学習セッションのデータがありません。')
+        return redirect(url_for('basebuilder_module.index'))
+    
+    learning_session = session.pop('learning_session')  # セッション情報を取得して削除
+    
+    # 学習した問題の情報を取得
+    completed_problems = BasicKnowledgeItem.query.filter(
+        BasicKnowledgeItem.id.in_(learning_session['completed_problems'])
+    ).all()
+    
+    # 解答履歴を取得
+    answer_records = AnswerRecord.query.filter(
+        AnswerRecord.student_id == current_user.id,
+        AnswerRecord.problem_id.in_(learning_session['completed_problems']),
+        AnswerRecord.timestamp >= datetime.fromisoformat(learning_session['session_start'])
+    ).order_by(AnswerRecord.timestamp).all()
+    
+    # 正解数・不正解数をカウント
+    correct_count = sum(1 for record in answer_records if record.is_correct)
+    incorrect_count = len(answer_records) - correct_count
+    
+    return render_template(
+        'basebuilder/session_summary.html',
+        completed_problems=completed_problems,
+        answer_records=answer_records,
+        correct_count=correct_count,
+        incorrect_count=incorrect_count,
+        total_attempts=learning_session['current_attempt'],
+        max_attempts=learning_session['max_attempts']
+    )
 
 # 熟練度を更新する関数
 def update_proficiency(student_id, category_id, is_correct):
-    # 既存の熟練度レコードを取得
-    proficiency = ProficiencyRecord.query.filter_by(
-        student_id=student_id,
-        category_id=category_id
-    ).first()
-    
-    # 熟練度レコードがなければ作成
-    if not proficiency:
-        proficiency = ProficiencyRecord(
-            student_id=student_id,
-            category_id=category_id,
-            level=0
-        )
-        db.session.add(proficiency)
-    
-    # 熟練度を更新
-    if is_correct:
-        # 正解の場合は熟練度を上げる（上限は100）
-        proficiency.level = min(100, proficiency.level + 5)
-    else:
-        # 不正解の場合は熟練度を下げる（下限は0）
-        proficiency.level = max(0, proficiency.level - 3)
-    
-    proficiency.last_updated = datetime.utcnow()
+   """
+   学生の熟練度を更新する関数。
+   スペースド・リピティションのための復習日も設定する。
+   
+   Args:
+       student_id: 学生ID
+       category_id: カテゴリID
+       is_correct: 正解かどうか
+       
+   Returns:
+       更新された熟練度レコード
+   """
+   # 既存の熟練度レコードを取得
+   proficiency = ProficiencyRecord.query.filter_by(
+       student_id=student_id,
+       category_id=category_id
+   ).first()
+   
+   # 熟練度レコードがなければ作成
+   if not proficiency:
+       proficiency = ProficiencyRecord(
+           student_id=student_id,
+           category_id=category_id,
+           level=0
+       )
+       db.session.add(proficiency)
+   
+   # 現在の日付を取得
+   today = datetime.now().date()
+   
+   # 正解・不正解に応じてポイントを更新
+   if is_correct:
+       # 正解の場合は+1ポイント（最大5ポイント）
+       new_level = min(5, proficiency.level + 1)
+   else:
+       # 不正解の場合は-1ポイント（最小0ポイント）
+       new_level = max(0, proficiency.level - 1)
+   
+   # ポイントに応じて次回復習日を設定
+   if new_level == 0:
+       # 0ポイント：今日
+       next_review = today
+   elif new_level == 1:
+       # 1ポイント：1日後
+       next_review = today + timedelta(days=1)
+   elif new_level == 2:
+       # 2ポイント：3日後
+       next_review = today + timedelta(days=3)
+   elif new_level == 3:
+       # 3ポイント：1週間後
+       next_review = today + timedelta(days=7)
+   elif new_level == 4:
+       # 4ポイント：2週間後
+       next_review = today + timedelta(days=14)
+   else:  # 5ポイント
+       # 5ポイント：1ヶ月後
+       next_review = today + timedelta(days=30)
+   
+   # 熟練度と次回復習日を更新
+   proficiency.level = new_level
+   proficiency.review_date = next_review
+   proficiency.last_updated = datetime.utcnow()
+   
+   # 変更をコミット
+   db.session.commit()
+   
+   return proficiency
 
 # 熟練度の表示
 @basebuilder_module.route('/proficiency')
@@ -1128,3 +1424,312 @@ def import_problems():
     
     # GETリクエストの場合、インポートフォームを表示
     return render_template('basebuilder/import_problems.html')
+
+# テキスト一覧
+@basebuilder_module.route('/text_sets')
+@login_required
+def text_sets():
+    if current_user.role == 'student':
+        # 学生用のテキスト一覧へリダイレクト
+        return redirect(url_for('basebuilder_module.my_texts'))
+    
+    elif current_user.role == 'teacher':
+        # 教師が作成したテキストセットを取得
+        text_sets = TextSet.query.filter_by(created_by=current_user.id).all()
+        
+        return render_template(
+            'basebuilder/text_sets.html',
+            text_sets=text_sets
+        )
+    
+    # その他のロールの場合
+    return redirect(url_for('basebuilder_module.index'))
+
+# テキスト作成・インポート
+@basebuilder_module.route('/text_set/import', methods=['GET', 'POST'])
+@login_required
+def import_text_set():
+    if current_user.role != 'teacher':
+        flash('この機能は教師のみ利用可能です。')
+        return redirect(url_for('basebuilder_module.index'))
+    
+    # カテゴリの選択肢を取得
+    categories = ProblemCategory.query.all()
+    
+    if request.method == 'POST':
+        title = request.form.get('title')
+        description = request.form.get('description', '')
+        category_id = request.form.get('category_id', type=int)
+        
+        if not title or not category_id:
+            flash('タイトルとカテゴリは必須です。')
+            return render_template(
+                'basebuilder/import_text.html',
+                categories=categories
+            )
+        
+        # CSVファイルのチェック
+        if 'csv_file' not in request.files:
+            flash('CSVファイルが選択されていません。')
+            return redirect(request.url)
+        
+        file = request.files['csv_file']
+        if file.filename == '':
+            flash('CSVファイルが選択されていません。')
+            return redirect(request.url)
+        
+        if file and file.filename.endswith('.csv'):
+            try:
+                # ファイルを読み込む
+                csv_content = file.read().decode('utf-8-sig')  # BOMを考慮
+                
+                # 問題をインポート
+                from basebuilder import importers
+                success_count, error_count, errors = importers.import_text_from_csv(
+                    csv_content, title, description, category_id, db, TextSet, BasicKnowledgeItem, current_user.id
+                )
+                
+                # 結果を表示
+                if success_count > 0:
+                    flash(f'{success_count}個の問題を含むテキストがインポートされました。')
+                
+                if error_count > 0:
+                    for error in errors:
+                        flash(error, 'error')
+                
+                return redirect(url_for('basebuilder_module.text_sets'))
+            
+            except Exception as e:
+                flash(f'CSVファイルの処理中にエラーが発生しました: {str(e)}')
+                return redirect(request.url)
+        else:
+            flash('CSVファイルの形式が正しくありません。')
+            return redirect(request.url)
+    
+    # GETリクエストの場合、インポートフォームを表示
+    return render_template(
+        'basebuilder/import_text.html',
+        categories=categories
+    )
+
+# テキスト詳細表示
+@basebuilder_module.route('/text_set/<int:text_id>')
+@login_required
+def view_text_set(text_id):
+    # テキストセットを取得
+    text_set = TextSet.query.get_or_404(text_id)
+    
+    # 教師の場合は作成者か確認
+    if current_user.role == 'teacher' and text_set.created_by != current_user.id:
+        flash('このテキストを閲覧する権限がありません。')
+        return redirect(url_for('basebuilder_module.text_sets'))
+    
+    # 学生の場合は配信されたテキストか確認
+    if current_user.role == 'student':
+        # 学生が所属するクラスを取得
+        enrolled_class_ids = [c.id for c in current_user.enrolled_classes]
+        
+        # そのクラスに配信されているか確認
+        delivery = TextDelivery.query.filter(
+            TextDelivery.text_set_id == text_id,
+            TextDelivery.class_id.in_(enrolled_class_ids)
+        ).first()
+        
+        if not delivery:
+            flash('このテキストを閲覧する権限がありません。')
+            return redirect(url_for('basebuilder_module.my_texts'))
+    
+    # テキストに含まれる問題を取得
+    problems = BasicKnowledgeItem.query.filter_by(
+        text_set_id=text_id
+    ).order_by(BasicKnowledgeItem.order_in_text).all()
+    
+    # 学生の解答状況を取得（学生の場合のみ）
+    answers = {}
+    if current_user.role == 'student':
+        for problem in problems:
+            answer = AnswerRecord.query.filter_by(
+                student_id=current_user.id,
+                problem_id=problem.id
+            ).order_by(AnswerRecord.timestamp.desc()).first()
+            
+            answers[problem.id] = answer
+    
+    return render_template(
+        'basebuilder/view_text.html',
+        text_set=text_set,
+        problems=problems,
+        answers=answers
+    )
+
+# テキスト配信
+@basebuilder_module.route('/text_set/<int:text_id>/deliver', methods=['GET', 'POST'])
+@login_required
+def deliver_text(text_id):
+    if current_user.role != 'teacher':
+        flash('この機能は教師のみ利用可能です。')
+        return redirect(url_for('basebuilder_module.index'))
+    
+    # テキストセットを取得
+    text_set = TextSet.query.get_or_404(text_id)
+    
+    # 作成者か確認
+    if text_set.created_by != current_user.id:
+        flash('このテキストを配信する権限がありません。')
+        return redirect(url_for('basebuilder_module.text_sets'))
+    
+    # 教師が担当するクラスを取得
+    classes = getattr(current_user, 'classes_teaching', [])
+    
+    if request.method == 'POST':
+        class_ids = request.form.getlist('class_ids')
+        due_date_str = request.form.get('due_date', '')
+        
+        if not class_ids:
+            flash('配信先クラスを選択してください。')
+            return render_template(
+                'basebuilder/deliver_text.html',
+                text_set=text_set,
+                classes=classes
+            )
+        
+        # 期限日の変換
+        due_date = None
+        if due_date_str:
+            from datetime import datetime
+            due_date = datetime.strptime(due_date_str, '%Y-%m-%d').date()
+        
+        # 各クラスに配信
+        for class_id in class_ids:
+            # 既に配信済みか確認
+            existing = TextDelivery.query.filter_by(
+                text_set_id=text_id,
+                class_id=int(class_id)
+            ).first()
+            
+            if existing:
+                # 既存の配信を更新
+                existing.due_date = due_date
+                existing.delivered_at = datetime.utcnow()
+            else:
+                # 新規配信を作成
+                delivery = TextDelivery(
+                    text_set_id=text_id,
+                    class_id=int(class_id),
+                    delivered_by=current_user.id,
+                    due_date=due_date
+                )
+                db.session.add(delivery)
+        
+        db.session.commit()
+        flash(f'テキストが選択したクラスに配信されました。')
+        return redirect(url_for('basebuilder_module.text_sets'))
+    
+    return render_template(
+        'basebuilder/deliver_text.html',
+        text_set=text_set,
+        classes=classes
+    )
+
+# 学生向けの配信されたテキスト一覧
+@basebuilder_module.route('/my_texts')
+@login_required
+def my_texts():
+    if current_user.role != 'student':
+        flash('この機能は学生のみ利用可能です。')
+        return redirect(url_for('basebuilder_module.index'))
+    
+    # 学生が所属するクラスを取得
+    enrolled_classes = current_user.enrolled_classes.all()
+    class_ids = [c.id for c in enrolled_classes]
+    
+    # クラスに配信されたテキストを取得
+    deliveries = TextDelivery.query.filter(
+        TextDelivery.class_id.in_(class_ids)
+    ).order_by(TextDelivery.delivered_at.desc()).all()
+    
+    # テキストごとの進捗状況を計算
+    progress = {}
+    for delivery in deliveries:
+        # テキストに含まれる問題の総数
+        problems = BasicKnowledgeItem.query.filter_by(
+            text_set_id=delivery.text_set_id
+        ).all()
+        
+        total_problems = len(problems)
+        
+        # 解答済みの問題数
+        answered_count = 0
+        for problem in problems:
+            answer = AnswerRecord.query.filter_by(
+                student_id=current_user.id,
+                problem_id=problem.id
+            ).first()
+            
+            if answer:
+                answered_count += 1
+        
+        # 進捗率を計算
+        if total_problems > 0:
+            progress_percent = int((answered_count / total_problems) * 100)
+        else:
+            progress_percent = 0
+        
+        progress[delivery.text_set_id] = {
+            'answered': answered_count,
+            'total': total_problems,
+            'percent': progress_percent
+        }
+    
+    return render_template(
+        'basebuilder/my_texts.html',
+        deliveries=deliveries,
+        progress=progress
+    )
+
+# テキスト解答ページ
+@basebuilder_module.route('/text_set/<int:text_id>/solve')
+@login_required
+def solve_text(text_id):
+    if current_user.role != 'student':
+        flash('この機能は学生のみ利用可能です。')
+        return redirect(url_for('basebuilder_module.index'))
+    
+    # テキストセットを取得
+    text_set = TextSet.query.get_or_404(text_id)
+    
+    # 学生が所属するクラスを取得
+    enrolled_class_ids = [c.id for c in current_user.enrolled_classes]
+    
+    # そのクラスに配信されているか確認
+    delivery = TextDelivery.query.filter(
+        TextDelivery.text_set_id == text_id,
+        TextDelivery.class_id.in_(enrolled_class_ids)
+    ).first()
+    
+    if not delivery:
+        flash('このテキストを解答する権限がありません。')
+        return redirect(url_for('basebuilder_module.my_texts'))
+    
+    # テキストに含まれる問題を取得
+    problems = BasicKnowledgeItem.query.filter_by(
+        text_set_id=text_id
+    ).order_by(BasicKnowledgeItem.order_in_text).all()
+    
+    # 学生の解答状況を取得
+    answers = {}
+    for problem in problems:
+        answer = AnswerRecord.query.filter_by(
+            student_id=current_user.id,
+            problem_id=problem.id
+        ).order_by(AnswerRecord.timestamp.desc()).first()
+        
+        answers[problem.id] = answer
+    
+    return render_template(
+        'basebuilder/solve_text.html',
+        text_set=text_set,
+        problems=problems,
+        answers=answers,
+        delivery=delivery
+    )

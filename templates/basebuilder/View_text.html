@@ -1,0 +1,102 @@
+{% extends 'basebuilder/layout.html' %}
+
+{% block basebuilder_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="section-title">テキスト詳細</h1>
+  {% if current_user.role == 'teacher' %}
+    <div>
+      <a href="{{ url_for('basebuilder_module.deliver_text', text_id=text_set.id) }}" class="btn btn-primary">
+        <i class="fas fa-paper-plane"></i> 配信
+      </a>
+      <a href="{{ url_for('basebuilder_module.text_sets') }}" class="btn btn-outline">
+        <i class="fas fa-arrow-left"></i> テキスト一覧に戻る
+      </a>
+    </div>
+  {% else %}
+    <div>
+      <a href="{{ url_for('basebuilder_module.solve_text', text_id=text_set.id) }}" class="btn btn-primary">
+        <i class="fas fa-edit"></i> 問題を解く
+      </a>
+      <a href="{{ url_for('basebuilder_module.my_texts') }}" class="btn btn-outline">
+        <i class="fas fa-arrow-left"></i> テキスト一覧に戻る
+      </a>
+    </div>
+  {% endif %}
+</div>
+
+<div class="card mb-4">
+  <div class="card-header">
+    <h5 class="card-title">テキスト情報</h5>
+  </div>
+  <div class="card-body">
+    <h4>{{ text_set.title }}</h4>
+    <p>カテゴリ: {{ text_set.category.name }}</p>
+    {% if text_set.description %}
+      <p>{{ text_set.description }}</p>
+    {% endif %}
+    <p>問題数: {{ problems|length }}問</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="card-title">問題一覧</h5>
+  </div>
+  <div class="card-body">
+    {% if problems %}
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>順番</th>
+              <th>タイトル</th>
+              <th>タイプ</th>
+              <th>難易度</th>
+              {% if current_user.role == 'student' %}
+                <th>解答状況</th>
+              {% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for problem in problems %}
+              <tr>
+                <td>{{ problem.order_in_text }}</td>
+                <td>{{ problem.title }}</td>
+                <td>
+                  {% if problem.answer_type == 'multiple_choice' %}
+                    選択問題
+                  {% elif problem.answer_type == 'text' %}
+                    記述問題
+                  {% elif problem.answer_type == 'true_false' %}
+                    真偽問題
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="problem-difficulty difficulty-{{ problem.difficulty }}">
+                    {{ problem.difficulty }}
+                  </span>
+                </td>
+                {% if current_user.role == 'student' %}
+                  <td>
+                    {% if answers[problem.id] %}
+                      {% if answers[problem.id].is_correct %}
+                        <span class="badge bg-success">正解</span>
+                      {% else %}
+                        <span class="badge bg-danger">不正解</span>
+                      {% endif %}
+                    {% else %}
+                      <span class="badge bg-secondary">未解答</span>
+                    {% endif %}
+                  </td>
+                {% endif %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-muted">このテキストには問題が登録されていません。</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

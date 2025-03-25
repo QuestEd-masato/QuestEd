@@ -1,0 +1,670 @@
+{% extends 'basebuilder/layout.html' %}
+
+{% block styles %}
+{{ super() }}
+<style>
+  .step-navigator {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+  }
+  
+  .step-list {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 10px 0;
+    margin-bottom: 15px;
+  }
+  
+  .step-item {
+    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #dee2e6;
+    color: #6c757d;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-right: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    position: relative;
+  }
+  
+  .step-item.active {
+    background-color: #5da8e8;
+    color: white;
+  }
+  
+  .step-item.completed {
+    background-color: #28a745;
+    color: white;
+  }
+  
+  .step-item::after {
+    content: '';
+    position: absolute;
+    height: 2px;
+    background-color: #dee2e6;
+    top: 50%;
+    left: 100%;
+    width: 10px;
+  }
+  
+  .step-item:last-child::after {
+    display: none;
+  }
+  
+  .step-item.completed::after {
+    background-color: #28a745;
+  }
+  
+  .step-content {
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  
+  .step-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #dee2e6;
+  }
+  
+  .nav-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+  }
+  
+  .problem-container {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+  }
+  
+  .choice-item {
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .choice-item:hover {
+    background-color: #e9ecef;
+  }
+  
+  .choice-item.selected {
+    background-color: #cfe2ff;
+    border-color: #9ec5fe;
+  }
+  
+  .progress-container {
+    margin: 20px 0;
+  }
+  
+  .feedback-area {
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 15px;
+  }
+  
+  .feedback-correct {
+    background-color: #d1e7dd;
+    border: 1px solid #a3cfbb;
+    color: #0f5132;
+  }
+  
+  .feedback-incorrect {
+    background-color: #f8d7da;
+    border: 1px solid #f5c2c7;
+    color: #721c24;
+  }
+  
+  .completion-banner {
+    background-color: #d1e7dd;
+    border: 1px solid #a3cfbb;
+    color: #0f5132;
+    padding: 20px;
+    text-align: center;
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+</style>
+{% endblock %}
+
+{% block basebuilder_content %}
+<div class="row justify-content-center">
+  <div class="col-md-10">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1 class="section-title">{{ path.title }}</h1>
+      <a href="{{ url_for('basebuilder_module.learning_paths') }}" class="btn btn-outline">
+        <i class="fas fa-arrow-left"></i> 学習パス一覧に戻る
+      </a>
+    </div>
+    
+    {% if assignment.completed %}
+      <div class="completion-banner">
+        <h3><i class="fas fa-check-circle"></i> お疲れ様でした！</h3>
+        <p>この学習パスを完了しました。</p>
+      </div>
+    {% endif %}
+    
+    <div class="progress-container">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span>進捗: {{ assignment.progress }}%</span>
+        <span>ステップ {{ current_step_index + 1 }}/{{ steps|length }}</span>
+      </div>
+      <div class="progress">
+        <div class="progress-bar" role="progressbar" style="width: {{ assignment.progress }}%"
+             aria-valuenow="{{ assignment.progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+      </div>
+    </div>
+    
+    <div class="step-navigator">
+      <div class="step-list">
+        {% for step in steps %}
+          <div class="step-item {% if loop.index0 == current_step_index %}active{% elif loop.index0 < current_step_index %}completed{% endif %}"
+               data-step="{{ loop.index0 }}" title="{{ step.title }}">
+            {{ loop.index }}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+    
+    <div class="step-content">
+      <div class="step-title">
+        <h3>{{ current_step.title }}</h3>
+        <span class="badge bg-primary">ステップ {{ current_step_index + 1 }}</span>
+      </div>
+      
+      {% if current_step.description %}
+        <p>{{ current_step.description }}</p>
+      {% endif %}
+      
+      <div id="step-activity-area">
+        {% if current_step.type == 'text' %}
+          <!-- テキスト説明のみのステップ -->
+          <div class="step-text-content">
+            {{ current_step.content|nl2br|safe }}
+          </div>
+          
+          <div class="nav-buttons">
+            {% if current_step_index > 0 %}
+              <a href="{{ url_for('basebuilder_module.start_learning_path', assignment_id=assignment.id, step=current_step_index-1) }}" class="btn btn-outline">
+                <i class="fas fa-arrow-left"></i> 前のステップ
+              </a>
+            {% else %}
+              <div></div>
+            {% endif %}
+            
+            <form method="POST" action="{{ url_for('basebuilder_module.update_path_progress', assignment_id=assignment.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="progress" value="{{ assignment.progress }}">
+              <input type="hidden" name="current_step" value="{{ current_step_index }}">
+              <input type="hidden" name="step_completed" value="true">
+              
+              {% if current_step_index < steps|length - 1 %}
+                <button type="submit" class="btn btn-primary">
+                  次のステップ <i class="fas fa-arrow-right"></i>
+                </button>
+              {% else %}
+                <button type="submit" class="btn btn-success">
+                  学習パスを完了 <i class="fas fa-check"></i>
+                </button>
+              {% endif %}
+            </form>
+          </div>
+          
+        {% elif current_step.type == 'category' %}
+          <!-- カテゴリからの問題 -->
+          <div id="category-problems">
+            <div class="text-center py-3" id="loading-message">
+              <p class="text-muted">問題を読み込んでいます...</p>
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+            
+            <div id="problem-container" style="display: none;">
+              <!-- 問題がJavaScriptで表示されます -->
+            </div>
+            
+            <div id="problems-completed" style="display: none;">
+              <div class="alert alert-success">
+                <h5><i class="fas fa-check-circle"></i> このステップの問題をすべて解きました！</h5>
+                <p>次のステップに進みましょう。</p>
+              </div>
+              
+              <div class="nav-buttons">
+                {% if current_step_index > 0 %}
+                  <a href="{{ url_for('basebuilder_module.start_learning_path', assignment_id=assignment.id, step=current_step_index-1) }}" class="btn btn-outline">
+                    <i class="fas fa-arrow-left"></i> 前のステップ
+                  </a>
+                {% else %}
+                  <div></div>
+                {% endif %}
+                
+                <form method="POST" action="{{ url_for('basebuilder_module.update_path_progress', assignment_id=assignment.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="progress" value="{{ assignment.progress }}">
+                  <input type="hidden" name="current_step" value="{{ current_step_index }}">
+                  <input type="hidden" name="step_completed" value="true">
+                  
+                  {% if current_step_index < steps|length - 1 %}
+                    <button type="submit" class="btn btn-primary">
+                      次のステップ <i class="fas fa-arrow-right"></i>
+                    </button>
+                  {% else %}
+                    <button type="submit" class="btn btn-success">
+                      学習パスを完了 <i class="fas fa-check"></i>
+                    </button>
+                  {% endif %}
+                </form>
+              </div>
+            </div>
+          </div>
+          
+        {% elif current_step.type == 'problem' %}
+          <!-- 特定の問題 -->
+          <div id="specific-problem">
+            <div class="text-center py-3" id="problem-loading-message">
+              <p class="text-muted">問題を読み込んでいます...</p>
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+            
+            <div id="specific-problem-container" style="display: none;">
+              <!-- 問題がJavaScriptで表示されます -->
+            </div>
+            
+            <div id="specific-problem-completed" style="display: none;">
+              <div class="alert alert-success">
+                <h5><i class="fas fa-check-circle"></i> この問題は正解です！</h5>
+                <p>次のステップに進みましょう。</p>
+              </div>
+              
+              <div class="nav-buttons">
+                {% if current_step_index > 0 %}
+                  <a href="{{ url_for('basebuilder_module.start_learning_path', assignment_id=assignment.id, step=current_step_index-1) }}" class="btn btn-outline">
+                    <i class="fas fa-arrow-left"></i> 前のステップ
+                  </a>
+                {% else %}
+                  <div></div>
+                {% endif %}
+                
+                <form method="POST" action="{{ url_for('basebuilder_module.update_path_progress', assignment_id=assignment.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="progress" value="{{ assignment.progress }}">
+                  <input type="hidden" name="current_step" value="{{ current_step_index }}">
+                  <input type="hidden" name="step_completed" value="true">
+                  
+                  {% if current_step_index < steps|length - 1 %}
+                    <button type="submit" class="btn btn-primary">
+                      次のステップ <i class="fas fa-arrow-right"></i>
+                    </button>
+                  {% else %}
+                    <button type="submit" class="btn btn-success">
+                      学習パスを完了 <i class="fas fa-check"></i>
+                    </button>
+                  {% endif %}
+                </form>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // ステップアイテムのクリックイベント
+    document.querySelectorAll('.step-item').forEach(item => {
+      item.addEventListener('click', function() {
+        const stepIndex = this.dataset.step;
+        window.location.href = `{{ url_for('basebuilder_module.start_learning_path', assignment_id=assignment.id) }}?step=${stepIndex}`;
+      });
+    });
+    
+    {% if current_step.type == 'category' %}
+      // カテゴリの問題を読み込む
+      loadCategoryProblems();
+    {% elif current_step.type == 'problem' %}
+      // 特定の問題を読み込む
+      loadSpecificProblem();
+    {% endif %}
+    
+    // カテゴリからの問題読み込み
+    function loadCategoryProblems() {
+      const categoryId = "{{ current_step.category_id }}";
+      const problemCount = "{{ current_step.problem_count }}";
+      
+      if (!categoryId) {
+        console.error('カテゴリIDが見つかりません');
+        return;
+      }
+      
+      // 問題データを取得
+      fetch(`/basebuilder/api/category/${categoryId}/problems?count=${problemCount}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('問題データの取得に失敗しました。');
+          }
+          return response.json();
+        })
+        .then(data => {
+          const loadingMessage = document.getElementById('loading-message');
+          const problemContainer = document.getElementById('problem-container');
+          const problemsCompleted = document.getElementById('problems-completed');
+          
+          if (data.problems && data.problems.length > 0) {
+            // 問題が見つかった場合
+            renderProblem(data.problems[0], data.problems.length, 1, problemContainer);
+            
+            loadingMessage.style.display = 'none';
+            problemContainer.style.display = 'block';
+            problemsCompleted.style.display = 'none';
+          } else if (data.completed) {
+            // すべての問題を解き終わった場合
+            loadingMessage.style.display = 'none';
+            problemContainer.style.display = 'none';
+            problemsCompleted.style.display = 'block';
+          } else {
+            // 問題が見つからない場合
+            loadingMessage.innerHTML = '<p class="text-muted">このカテゴリに問題がありません。</p>';
+          }
+        })
+        .catch(error => {
+          console.error('エラー:', error);
+          document.getElementById('loading-message').innerHTML = `
+            <p class="text-danger">問題の読み込み中にエラーが発生しました: ${error.message}</p>
+            <button class="btn btn-outline-primary mt-2" onclick="location.reload()">
+              再試行
+            </button>
+          `;
+        });
+    }
+    
+    // 特定の問題を読み込む
+    function loadSpecificProblem() {
+      const problemId = "{{ current_step.problem_id }}";
+      
+      if (!problemId) {
+        console.error('問題IDが見つかりません');
+        return;
+      }
+      
+      // 問題データを取得
+      fetch(`/basebuilder/api/problem/${problemId}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('問題データの取得に失敗しました。');
+          }
+          return response.json();
+        })
+        .then(data => {
+          const loadingMessage = document.getElementById('problem-loading-message');
+          const problemContainer = document.getElementById('specific-problem-container');
+          const problemCompleted = document.getElementById('specific-problem-completed');
+          
+          if (data.problem) {
+            // 問題が見つかった場合
+            renderProblem(data.problem, 1, 1, problemContainer);
+            
+            loadingMessage.style.display = 'none';
+            problemContainer.style.display = 'block';
+            
+            if (data.completed) {
+              // 既に解いた問題の場合
+              problemContainer.style.display = 'none';
+              problemCompleted.style.display = 'block';
+            } else {
+              problemCompleted.style.display = 'none';
+            }
+          } else {
+            // 問題が見つからない場合
+            loadingMessage.innerHTML = '<p class="text-muted">問題が見つかりません。</p>';
+          }
+        })
+        .catch(error => {
+          console.error('エラー:', error);
+          document.getElementById('problem-loading-message').innerHTML = `
+            <p class="text-danger">問題の読み込み中にエラーが発生しました: ${error.message}</p>
+            <button class="btn btn-outline-primary mt-2" onclick="location.reload()">
+              再試行
+            </button>
+          `;
+        });
+    }
+    
+    // 問題を表示する関数
+    function renderProblem(problem, totalProblems, currentProblemIndex, container) {
+      let choicesHtml = '';
+      
+      if (problem.answer_type === 'multiple_choice' && problem.choices) {
+        // 選択肢を表示
+        let choices = [];
+        try {
+          choices = typeof problem.choices === 'string' ? JSON.parse(problem.choices) : problem.choices;
+        } catch (e) {
+          console.error('選択肢の解析エラー:', e);
+          choices = [];
+        }
+        
+        if (choices.length > 0) {
+          choicesHtml = `
+            <div class="choices-container">
+              ${choices.map((choice, index) => `
+                <div class="choice-item" data-value="${choice.value}">
+                  <input type="radio" name="answer" id="choice-${index}" value="${choice.value}" class="visually-hidden">
+                  <label for="choice-${index}">${choice.text}</label>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        }
+      } else if (problem.answer_type === 'true_false') {
+        // 真偽問題
+        choicesHtml = `
+          <div class="choices-container">
+            <div class="choice-item" data-value="true">
+              <input type="radio" name="answer" id="choice-true" value="true" class="visually-hidden">
+              <label for="choice-true">正しい (True)</label>
+            </div>
+            <div class="choice-item" data-value="false">
+              <input type="radio" name="answer" id="choice-false" value="false" class="visually-hidden">
+              <label for="choice-false">間違い (False)</label>
+            </div>
+          </div>
+        `;
+      } else {
+        // テキスト入力問題
+        choicesHtml = `
+          <div class="form-group">
+            <label for="answer">回答を入力してください:</label>
+            <input type="text" name="answer" id="answer" class="form-control" required>
+          </div>
+        `;
+      }
+      
+      const progressText = totalProblems > 1 ? 
+        `<div class="text-end mb-2">問題 ${currentProblemIndex}/${totalProblems}</div>` : '';
+      
+      container.innerHTML = `
+        <div class="problem-wrapper">
+          ${progressText}
+          <div class="problem-container">
+            <div class="mb-3">
+              <span class="badge bg-secondary">${problem.category.name}</span>
+              <span class="problem-difficulty difficulty-${problem.difficulty}">難易度: ${problem.difficulty}</span>
+            </div>
+            <h4>${problem.title}</h4>
+            <p>${problem.question}</p>
+          </div>
+          
+          <form id="problem-form" data-problem-id="${problem.id}">
+            ${choicesHtml}
+            
+            <div id="feedback-area" class="feedback-area" style="display: none;">
+              <h5 id="feedback-title"></h5>
+              <p id="feedback-message"></p>
+              <div id="explanation-section">
+                <h6>解説:</h6>
+                <p id="explanation-text">${problem.explanation || '解説はありません。'}</p>
+              </div>
+            </div>
+            
+            <div class="d-grid mt-3">
+              <button type="submit" class="btn btn-primary" id="submit-btn">回答する</button>
+            </div>
+          </form>
+        </div>
+      `;
+      
+      // 選択肢クリックのイベントハンドラを設定
+      container.querySelectorAll('.choice-item').forEach(item => {
+        item.addEventListener('click', function() {
+          // 以前の選択をクリア
+          container.querySelectorAll('.choice-item').forEach(choice => choice.classList.remove('selected'));
+          
+          // この選択肢を選択状態に
+          this.classList.add('selected');
+          
+          // 関連するラジオボタンをチェック
+          const radio = this.querySelector('input[type="radio"]');
+          if (radio) {
+            radio.checked = true;
+          }
+        });
+      });
+      
+      // フォーム送信のイベントハンドラを設定
+      const form = container.querySelector('#problem-form');
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // 送信ボタンを無効化
+        container.querySelector('#submit-btn').disabled = true;
+        
+        // 回答を取得
+        let answer = '';
+        if (problem.answer_type === 'multiple_choice' || problem.answer_type === 'true_false') {
+          const selectedRadio = this.querySelector('input[name="answer"]:checked');
+          if (selectedRadio) {
+            answer = selectedRadio.value;
+          } else {
+            alert('回答を選択してください。');
+            container.querySelector('#submit-btn').disabled = false;
+            return;
+          }
+        } else {
+          answer = this.querySelector('#answer').value;
+          if (!answer.trim()) {
+            alert('回答を入力してください。');
+            container.querySelector('#submit-btn').disabled = false;
+            return;
+          }
+        }
+        
+        // 回答データの準備
+        const formData = new FormData();
+        formData.append('answer', answer);
+        formData.append('csrf_token', '{{ csrf_token() }}');
+        
+        // 回答を送信
+        fetch(`/basebuilder/problem/${problem.id}/submit`, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          // フィードバックエリアを表示
+          const feedbackArea = container.querySelector('#feedback-area');
+          feedbackArea.style.display = 'block';
+          
+          // フィードバックの内容を設定
+          const feedbackTitle = container.querySelector('#feedback-title');
+          const feedbackMessage = container.querySelector('#feedback-message');
+          
+          if (data.is_correct) {
+            feedbackArea.classList.add('feedback-correct');
+            feedbackArea.classList.remove('feedback-incorrect');
+            feedbackTitle.textContent = '正解です！';
+            feedbackMessage.textContent = '素晴らしい！';
+            
+            // 次の問題に進むか、すべて完了したら完了メッセージを表示
+            setTimeout(() => {
+              if (totalProblems > 1 && currentProblemIndex < totalProblems) {
+                // 次の問題を読み込む
+                loadNextProblem(problem.category.id, totalProblems, currentProblemIndex + 1);
+              } else {
+                // すべての問題が終了
+                if (current_step.type === 'category') {
+                  document.getElementById('problem-container').style.display = 'none';
+                  document.getElementById('problems-completed').style.display = 'block';
+                } else {
+                  document.getElementById('specific-problem-container').style.display = 'none';
+                  document.getElementById('specific-problem-completed').style.display = 'block';
+                }
+              }
+            }, 2000);
+          } else {
+            feedbackArea.classList.add('feedback-incorrect');
+            feedbackArea.classList.remove('feedback-correct');
+            feedbackTitle.textContent = '不正解です';
+            feedbackMessage.textContent = `正解は: ${data.correct_answer}`;
+            
+            // 送信ボタンを再度有効化
+            container.querySelector('#submit-btn').disabled = false;
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('回答の送信中にエラーが発生しました。もう一度お試しください。');
+          container.querySelector('#submit-btn').disabled = false;
+        });
+      });
+    }
+    
+    // 次の問題を読み込む関数
+    function loadNextProblem(categoryId, totalProblems, nextIndex) {
+      // 次の問題データを取得
+      fetch(`/basebuilder/api/category/${categoryId}/problems?count=1&skip=${nextIndex - 1}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.problems && data.problems.length > 0) {
+            const problemContainer = document.getElementById('problem-container');
+            renderProblem(data.problems[0], totalProblems, nextIndex, problemContainer);
+          } else {
+            // 問題が取得できない場合は完了メッセージを表示
+            document.getElementById('problem-container').style.display = 'none';
+            document.getElementById('problems-completed').style.display = 'block';
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('次の問題の読み込み中にエラーが発生しました。');
+        });
+    }
+  });
+</script>
+{% endblock %}

@@ -4,7 +4,7 @@ import io
 
 def generate_problem_csv_template():
     """
-    問題インポート用のCSVテンプレートを生成
+    単語インポート用のCSVテンプレートを生成
     
     Returns:
         str: CSVテンプレート文字列
@@ -16,38 +16,58 @@ def generate_problem_csv_template():
         'explanation', 'difficulty'
     ]
     
-    # 例データ
+    # 例データ - 単語学習向けにカスタマイズ
     examples = [
         {
-            'title': '江戸幕府の開始年',
-            'category': '日本史',
-            'question': '江戸幕府が始まったのは西暦何年か？',
+            'title': 'apple',  # 単語
+            'category': '基本英単語',  # カテゴリ
+            'question': 'リンゴ（果物）',  # 意味
+            'answer_type': 'text',  # 常にtextとして扱う
+            'correct_answer': 'アップル',  # 別の表記
+            'explanation': '/ˈæpl/ 赤い皮と白い実をもつ果物',  # 発音記号や追加情報
+            'difficulty': '1'  # 難易度
+        },
+        {
+            'title': 'computer',
+            'category': '基本英単語',
+            'question': 'コンピュータ（電子機器）',
             'answer_type': 'text',
-            'correct_answer': '1603',
-            'explanation': '徳川家康が征夷大将軍に任命され、江戸幕府を開いたのは1603年です。',
+            'correct_answer': 'コンピューター',
+            'choice_1': 'She uses a computer every day.',  # 例文をchoice欄に格納
+            'choice_2': 'This computer is very fast.',
+            'choice_3': 'I need to buy a new computer.',
+            'explanation': '/kəmˈpjuːtər/ データを処理するための電子機器',
             'difficulty': '2'
         },
         {
-            'title': '二酸化炭素の化学式',
-            'category': '化学',
-            'question': '二酸化炭素の化学式は何か？',
-            'answer_type': 'multiple_choice',
-            'correct_answer': 'choice_1',
-            'choice_1': 'CO2',
-            'choice_2': 'H2O',
-            'choice_3': 'O2',
-            'choice_4': 'CH4',
-            'explanation': '二酸化炭素の化学式はCO2（炭素原子1つと酸素原子2つ）です。',
-            'difficulty': '1'
+            'title': 'beautiful',
+            'category': '形容詞',
+            'question': '美しい、きれいな',
+            'answer_type': 'text',
+            'correct_answer': 'ビューティフル',
+            'choice_1': 'She is a beautiful woman.',
+            'choice_2': 'What a beautiful day!',
+            'explanation': '/ˈbjuːtɪfl/ 見た目が非常に良い、魅力的な',
+            'difficulty': '2'
         },
         {
-            'title': 'ピタゴラスの定理',
-            'category': '数学',
-            'question': '直角三角形において、a²+b²=c²は正しいか？（aとbは直角をはさむ2辺、cは斜辺）',
-            'answer_type': 'true_false',
-            'correct_answer': 'true',
-            'explanation': 'ピタゴラスの定理により、直角三角形の直角をはさむ2辺の長さの平方和は、斜辺の長さの平方に等しい。',
-            'difficulty': '3'
+            'title': 'psychology',
+            'category': '学術用語',
+            'question': '心理学',
+            'answer_type': 'text',
+            'correct_answer': 'サイコロジー',
+            'choice_1': 'She is studying psychology at university.',
+            'explanation': '/saɪˈkɒlədʒi/ 人間の心理や行動を研究する学問',
+            'difficulty': '4'
+        },
+        {
+            'title': 'entrepreneur',
+            'category': 'ビジネス用語',
+            'question': '起業家、企業家',
+            'answer_type': 'text',
+            'correct_answer': 'アントレプレナー',
+            'explanation': '/ˌɒntrəprəˈnɜːr/ 事業を立ち上げ、運営する人',
+            'difficulty': '5'
         }
     ]
     
@@ -63,7 +83,7 @@ def generate_problem_csv_template():
 
 def generate_problem_csv_empty_template():
     """
-    問題インポート用の空のCSVテンプレートを生成
+    単語インポート用の空のCSVテンプレートを生成
     
     Returns:
         str: 空のCSVテンプレート文字列

@@ -1,0 +1,58 @@
+{% extends 'basebuilder/layout.html' %}
+
+{% block basebuilder_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="section-title">テキスト管理</h1>
+  <a href="{{ url_for('basebuilder_module.import_text_set') }}" class="btn btn-primary">
+    <i class="fas fa-plus"></i> 新規テキスト
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="card-title">テキスト一覧</h5>
+  </div>
+  <div class="card-body">
+    {% if text_sets %}
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>タイトル</th>
+              <th>カテゴリ</th>
+              <th>問題数</th>
+              <th>作成日</th>
+              <th>アクション</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for text in text_sets %}
+              <tr>
+                <td>{{ text.title }}</td>
+                <td>{{ text.category.name }}</td>
+                <td>{{ text.problems|length }}</td>
+                <td>{{ text.created_at.strftime('%Y-%m-%d') }}</td>
+                <td>
+                  <a href="{{ url_for('basebuilder_module.view_text_set', text_id=text.id) }}" class="btn btn-sm btn-outline">
+                    詳細
+                  </a>
+                  <a href="{{ url_for('basebuilder_module.deliver_text', text_id=text.id) }}" class="btn btn-sm btn-primary">
+                    配信
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-muted">テキストがまだありません。</p>
+      <div class="text-center mt-3">
+        <a href="{{ url_for('basebuilder_module.import_text_set') }}" class="btn btn-primary">
+          <i class="fas fa-plus"></i> 新規テキストを作成
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

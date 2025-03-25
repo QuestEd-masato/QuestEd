@@ -1,0 +1,79 @@
+{% extends 'basebuilder/layout.html' %}
+
+{% block basebuilder_content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1 class="section-title">テキストのインポート</h1>
+      <a href="{{ url_for('basebuilder_module.text_sets') }}" class="btn btn-outline">
+        <i class="fas fa-arrow-left"></i> テキスト一覧に戻る
+      </a>
+    </div>
+    
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5 class="card-title">CSVテンプレートのダウンロード</h5>
+      </div>
+      <div class="card-body">
+        <p>テキストをインポートするには、CSVテンプレートをダウンロードし、問題データを入力してください。</p>
+        <div class="d-grid gap-2">
+          <a href="{{ url_for('basebuilder_module.download_problem_template', template_type='example') }}" class="btn btn-primary">
+            <i class="fas fa-download"></i> サンプル入りテンプレート
+          </a>
+        </div>
+        <div class="mt-3">
+          <p class="form-text">
+            ※通常の問題と同じCSVフォーマットを使用しますが、インポート時にテキストとして一括登録されます。
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title">テキスト情報とCSVインポート</h5>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('basebuilder_module.import_text_set') }}" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          
+          <div class="form-group mb-3">
+            <label for="title" class="form-label">テキストタイトル <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="title" name="title" required>
+          </div>
+          
+          <div class="form-group mb-3">
+            <label for="description" class="form-label">説明</label>
+            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+          </div>
+          
+          <div class="form-group mb-3">
+            <label for="category_id" class="form-label">カテゴリ <span class="text-danger">*</span></label>
+            <select class="form-control" id="category_id" name="category_id" required>
+              <option value="">カテゴリを選択</option>
+              {% for category in categories %}
+                <option value="{{ category.id }}">{{ category.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          
+          <div class="form-group mb-4">
+            <label for="csv_file" class="form-label">問題データのCSVファイル <span class="text-danger">*</span></label>
+            <input type="file" class="form-control" id="csv_file" name="csv_file" accept=".csv" required>
+            <div class="form-text">
+              CSVファイル（UTF-8形式）をアップロードしてください。
+            </div>
+          </div>
+          
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-upload"></i> インポート実行
+            </button>
+            <a href="{{ url_for('basebuilder_module.text_sets') }}" class="btn btn-outline">キャンセル</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
