@@ -16,6 +16,36 @@ class ProblemCategory(db.Model):
     problems = db.relationship('BasicKnowledgeItem', backref='category', lazy=True)
     subcategories = db.relationship('ProblemCategory', backref=db.backref('parent', remote_side=[id]))
     creator = db.relationship('User', backref=db.backref('created_categories', lazy=True))
+    text_sets = db.relationship('TextSet', backref='category', lazy=True)
+
+# テキストセットモデル（新規）
+class TextSet(db.Model):
+    __tablename__ = 'text_sets'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    category_id = db.Column(db.Integer, db.ForeignKey('problem_categories.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    
+    # リレーションシップ
+    problems = db.relationship('BasicKnowledgeItem', backref='text_set', lazy=True)
+    creator = db.relationship('User', backref=db.backref('created_text_sets', lazy=True))
+    deliveries = db.relationship('TextDelivery', backref='text_set', lazy=True)
+
+# テキスト配信モデル（新規）
+class TextDelivery(db.Model):
+    __tablename__ = 'text_deliveries'
+    id = db.Column(db.Integer, primary_key=True)
+    text_set_id = db.Column(db.Integer, db.ForeignKey('text_sets.id'), nullable=False)
+    class_id = db.Column(db.Integer, db.ForeignKey('class_groups.id'), nullable=False)
+    delivered_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    delivered_at = db.Column(db.DateTime, default=datetime.utcnow)
+    due_date = db.Column(db.Date, nullable=True)
+    
+    # リレーションシップ
+    class_group = db.relationship('ClassGroup', backref='text_deliveries')
+    deliverer = db.relationship('User', backref='delivered_texts')
 
 # 基礎知識問題モデル → 単語モデルに変更
 class BasicKnowledgeItem(db.Model):
@@ -32,6 +62,8 @@ class BasicKnowledgeItem(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     is_active = db.Column(db.Boolean, default=True)
+    text_set_id = db.Column(db.Integer, db.ForeignKey('text_sets.id'), nullable=True)
+    order_in_text = db.Column(db.Integer, nullable=True)  # テキスト内での順序
     
     # リレーションシップ
     creator = db.relationship('User', backref=db.backref('created_problems', lazy=True))
@@ -82,6 +114,22 @@ class ProficiencyRecord(db.Model):
     
     # ユニーク制約（学生+カテゴリの組み合わせは一意）
     __table_args__ = (db.UniqueConstraint('student_id', 'category_id'),)
+
+# テキスト熟練度記録モデル（新規）
+class TextProficiencyRecord(db.Model):
+    __tablename__ = 'text_proficiency_records'
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    text_set_id = db.Column(db.Integer, db.ForeignKey('text_sets.id'), nullable=False)
+    level = db.Column(db.Integer, default=0)  # 0-100のパーセント
+    last_updated = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # リレーションシップ
+    student = db.relationship('User', backref=db.backref('text_proficiency_records', lazy=True))
+    text_set = db.relationship('TextSet', backref=db.backref('proficiency_records', lazy=True))
+    
+    # ユニーク制約（学生+テキストの組み合わせは一意）
+    __table_args__ = (db.UniqueConstraint('student_id', 'text_set_id'),)
 
 # 学習パスモデル（そのまま利用）
 class LearningPath(db.Model):

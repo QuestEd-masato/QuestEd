@@ -64,7 +64,7 @@
               </tbody>
             </table>
           </div>
-          <a href="{{ url_for('basebuilder.view_history') }}" class="btn btn-outline">履歴をすべて見る</a>
+          <a href="{{ url_for('basebuilder_module.view_history') }}" class="btn btn-outline">履歴をすべて見る</a>
         {% else %}
           <p class="text-muted">まだ解答履歴がありません。</p>
         {% endif %}
@@ -74,14 +74,59 @@
   
   <!-- 右側 - アクション領域 -->
   <div class="col-md-4">
+    <!-- 配信されたテキスト一覧 - 新規追加 -->
+    <div class="card mb-3">
+      <div class="card-header">
+        <h5 class="card-title">配信されたテキスト</h5>
+      </div>
+      <div class="card-body">
+        {% if delivered_texts %}
+          <div class="list-group">
+            {% for delivery in delivered_texts %}
+              <a href="{{ url_for('basebuilder_module.solve_text', text_id=delivery.text_set_id) }}" 
+                 class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                  <h6 class="mb-1">{{ delivery.text_set.title }}</h6>
+                  <small>{{ delivery.text_set.category.name }}</small>
+                </div>
+                
+                <div class="progress mt-2" style="height: 10px;">
+                  <div class="progress-bar 
+                    {% if text_progress[delivery.text_set_id].percent == 100 %}bg-success{% endif %}" 
+                       role="progressbar" 
+                       style="width: {{ text_progress[delivery.text_set_id].percent }}%;" 
+                       aria-valuenow="{{ text_progress[delivery.text_set_id].percent }}" 
+                       aria-valuemin="0" 
+                       aria-valuemax="100">
+                  </div>
+                </div>
+                <small class="text-muted">
+                  {% if delivery.due_date %}
+                    期限: {{ delivery.due_date.strftime('%Y-%m-%d') }}
+                  {% else %}
+                    期限なし
+                  {% endif %}
+                </small>
+              </a>
+            {% endfor %}
+          </div>
+          <a href="{{ url_for('basebuilder_module.my_texts') }}" class="btn btn-outline mt-3">
+            すべてのテキストを見る
+          </a>
+        {% else %}
+          <p class="text-muted">配信されたテキストはありません。</p>
+        {% endif %}
+      </div>
+    </div>
+    
     <div class="card mb-3">
       <div class="card-header">
         <h5 class="card-title">今日のおすすめ</h5>
       </div>
       <div class="card-body">
         <div class="d-grid gap-2">
-          <a href="{{ url_for('basebuilder_module.problems') }}" class="btn btn-primary">問題を解く</a>
-          <a href="{{ url_for('basebuilder_module.learning_paths') }}" class="btn btn-outline">学習パスを見る</a>
+          <a href="{{ url_for('basebuilder_module.my_texts') }}" class="btn btn-primary">テキストを学習する</a>
+          <a href="{{ url_for('basebuilder_module.problems') }}" class="btn btn-outline">単語一覧を見る</a>
         </div>
       </div>
     </div>

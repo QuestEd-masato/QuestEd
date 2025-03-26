@@ -49,18 +49,22 @@
   .choice-item {
     margin-bottom: 0.5rem;
     padding: 0.75rem;
-    border: 1px solid #dee2e6;
+    border: 2px solid #dee2e6;
     border-radius: 0.25rem;
     cursor: pointer;
+    transition: all 0.2s ease;
   }
   
   .choice-item:hover {
     background-color: #f8f9fa;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
   }
   
   .choice-item.selected {
     background-color: #cfe2ff;
-    border-color: #9ec5fe;
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
   }
   
   .answer-timer {
@@ -154,13 +158,13 @@
               {% else %}
                 <!-- テキスト入力問題 -->
                 <div class="form-group">
-                  <label for="text-answer-{{ problem.id }}">回答を入力してください:</label>
+                  <label for="text-answer-{{ problem.id }}">解答を入力してください:</label>
                   <input type="text" name="answer" id="text-answer-{{ problem.id }}" class="form-control" required>
                 </div>
               {% endif %}
               
               <div class="d-grid gap-2 mt-4">
-                <button type="submit" class="btn btn-primary submit-btn" data-problem-id="{{ problem.id }}">回答する</button>
+                <button type="submit" class="btn btn-primary submit-btn" data-problem-id="{{ problem.id }}">解答する</button>
               </div>
             </form>
           </div>
@@ -181,7 +185,7 @@
             
             {% if not answers[problem.id].is_correct %}
               <p>正解: {{ problem.correct_answer }}</p>
-              <p>あなたの回答: {{ answers[problem.id].student_answer }}</p>
+              <p>あなたの解答: {{ answers[problem.id].student_answer }}</p>
             {% endif %}
             
             {% if problem.explanation %}
@@ -315,7 +319,14 @@
         // フォームデータを収集
         const formData = new FormData(this);
         
-        // 回答を送信
+        // 選択肢が選択されている場合
+        const selectedChoice = this.querySelector('.choice-item.selected');
+        if (selectedChoice) {
+          const value = selectedChoice.dataset.value;
+          formData.set('answer', value);
+        }
+        
+        // 解答を送信
         fetch(`{{ url_for('basebuilder_module.submit_answer', problem_id=0) }}`.replace('0', problemId), {
           method: 'POST',
           body: formData,
@@ -330,7 +341,7 @@
           const feedbackArea = document.getElementById(`feedback-${problemId}`);
           feedbackArea.style.display = 'block';
           
-          // 回答フォームを非表示
+          // 解答フォームを非表示
           document.getElementById(`answer-section-${problemId}`).style.display = 'none';
           
           // フィードバックの内容を設定
@@ -364,7 +375,7 @@
         })
         .catch(error => {
           console.error('Error:', error);
-          alert('回答の送信中にエラーが発生しました。もう一度お試しください。');
+          alert('解答の送信中にエラーが発生しました。もう一度お試しください。');
           submitBtn.disabled = false;
         });
       });

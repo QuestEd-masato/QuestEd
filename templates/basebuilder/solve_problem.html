@@ -51,10 +51,11 @@
   .choice-item {
     margin-bottom: 10px;
     padding: 10px;
-    border: 1px solid #dee2e6;
+    border: 2px solid #dee2e6;
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s ease;
+    position: relative;
   }
   
   .choice-item:hover {
@@ -65,7 +66,12 @@
   
   .choice-item.selected {
     background-color: #cfe2ff;
-    border-color: #9ec5fe;
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+  }
+  
+  .choice-item.selected-focus {
+    border-color: #0d6efd;
   }
   
   .proficiency-indicator {
@@ -131,7 +137,7 @@
     {% for i in range(6) %}
       <div class="proficiency-dot {% if proficiency_record and proficiency_record.level >= i %}active{% endif %}"></div>
     {% endfor %}
-    <span class="ms-2 text-muted">熟練度: {{ proficiency_record.level if proficiency_record else 0 }}/5</span>
+    <span class="ms-2 text-muted">定着度: {{ proficiency_record.level if proficiency_record else 0 }}/5</span>
   </div>
   
   <div class="question-area">
@@ -198,14 +204,14 @@
       {% endif %}
       
       <div class="d-grid gap-2 mt-4">
-        <button type="submit" class="btn btn-primary" id="submit-btn">回答する</button>
+        <button type="submit" class="btn btn-primary" id="submit-btn">解答する</button>
         {% if in_session and learning_session is defined and learning_session %}
           <a href="{{ url_for('basebuilder_module.next_problem') }}" class="btn btn-outline-secondary">
             スキップする
           </a>
         {% else %}
           <a href="{{ url_for('basebuilder_module.problems') }}" class="btn btn-outline-secondary">
-            単語一覧に戻る
+            問題一覧に戻る
           </a>
         {% endif %}
       </div>
@@ -242,7 +248,7 @@
     <div class="d-grid gap-2 mt-3">
       {% if in_session and learning_session is defined and learning_session %}
         <a href="{{ url_for('basebuilder_module.next_problem') }}" class="btn btn-primary">
-          次の単語へ
+          次の問題へ
         </a>
       {% else %}
         <a href="{{ url_for('basebuilder_module.start_session') }}" class="btn btn-primary">
@@ -275,6 +281,7 @@
     // 選択肢クリックのイベントハンドラ
     const choiceItems = document.querySelectorAll('.choice-item');
     choiceItems.forEach(item => {
+      // 選択肢全体をクリック可能に
       item.addEventListener('click', function() {
         // 以前の選択をクリア
         choiceItems.forEach(choice => choice.classList.remove('selected'));
@@ -287,6 +294,11 @@
         if (radio) {
           radio.checked = true;
         }
+        
+        // スタイル適用を確実にするために小さな遅延を入れる
+        setTimeout(() => {
+          this.classList.add('selected-focus');
+        }, 50);
       });
     });
     
@@ -307,10 +319,17 @@
       // フォームデータを収集
       const formData = new FormData(answerForm);
       
+      // 選択肢が選択されている場合
+      if (document.querySelector('.choice-item.selected')) {
+        const selectedChoice = document.querySelector('.choice-item.selected');
+        const value = selectedChoice.dataset.value;
+        formData.set('answer', value);
+      }
+      
       // 回答が入力されているか確認
       const answer = formData.get('answer');
       if (!answer) {
-        alert('回答を入力または選択してください。');
+        alert('解答を入力または選択してください。');
         return;
       }
       
@@ -367,7 +386,7 @@
       })
       .catch(error => {
         console.error('Error:', error);
-        alert('回答の送信中にエラーが発生しました: ' + error.message);
+        alert('解答の送信中にエラーが発生しました: ' + error.message);
         // 送信ボタンを再度有効化
         document.getElementById('submit-btn').disabled = false;
       });

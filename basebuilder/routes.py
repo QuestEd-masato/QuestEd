@@ -9,7 +9,8 @@ from sqlalchemy import func
 
 from basebuilder.models import (
     ProblemCategory, BasicKnowledgeItem, KnowledgeThemeRelation,
-    AnswerRecord, ProficiencyRecord, LearningPath, PathAssignment
+    AnswerRecord, ProficiencyRecord, LearningPath, PathAssignment,
+    TextSet, TextDelivery, TextProficiencyRecord  # 追加
 )
 
 # Blueprint名をbasebuilderに変更
@@ -17,7 +18,6 @@ basebuilder_module = Blueprint('basebuilder_module', __name__, url_prefix='/base
 
 # BaseBuilder ホームページ
 # basebuilder/routes.py の index 関数（学生向け部分）を修正
-
 @basebuilder_module.route('/')
 @login_required
 def index():
@@ -87,6 +87,45 @@ def index():
             completed=False
         ).all()
         
+        # 学生に配信されたテキストを取得
+        enrolled_class_ids = [c.id for c in current_user.enrolled_classes]
+        delivered_texts = TextDelivery.query.filter(
+            TextDelivery.class_id.in_(enrolled_class_ids)
+        ).order_by(TextDelivery.delivered_at.desc()).limit(5).all()
+
+        # テキストごとの進捗状況を計算
+        text_progress = {}
+        for delivery in delivered_texts:
+            # テキストの問題総数
+            problems = BasicKnowledgeItem.query.filter_by(
+                text_set_id=delivery.text_set_id
+            ).all()
+            
+            total_problems = len(problems)
+            
+            # 解答済みの問題数
+            answered_count = 0
+            for problem in problems:
+                answer = AnswerRecord.query.filter_by(
+                    student_id=current_user.id,
+                    problem_id=problem.id
+                ).first()
+                
+                if answer:
+                    answered_count += 1
+            
+            # 進捗率を計算
+            if total_problems > 0:
+                progress_percent = int((answered_count / total_problems) * 100)
+            else:
+                progress_percent = 0
+            
+            text_progress[delivery.text_set_id] = {
+                'answered': answered_count,
+                'total': total_problems,
+                'percent': progress_percent
+            }
+        
         return render_template(
             'basebuilder/student_dashboard.html',
             category_proficiency=category_proficiency,
@@ -96,7 +135,9 @@ def index():
             theme=theme,
             today_words=today_words,
             proficiency_counts=proficiency_counts,
-            today=today
+            today=today,
+            delivered_texts=delivered_texts,
+            text_progress=text_progress
         )
     
     elif current_user.role == 'teacher':
@@ -111,6 +152,9 @@ def index():
         # 教師が作成した学習パスの数を取得
         path_count = LearningPath.query.filter_by(created_by=current_user.id).count()
         
+        # 教師が作成したテキストの数を取得
+        text_count = TextSet.query.filter_by(created_by=current_user.id).count()
+        
         # 教師が担当するクラスを取得
         classes = getattr(current_user, 'classes_teaching', [])
         
@@ -124,6 +168,7 @@ def index():
             problem_count=problem_count,
             category_count=category_count,
             path_count=path_count,
+            text_count=text_count,
             classes=classes,
             recent_problems=recent_problems
         )
@@ -419,7 +464,6 @@ def edit_problem(problem_id):
     )
 
 # 問題を解く
-# 問題を解く
 @basebuilder_module.route('/problem/<int:problem_id>/solve', methods=['GET'])
 @login_required
 def solve_problem(problem_id):
@@ -527,18 +571,29 @@ def submit_answer(problem_id):
     
     # 回答が正しいかチェック
     is_correct = False
-    
-    # 単語学習の場合は大文字小文字を区別せず、空白も無視して比較
-    student_answer = answer.strip().lower()
-    correct_answer = problem.title.strip().lower()
-    
-    # 完全一致の場合
-    if student_answer == correct_answer:
-        is_correct = True
+
+    # 問題タイプに応じた正解チェック
+    if problem.answer_type == 'multiple_choice':
+        # 選択肢問題の場合、選択された値が正解かチェック
+        try:
+            choices = json.loads(problem.choices)
+            correct_choice = next((c for c in choices if c.get('isCorrect')), None)
+            if correct_choice and answer == correct_choice.get('value'):
+                is_correct = True
+        except (json.JSONDecodeError, AttributeError):
+            # JSONデコードエラーやその他の例外が発生した場合はフォールバック
+            is_correct = (answer.strip().lower() == problem.correct_answer.strip().lower())
+    elif problem.answer_type == 'true_false':
+        # 真偽問題の場合
+        is_correct = (answer.strip().lower() == problem.correct_answer.strip().lower())
     else:
-        # 部分的に正解の場合（例：綴りミスが少ない場合）
-        # レーベンシュタイン距離などを使って類似度を測るロジックを追加可能
-        pass
+        # テキスト入力問題の場合は大文字小文字を区別せず、空白も無視して比較
+        student_answer = answer.strip().lower()
+        correct_answer = problem.correct_answer.strip().lower()
+    
+        # 複数の正解パターンがあればカンマで区切られていることを想定
+        correct_answers = [ans.strip().lower() for ans in correct_answer.split(',')]
+        is_correct = (student_answer in correct_answers or student_answer == problem.title.strip().lower())
     
     # 解答レコードを作成
     answer_record = AnswerRecord(
@@ -1345,8 +1400,6 @@ def update_path_progress(assignment_id):
         'completed': assignment.completed
     })
 
-# routes.py に追加
-
 # 問題テンプレートのダウンロード用ルート
 @basebuilder_module.route('/problems/template/<template_type>')
 @login_required
@@ -1723,13 +1776,80 @@ def solve_text(text_id):
             student_id=current_user.id,
             problem_id=problem.id
         ).order_by(AnswerRecord.timestamp.desc()).first()
-        
+    
         answers[problem.id] = answer
+
+    # テキストの進捗状況を計算
+    progress = {}
+    total_problems = len(problems)
+    answered_count = sum(1 for p in problems if p.id in answers and answers[p.id])
+    progress_percent = int((answered_count / total_problems * 100) if total_problems > 0 else 0)
+
+    progress[text_id] = {
+        'answered': answered_count,
+        'total': total_problems,
+        'percent': progress_percent
+    }
     
     return render_template(
         'basebuilder/solve_text.html',
         text_set=text_set,
         problems=problems,
         answers=answers,
-        delivery=delivery
+        delivery=delivery,
+        progress=progress, 
+        now=datetime.now() 
     )
+
+def update_text_proficiency(student_id, text_set_id):
+    """
+    テキストセットの熟練度を計算して更新する
+    
+    Args:
+        student_id: 学生ID
+        text_set_id: テキストセットID
+    """
+    # テキストに含まれる問題数を取得
+    problems = BasicKnowledgeItem.query.filter_by(
+        text_set_id=text_set_id
+    ).all()
+    
+    if not problems:
+        return
+    
+    # 学生の解答履歴を取得
+    answers = {}
+    correct_count = 0
+    
+    for problem in problems:
+        answer = AnswerRecord.query.filter_by(
+            student_id=student_id,
+            problem_id=problem.id
+        ).order_by(AnswerRecord.timestamp.desc()).first()
+        
+        if answer and answer.is_correct:
+            correct_count += 1
+    
+    # 熟練度を計算（正解数÷問題数×100）
+    level = int((correct_count / len(problems)) * 100)
+    
+    # 熟練度レコードを取得または作成
+    proficiency = TextProficiencyRecord.query.filter_by(
+        student_id=student_id,
+        text_set_id=text_set_id
+    ).first()
+    
+    if proficiency:
+        proficiency.level = level
+        proficiency.last_updated = datetime.utcnow()
+    else:
+        proficiency = TextProficiencyRecord(
+            student_id=student_id,
+            text_set_id=text_set_id,
+            level=level
+        )
+        db.session.add(proficiency)
+    
+    db.session.commit()
+    
+    return proficiency
