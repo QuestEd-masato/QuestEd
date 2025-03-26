@@ -70,10 +70,6 @@
     box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
   }
   
-  .choice-item.selected-focus {
-    border-color: #0d6efd;
-  }
-  
   .proficiency-indicator {
     display: flex;
     margin-bottom: 15px;
@@ -144,15 +140,15 @@
     <h3>{{ problem.question }}</h3> <!-- 意味を表示 -->
     
     {% if problem.choices %}
-      {% if condition %}
-        {% set example_data = problem.choices|fromjson %}
-        {% if example_data and example_data|length > 0 and example_data[0].text %}
-          <div class="example-text">
-            <strong>例文:</strong> {{ example_data[0].text }}
-          </div>
-        {% endif %}
-      {% else %}
-        <!-- fromjsonフィルターがエラーを起こした場合のフォールバック -->
+      {% set example_data = [] %}
+      {% if problem.choices|default('{}') != '{}' %}
+        {% set example_data = problem.choices|fromjson|default([]) %}
+      {% endif %}
+      
+      {% if example_data and example_data|length > 0 and example_data[0].text %}
+        <div class="example-text">
+          <strong>例文:</strong> {{ example_data[0].text }}
+        </div>
       {% endif %}
     {% endif %}
     
@@ -164,7 +160,8 @@
   </div>
   
   <div class="answer-area">
-    <form id="answer-form">
+    <form id="answer-form" method="post" action="{{ url_for('basebuilder_module.submit_answer', problem_id=problem.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="problem_id" value="{{ problem.id }}">
       <input type="hidden" name="answer_time" id="answer-time" value="0">
       
@@ -176,21 +173,21 @@
               <div class="choice-item" data-value="{{ choice }}">
                 <input type="radio" name="answer" id="choice-{{ loop.index }}" 
                        value="{{ choice }}" class="visually-hidden">
-                <label for="choice-{{ loop.index }}">{{ choice }}</label>
+                <label for="choice-{{ loop.index }}" class="w-100 h-100 d-block">{{ choice }}</label>
               </div>
             {% endfor %}
           {% else %}
             <!-- 選択肢が提供されていない場合のフォールバック -->
             <div class="choice-item" data-value="{{ problem.title }}">
               <input type="radio" name="answer" id="choice-1" value="{{ problem.title }}" class="visually-hidden">
-              <label for="choice-1">{{ problem.title }}</label>
+              <label for="choice-1" class="w-100 h-100 d-block">{{ problem.title }}</label>
             </div>
             
             {% for choice in dummy_choices %}
               <div class="choice-item" data-value="{{ choice }}">
                 <input type="radio" name="answer" id="choice-{{ loop.index + 1 }}" 
                        value="{{ choice }}" class="visually-hidden">
-                <label for="choice-{{ loop.index + 1 }}">{{ choice }}</label>
+                <label for="choice-{{ loop.index + 1 }}" class="w-100 h-100 d-block">{{ choice }}</label>
               </div>
             {% endfor %}
           {% endif %}
@@ -232,15 +229,15 @@
       {% endif %}
       
       {% if problem.choices %}
+        {% set example_data = [] %}
         {% if problem.choices|default('{}') != '{}' %}
-          {% set example_data = problem.choices|fromjson %}
-          {% if example_data and example_data|length > 0 and example_data[0].text %}
-            <div class="example-text">
-              <strong>例文:</strong> {{ example_data[0].text }}
-            </div>
-          {% endif %}
-        {% else %}
-          <!-- fromjsonフィルターがエラーを起こした場合や空の場合のフォールバック -->
+          {% set example_data = problem.choices|fromjson|default([]) %}
+        {% endif %}
+        
+        {% if example_data and example_data|length > 0 and example_data[0].text %}
+          <div class="example-text">
+            <strong>例文:</strong> {{ example_data[0].text }}
+          </div>
         {% endif %}
       {% endif %}
     </div>
@@ -294,11 +291,6 @@
         if (radio) {
           radio.checked = true;
         }
-        
-        // スタイル適用を確実にするために小さな遅延を入れる
-        setTimeout(() => {
-          this.classList.add('selected-focus');
-        }, 50);
       });
     });
     
@@ -319,7 +311,7 @@
       // フォームデータを収集
       const formData = new FormData(answerForm);
       
-      // 選択肢が選択されている場合
+      // 選択肢が選択されている場合、値を確実に設定
       if (document.querySelector('.choice-item.selected')) {
         const selectedChoice = document.querySelector('.choice-item.selected');
         const value = selectedChoice.dataset.value;
@@ -341,8 +333,7 @@
         method: 'POST',
         body: formData,
         headers: {
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-CSRFToken': '{{ csrf_token() }}'
+          'X-Requested-With': 'XMLHttpRequest'
         }
       })
       .then(response => {

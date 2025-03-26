@@ -580,9 +580,13 @@ def submit_answer(problem_id):
             correct_choice = next((c for c in choices if c.get('isCorrect')), None)
             if correct_choice and answer == correct_choice.get('value'):
                 is_correct = True
-        except (json.JSONDecodeError, AttributeError):
+            # 選択肢の文字列と直接比較する場合の対応
+            elif answer.strip().lower() == problem.correct_answer.strip().lower() or answer.strip().lower() == problem.title.strip().lower():
+                is_correct = True
+        except (json.JSONDecodeError, AttributeError, TypeError):
             # JSONデコードエラーやその他の例外が発生した場合はフォールバック
-            is_correct = (answer.strip().lower() == problem.correct_answer.strip().lower())
+            is_correct = (answer.strip().lower() == problem.correct_answer.strip().lower() or 
+                         answer.strip().lower() == problem.title.strip().lower())
     elif problem.answer_type == 'true_false':
         # 真偽問題の場合
         is_correct = (answer.strip().lower() == problem.correct_answer.strip().lower())
@@ -594,7 +598,6 @@ def submit_answer(problem_id):
         # 複数の正解パターンがあればカンマで区切られていることを想定
         correct_answers = [ans.strip().lower() for ans in correct_answer.split(',')]
         is_correct = (student_answer in correct_answers or student_answer == problem.title.strip().lower())
-    
     # 解答レコードを作成
     answer_record = AnswerRecord(
         student_id=current_user.id,
@@ -1544,7 +1547,7 @@ def import_text_set():
                 
                 # 結果を表示
                 if success_count > 0:
-                    flash(f'{success_count}個の問題を含むテキストがインポートされました。')
+                    flash(f'{success_count}個の問題を含むテキスト「{title}」が作成されました。')
                 
                 if error_count > 0:
                     for error in errors:

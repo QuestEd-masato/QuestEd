@@ -49,22 +49,18 @@
   .choice-item {
     margin-bottom: 0.5rem;
     padding: 0.75rem;
-    border: 2px solid #dee2e6;
+    border: 1px solid #dee2e6;
     border-radius: 0.25rem;
     cursor: pointer;
-    transition: all 0.2s ease;
   }
   
   .choice-item:hover {
     background-color: #f8f9fa;
-    transform: translateY(-2px);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
   }
   
   .choice-item.selected {
     background-color: #cfe2ff;
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+    border-color: #9ec5fe;
   }
   
   .answer-timer {
@@ -120,23 +116,28 @@
           <div class="answer-section" id="answer-section-{{ problem.id }}">
             <div class="answer-timer" id="timer-{{ problem.id }}">00:00</div>
             
-            <form id="answer-form-{{ problem.id }}" class="answer-form">
+            <form id="answer-form-{{ problem.id }}" method="POST" action="{{ url_for('basebuilder_module.submit_answer', problem_id=problem.id) }}" class="answer-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <input type="hidden" name="problem_id" value="{{ problem.id }}">
               <input type="hidden" name="answer_time" id="answer-time-{{ problem.id }}" value="0">
               
               {% if problem.answer_type == 'multiple_choice' %}
                 <!-- 多肢選択問題 -->
                 <div class="choices-container">
-                  {% if problem.choices %}
-                    {% set choices = problem.choices|tojson|safe|fromjson %}
-                    {% for choice in choices %}
-                      <div class="choice-item" data-value="{{ choice.value }}" data-form="{{ problem.id }}">
-                        <input type="radio" name="answer" id="choice-{{ problem.id }}-{{ loop.index }}" value="{{ choice.value }}" class="visually-hidden">
-                        <label for="choice-{{ problem.id }}-{{ loop.index }}">
-                          {{ choice.text }}
-                        </label>
-                      </div>
-                    {% endfor %}
+                  {% if problem.choices and problem.choices != '{}' %}
+                    {% set choices = problem.choices|fromjson %}
+                    {% if choices and choices|length > 0 %}
+                      {% for choice in choices %}
+                        <div class="choice-item" data-value="{{ choice.value }}" data-form="{{ problem.id }}">
+                          <input type="radio" name="answer" id="choice-{{ problem.id }}-{{ loop.index }}" value="{{ choice.value }}" class="visually-hidden">
+                          <label for="choice-{{ problem.id }}-{{ loop.index }}">
+                            {{ choice.text }}
+                          </label>
+                        </div>
+                      {% endfor %}
+                    {% else %}
+                      <p class="text-danger">選択肢データが見つかりません。</p>
+                    {% endif %}
                   {% else %}
                     <p class="text-danger">選択肢データが見つかりません。</p>
                   {% endif %}
@@ -158,13 +159,13 @@
               {% else %}
                 <!-- テキスト入力問題 -->
                 <div class="form-group">
-                  <label for="text-answer-{{ problem.id }}">解答を入力してください:</label>
+                  <label for="text-answer-{{ problem.id }}">回答を入力してください:</label>
                   <input type="text" name="answer" id="text-answer-{{ problem.id }}" class="form-control" required>
                 </div>
               {% endif %}
               
               <div class="d-grid gap-2 mt-4">
-                <button type="submit" class="btn btn-primary submit-btn" data-problem-id="{{ problem.id }}">解答する</button>
+                <button type="submit" class="btn btn-primary submit-btn" data-problem-id="{{ problem.id }}">回答する</button>
               </div>
             </form>
           </div>
@@ -185,7 +186,7 @@
             
             {% if not answers[problem.id].is_correct %}
               <p>正解: {{ problem.correct_answer }}</p>
-              <p>あなたの解答: {{ answers[problem.id].student_answer }}</p>
+              <p>あなたの回答: {{ answers[problem.id].student_answer }}</p>
             {% endif %}
             
             {% if problem.explanation %}
@@ -316,24 +317,23 @@
         const submitBtn = this.querySelector('.submit-btn');
         submitBtn.disabled = true;
         
-        // フォームデータを収集
+        // フォームデータを確認
         const formData = new FormData(this);
+        const answer = formData.get('answer');
         
-        // 選択肢が選択されている場合
-        const selectedChoice = this.querySelector('.choice-item.selected');
-        if (selectedChoice) {
-          const value = selectedChoice.dataset.value;
-          formData.set('answer', value);
+        if (!answer) {
+          alert('回答を入力または選択してください。');
+          submitBtn.disabled = false;
+          return;
         }
         
-        // 解答を送信
-        fetch(`{{ url_for('basebuilder_module.submit_answer', problem_id=0) }}`.replace('0', problemId), {
+        // AJAXリクエストの代わりに、通常のフォーム送信を実行
+        // ただし結果はAJAXで取得する
+        const formAction = this.action;
+        
+        fetch(formAction, {
           method: 'POST',
-          body: formData,
-          headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRFToken': '{{ csrf_token() }}'
-          }
+          body: formData
         })
         .then(response => response.json())
         .then(data => {
@@ -341,7 +341,7 @@
           const feedbackArea = document.getElementById(`feedback-${problemId}`);
           feedbackArea.style.display = 'block';
           
-          // 解答フォームを非表示
+          // 回答フォームを非表示
           document.getElementById(`answer-section-${problemId}`).style.display = 'none';
           
           // フィードバックの内容を設定
@@ -360,6 +360,11 @@
           
           // 問題カードのヘッダーにバッジを追加
           const problemHeader = document.querySelector(`#problem-${problemId} .problem-header`);
+          const existingBadge = problemHeader.querySelector('.badge.float-end');
+          if (existingBadge) {
+            existingBadge.remove();
+          }
+          
           const badge = document.createElement('span');
           badge.className = `badge ${data.is_correct ? 'bg-success' : 'bg-danger'} float-end`;
           badge.textContent = data.is_correct ? '正解' : '不正解';
@@ -375,7 +380,7 @@
         })
         .catch(error => {
           console.error('Error:', error);
-          alert('解答の送信中にエラーが発生しました。もう一度お試しください。');
+          alert('回答の送信中にエラーが発生しました: ' + error.message);
           submitBtn.disabled = false;
         });
       });

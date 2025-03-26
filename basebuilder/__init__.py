@@ -12,7 +12,8 @@ def init_app(app):
         from flask_admin.contrib.sqla import ModelView
         from basebuilder.models import (
             ProblemCategory, BasicKnowledgeItem, KnowledgeThemeRelation,
-            AnswerRecord, ProficiencyRecord, LearningPath, PathAssignment
+            AnswerRecord, ProficiencyRecord, LearningPath, PathAssignment,
+            TextSet, TextDelivery, TextProficiencyRecord  # テキスト関連モデルを追加
         )
         # 新しく追加したモジュールをインポート
         from basebuilder import exporters
@@ -31,6 +32,10 @@ def init_app(app):
         admin.add_view(BaseBuilderModelView(ProficiencyRecord, db.session, name='熟練度記録'))
         admin.add_view(BaseBuilderModelView(LearningPath, db.session, name='学習パス'))
         admin.add_view(BaseBuilderModelView(PathAssignment, db.session, name='パス割り当て'))
+        # テキスト関連のモデルを管理画面に追加
+        admin.add_view(BaseBuilderModelView(TextSet, db.session, name='テキストセット'))
+        admin.add_view(BaseBuilderModelView(TextDelivery, db.session, name='テキスト配信'))
+        admin.add_view(BaseBuilderModelView(TextProficiencyRecord, db.session, name='テキスト熟練度'))
     
     # ナビゲーションのカスタマイズ
     @app.context_processor
