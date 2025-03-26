@@ -565,39 +565,43 @@ def submit_answer(problem_id):
     answer = request.form.get('answer')
     answer_time = request.form.get('answer_time', type=int, default=0)
     
-    # 回答必須
+    # 解答必須
     if not answer:
-        return jsonify({'error': '回答が入力されていません。'}), 400
+        return jsonify({'error': '解答が入力されていません。'}), 400
     
-    # 回答が正しいかチェック
+    # 解答が正しいかチェック
     is_correct = False
-
+    
     # 問題タイプに応じた正解チェック
     if problem.answer_type == 'multiple_choice':
-        # 選択肢問題の場合、選択された値が正解かチェック
-        try:
-            choices = json.loads(problem.choices)
-            correct_choice = next((c for c in choices if c.get('isCorrect')), None)
-            if correct_choice and answer == correct_choice.get('value'):
-                is_correct = True
-            # 選択肢の文字列と直接比較する場合の対応
-            elif answer.strip().lower() == problem.correct_answer.strip().lower() or answer.strip().lower() == problem.title.strip().lower():
-                is_correct = True
-        except (json.JSONDecodeError, AttributeError, TypeError):
-            # JSONデコードエラーやその他の例外が発生した場合はフォールバック
-            is_correct = (answer.strip().lower() == problem.correct_answer.strip().lower() or 
-                         answer.strip().lower() == problem.title.strip().lower())
+        # 選択肢問題の場合、まず直接問題のタイトルと比較
+        if answer.strip().lower() == problem.title.strip().lower():
+            is_correct = True
+        # 次にcorrect_answerと比較
+        elif answer.strip().lower() == problem.correct_answer.strip().lower():
+            is_correct = True
+        # 最後に選択肢データがあれば確認
+        elif problem.choices:
+            try:
+                choices = json.loads(problem.choices)
+                for choice in choices:
+                    if choice.get('isCorrect') and answer == choice.get('value'):
+                        is_correct = True
+                        break
+            except:
+                pass
     elif problem.answer_type == 'true_false':
         # 真偽問題の場合
         is_correct = (answer.strip().lower() == problem.correct_answer.strip().lower())
     else:
-        # テキスト入力問題の場合は大文字小文字を区別せず、空白も無視して比較
+        # テキスト入力問題の場合
         student_answer = answer.strip().lower()
         correct_answer = problem.correct_answer.strip().lower()
-    
+        
         # 複数の正解パターンがあればカンマで区切られていることを想定
         correct_answers = [ans.strip().lower() for ans in correct_answer.split(',')]
         is_correct = (student_answer in correct_answers or student_answer == problem.title.strip().lower())
+    
     # 解答レコードを作成
     answer_record = AnswerRecord(
         student_id=current_user.id,
@@ -608,6 +612,7 @@ def submit_answer(problem_id):
     )
     
     db.session.add(answer_record)
+    db.session.commit()  # 忘れずにコミット
     
     # 熟練度を更新
     proficiency = update_proficiency(current_user.id, problem.category_id, is_correct)
@@ -618,12 +623,14 @@ def submit_answer(problem_id):
         learning_session = session['learning_session']
         
         # 現在の問題がセッションの問題と一致する場合
-        if learning_session['current_problem_id'] == problem_id:
+        if learning_session.get('current_problem_id') == problem_id:
             # 解答回数をカウントアップ
             learning_session['current_attempt'] += 1
             
             # 完了した問題リストに追加（まだなければ）
-            if problem_id not in learning_session['completed_problems']:
+            if problem_id not in learning_session.get('completed_problems', []):
+                if 'completed_problems' not in learning_session:
+                    learning_session['completed_problems'] = []
                 learning_session['completed_problems'].append(problem_id)
             
             session['learning_session'] = learning_session
@@ -634,7 +641,7 @@ def submit_answer(problem_id):
     # フィードバックを返す
     return jsonify({
         'is_correct': is_correct,
-        'correct_answer': problem.title,
+        'correct_answer': problem.title,  # 問題のタイトルを正解として返す
         'explanation': problem.explanation,
         'next_url': next_url,
         'proficiency_level': proficiency.level if proficiency else 0

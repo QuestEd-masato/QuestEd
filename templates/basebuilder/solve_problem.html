@@ -59,7 +59,7 @@
   }
   
   .choice-item:hover {
-    background-color: #f8f9fa;
+    background-color: #f0f7ff;
     transform: translateY(-2px);
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
   }
@@ -160,7 +160,7 @@
   </div>
   
   <div class="answer-area">
-    <form id="answer-form" method="post" action="{{ url_for('basebuilder_module.submit_answer', problem_id=problem.id) }}">
+    <form id="answer-form" method="POST" action="{{ url_for('basebuilder_module.submit_answer', problem_id=problem.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="problem_id" value="{{ problem.id }}">
       <input type="hidden" name="answer_time" id="answer-time" value="0">
@@ -170,24 +170,24 @@
         <div class="choices-container">
           {% if all_choices %}
             {% for choice in all_choices %}
-              <div class="choice-item" data-value="{{ choice }}">
+              <div class="choice-item" id="choice-container-{{ loop.index }}">
                 <input type="radio" name="answer" id="choice-{{ loop.index }}" 
                        value="{{ choice }}" class="visually-hidden">
-                <label for="choice-{{ loop.index }}" class="w-100 h-100 d-block">{{ choice }}</label>
+                <label for="choice-{{ loop.index }}" style="cursor:pointer; display:block; width:100%;">{{ choice }}</label>
               </div>
             {% endfor %}
           {% else %}
             <!-- 選択肢が提供されていない場合のフォールバック -->
-            <div class="choice-item" data-value="{{ problem.title }}">
+            <div class="choice-item" id="choice-container-1">
               <input type="radio" name="answer" id="choice-1" value="{{ problem.title }}" class="visually-hidden">
-              <label for="choice-1" class="w-100 h-100 d-block">{{ problem.title }}</label>
+              <label for="choice-1" style="cursor:pointer; display:block; width:100%;">{{ problem.title }}</label>
             </div>
             
             {% for choice in dummy_choices %}
-              <div class="choice-item" data-value="{{ choice }}">
+              <div class="choice-item" id="choice-container-{{ loop.index + 1 }}">
                 <input type="radio" name="answer" id="choice-{{ loop.index + 1 }}" 
                        value="{{ choice }}" class="visually-hidden">
-                <label for="choice-{{ loop.index + 1 }}" class="w-100 h-100 d-block">{{ choice }}</label>
+                <label for="choice-{{ loop.index + 1 }}" style="cursor:pointer; display:block; width:100%;">{{ choice }}</label>
               </div>
             {% endfor %}
           {% endif %}
@@ -201,7 +201,7 @@
       {% endif %}
       
       <div class="d-grid gap-2 mt-4">
-        <button type="submit" class="btn btn-primary" id="submit-btn">解答する</button>
+        <button type="button" class="btn btn-primary" id="submit-btn">解答する</button>
         {% if in_session and learning_session is defined and learning_session %}
           <a href="{{ url_for('basebuilder_module.next_problem') }}" class="btn btn-outline-secondary">
             スキップする
@@ -276,18 +276,40 @@
     }
     
     // 選択肢クリックのイベントハンドラ
-    const choiceItems = document.querySelectorAll('.choice-item');
-    choiceItems.forEach(item => {
-      // 選択肢全体をクリック可能に
+    document.querySelectorAll('.choice-item').forEach(item => {
       item.addEventListener('click', function() {
-        // 以前の選択をクリア
-        choiceItems.forEach(choice => choice.classList.remove('selected'));
+        // すべての選択肢から選択状態を解除
+        document.querySelectorAll('.choice-item').forEach(choice => {
+          choice.classList.remove('selected');
+        });
         
         // この選択肢を選択状態に
         this.classList.add('selected');
         
-        // 関連するラジオボタンをチェック
+        // この選択肢内のラジオボタンを選択
         const radio = this.querySelector('input[type="radio"]');
+        if (radio) {
+          radio.checked = true;
+        }
+      });
+    });
+    
+    // ラベルクリックイベントも設定
+    document.querySelectorAll('.choice-item label').forEach(label => {
+      label.addEventListener('click', function(e) {
+        // イベントバブリングを防止（2重クリックを避けるため）
+        e.stopPropagation();
+        
+        // 対応する選択肢アイテムを選択済みに
+        const choiceItem = this.closest('.choice-item');
+        document.querySelectorAll('.choice-item').forEach(choice => {
+          choice.classList.remove('selected');
+        });
+        choiceItem.classList.add('selected');
+        
+        // ラジオボタンを選択
+        const radioId = this.getAttribute('for');
+        const radio = document.getElementById(radioId);
         if (radio) {
           radio.checked = true;
         }
@@ -300,25 +322,19 @@
       textInput.focus();
     }
     
-    // フォーム送信のイベントハンドラ
-    const answerForm = document.getElementById('answer-form');
-    answerForm.addEventListener('submit', function(e) {
-      e.preventDefault();
+    // 送信ボタンのイベントハンドラ（type="button"に注意）
+    const submitBtn = document.getElementById('submit-btn');
+    submitBtn.addEventListener('click', function() {
+      // フォームを取得
+      const form = document.getElementById('answer-form');
       
       // タイマーを停止
       clearInterval(timerInterval);
       
       // フォームデータを収集
-      const formData = new FormData(answerForm);
+      const formData = new FormData(form);
       
-      // 選択肢が選択されている場合、値を確実に設定
-      if (document.querySelector('.choice-item.selected')) {
-        const selectedChoice = document.querySelector('.choice-item.selected');
-        const value = selectedChoice.dataset.value;
-        formData.set('answer', value);
-      }
-      
-      // 回答が入力されているか確認
+      // 回答が入力・選択されているか確認
       const answer = formData.get('answer');
       if (!answer) {
         alert('解答を入力または選択してください。');
@@ -326,10 +342,10 @@
       }
       
       // 送信ボタンを無効化
-      document.getElementById('submit-btn').disabled = true;
+      submitBtn.disabled = true;
       
-      // 回答を送信
-      fetch('{{ url_for("basebuilder_module.submit_answer", problem_id=problem.id) }}', {
+      // 回答を送信（AJAX）
+      fetch(form.action, {
         method: 'POST',
         body: formData,
         headers: {
@@ -355,7 +371,7 @@
           feedbackArea.classList.add('feedback-correct');
           feedbackArea.classList.remove('feedback-incorrect');
           feedbackTitle.textContent = '正解です！';
-          feedbackMessage.innerHTML = `<strong>${data.correct_answer}</strong> - 熟練度が上がりました（${data.proficiency_level}/5）`;
+          feedbackMessage.innerHTML = `<strong>${data.correct_answer}</strong> - 定着度が上がりました（${data.proficiency_level}/5）`;
         } else {
           feedbackArea.classList.add('feedback-incorrect');
           feedbackArea.classList.remove('feedback-correct');
@@ -379,8 +395,16 @@
         console.error('Error:', error);
         alert('解答の送信中にエラーが発生しました: ' + error.message);
         // 送信ボタンを再度有効化
-        document.getElementById('submit-btn').disabled = false;
+        submitBtn.disabled = false;
       });
+    });
+    
+    // フォームの通常送信を防止
+    const answerForm = document.getElementById('answer-form');
+    answerForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      // 送信ボタンのクリックイベントを手動で発火
+      document.getElementById('submit-btn').click();
     });
   });
 </script>
