@@ -1,6 +1,6 @@
 # basebuilder/models.py
 from datetime import datetime
-from app import db, User
+from app import db, User  # Classのインポートを削除
 
 # 問題カテゴリモデル → 単語カテゴリモデルに変更
 class ProblemCategory(db.Model):
@@ -38,14 +38,15 @@ class TextDelivery(db.Model):
     __tablename__ = 'text_deliveries'
     id = db.Column(db.Integer, primary_key=True)
     text_set_id = db.Column(db.Integer, db.ForeignKey('text_sets.id'), nullable=False)
-    class_id = db.Column(db.Integer, db.ForeignKey('class_groups.id'), nullable=False)
+    class_id = db.Column(db.Integer, db.ForeignKey('classes.id'), nullable=False)  # class_groupsからclassesに変更
     delivered_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     delivered_at = db.Column(db.DateTime, default=datetime.utcnow)
     due_date = db.Column(db.Date, nullable=True)
     
-    # リレーションシップ
-    class_group = db.relationship('ClassGroup', backref='text_deliveries')
+    # リレーションシップ - 循環インポートを避けるためにストリング形式で指定
     deliverer = db.relationship('User', backref='delivered_texts')
+    # Classとのリレーションシップを文字列で参照
+    delivered_class = db.relationship('Class', backref='text_deliveries')
 
 # 基礎知識問題モデル → 単語モデルに変更
 class BasicKnowledgeItem(db.Model):
