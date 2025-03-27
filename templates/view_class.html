@@ -17,13 +17,23 @@
         {% endif %}
     </div>
     
+    <!-- ここに新しいボタン群を追加 -->
+    {% if is_teacher %}
+    <div class="mt-3 mb-4">
+        <a href="{{ url_for('view_curriculums', class_id=class_.id) }}" class="btn btn-primary me-2">
+            <i class="fas fa-book"></i> カリキュラム
+        </a>
+        <a href="{{ url_for('generate_evaluations', class_id=class_.id) }}" class="btn btn-primary">
+            <i class="fas fa-star"></i> 評価
+        </a>
+    </div>
+    {% endif %}
+    <!-- ボタン群ここまで -->
+
     <div class="class-tabs">
         <button class="tab-btn active" onclick="showTab('students')">学生一覧</button>
         <button class="tab-btn" onclick="showTab('milestones')">マイルストーン</button>
         <button class="tab-btn" onclick="showTab('groups')">グループ</button>
-        {% if is_teacher %}
-        <button class="tab-btn" onclick="window.location.href='{{ url_for('generate_evaluations', class_id=class_.id) }}'">評価</button>
-        {% endif %}
     </div>
     
     <div id="students" class="tab-content active">

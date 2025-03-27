@@ -183,7 +183,7 @@
             nav {
                 padding: 0.3rem 0.5rem; /* パディングを減らしてスペースを確保 */
             }
-            
+
             .menu-toggle {
                 display: flex;
             }
@@ -218,8 +218,9 @@
                 width: 100%;
             }
 
-            /* モバイル用ドロップダウンメニュー */
+            /* モバイル用ドロップダウンメニュー - important表示制御を修正 */
             .dropdown-menu {
+                display: none !important; /* 初期状態は非表示 */
                 position: static;
                 box-shadow: none;
                 width: 100%;
@@ -227,6 +228,11 @@
                 background-color: rgba(255,255,255,0.05);
                 margin-top: 0.5rem;
                 margin-bottom: 0.5rem;
+            }
+
+            /* openクラスがついた場合のみ表示 - 優先度を高くする */
+            .nav-item.dropdown.open .dropdown-menu {
+                display: block !important; /* 最高優先度で表示 */
             }
 
             .dropdown-menu a {
@@ -237,19 +243,19 @@
             .dropdown-menu a:hover {
                 background-color: rgba(255,255,255,0.1);
             }
-            
+    
             /* モバイルでのドロップダウンの開閉ボタンを強調 */
             .nav-link.dropdown-toggle {
                 position: relative;
             }
-            
+    
             .nav-link.dropdown-toggle::after {
                 position: absolute;
                 right: 1rem;
                 top: 50%;
                 transform: translateY(-50%);
             }
-            
+    
             /* ドロップダウンが開いている時の表示を強調 */
             .nav-item.dropdown.open > .nav-link {
                 background-color: rgba(255,255,255,0.1);
@@ -375,6 +381,8 @@
                                 <ul class="dropdown-menu">
                                     <li><a href="{{ url_for('view_themes') }}">テーマ管理</a></li>
                                     <li><a href="{{ url_for('classes') }}">クラス管理</a></li>
+                                     <li><a href="{{ url_for('view_curriculums', class_id=current_class.id) if current_class else '#' }}">カリキュラム</a></li>
+                                     <li><a href="{{ url_for('generate_evaluations', class_id=current_class.id) if current_class else '#' }}">評価</a></li>
                                 </ul>
                             </li>
                             
@@ -440,122 +448,136 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // 初期化 - すべてのドロップダウンを確実に閉じる
-            document.querySelectorAll('.dropdown-menu').forEach(menu => {
-                menu.style.display = 'none';
+        // メニュートグル
+        const menuToggle = document.getElementById('menu-toggle');
+        const mainMenu = document.getElementById('main-menu');
+        const overlay = document.getElementById('mobile-overlay');
+    
+        // メニュートグルのクリックイベント
+        menuToggle.addEventListener('click', function(e) {
+            e.stopPropagation(); // イベントの伝播を停止
+            menuToggle.classList.toggle('active');
+            mainMenu.classList.toggle('active');
+            overlay.classList.toggle('active');
+            document.body.classList.toggle('menu-open');
+        });
+    
+        // オーバーレイのクリックイベント
+        overlay.addEventListener('click', function() {
+            menuToggle.classList.remove('active');
+            mainMenu.classList.remove('active');
+            overlay.classList.remove('active');
+            document.body.classList.remove('menu-open');
+        
+            // ドロップダウンもすべて閉じる
+            document.querySelectorAll('.nav-item.dropdown.open').forEach(item => {
+                item.classList.remove('open');
             });
-            
-            // メニュートグル
-            const menuToggle = document.getElementById('menu-toggle');
-            const mainMenu = document.getElementById('main-menu');
-            const overlay = document.getElementById('mobile-overlay');
-            
-            // メニュートグルのクリックイベント
-            menuToggle.addEventListener('click', function(e) {
+        });
+    
+        // ドロップダウントグルのクリックイベント - 修正版
+        const dropdownToggles = document.querySelectorAll('.js-dropdown-toggle');
+        dropdownToggles.forEach(toggle => {
+            toggle.addEventListener('click', function(e) {
+                e.preventDefault(); // デフォルトのナビゲーションを防止
                 e.stopPropagation(); // イベントの伝播を停止
-                menuToggle.classList.toggle('active');
-                mainMenu.classList.toggle('active');
-                overlay.classList.toggle('active');
-                document.body.classList.toggle('menu-open');
-            });
             
-            // オーバーレイのクリックイベント
-            overlay.addEventListener('click', function() {
-                menuToggle.classList.remove('active');
-                mainMenu.classList.remove('active');
-                overlay.classList.remove('active');
-                document.body.classList.remove('menu-open');
-                
-                // ドロップダウンもすべて閉じる
-                document.querySelectorAll('.nav-item.dropdown.open').forEach(item => {
-                    item.classList.remove('open');
-                });
-            });
+                const parentLi = this.closest('.nav-item.dropdown');
             
-            // ドロップダウントグルのクリックイベント
-            const dropdownToggles = document.querySelectorAll('.js-dropdown-toggle');
-            dropdownToggles.forEach(toggle => {
-                toggle.addEventListener('click', function(e) {
-                    e.preventDefault(); // デフォルトのナビゲーションを防止
-                    e.stopPropagation(); // イベントの伝播を停止
-                    
-                    const parentLi = this.closest('.nav-item.dropdown');
-                    
+                // 現在の状態を確認
+                const isCurrentlyOpen = parentLi.classList.contains('open');
+            
+                // モバイルサイズでの対応
+                if (window.innerWidth <= 992) {
                     // 他のドロップダウンを閉じる
                     document.querySelectorAll('.nav-item.dropdown.open').forEach(item => {
                         if (item !== parentLi) {
                             item.classList.remove('open');
                         }
                     });
-                    
-                    // ドロップダウンの開閉を切り替え
-                    parentLi.classList.toggle('open');
-                });
-            });
-            
-            // ドロップダウン内のリンクを直接クリックできるように
-            const dropdownLinks = document.querySelectorAll('.dropdown-menu a');
-            dropdownLinks.forEach(link => {
-                link.addEventListener('click', function(e) {
-                    // デフォルトのリンク動作を許可（阻止しない）
-                    // ただしイベントの親への伝播は停止する
-                    e.stopPropagation();
-                });
-            });
-            
-            // デスクトップでのホバー動作
-            const dropdownItems = document.querySelectorAll('.nav-item.dropdown');
-            dropdownItems.forEach(item => {
-                // ホバー開始時
-                item.addEventListener('mouseenter', function() {
-                    if (window.innerWidth > 992) {
-                        // 他のすべての開いているドロップダウンを閉じる
-                        document.querySelectorAll('.nav-item.dropdown.open').forEach(openItem => {
-                            if (openItem !== this) {
-                                openItem.classList.remove('open');
-                            }
-                        });
-                        
-                        // このドロップダウンを開く
-                        this.classList.add('open');
-                    }
-                });
                 
-                // ホバー終了時
-                item.addEventListener('mouseleave', function() {
-                    if (window.innerWidth > 992) {
-                        // ドロップダウンを閉じる
-                        this.classList.remove('open');
+                    // 現在のドロップダウンの状態を切り替え
+                    parentLi.classList.toggle('open');
+                
+                    // デバッグ用 - 状態の確認
+                    console.log('ドロップダウン状態:', parentLi.classList.contains('open'));
+                } else {
+                    // デスクトップでの挙動は既存のままでOK
+                    if (!isCurrentlyOpen) {
+                        document.querySelectorAll('.nav-item.dropdown.open').forEach(item => {
+                            item.classList.remove('open');
+                        });
+                        parentLi.classList.add('open');
+                    } else {
+                        parentLi.classList.remove('open');
                     }
-                });
-            });
-            
-            // ドロップダウン以外の場所をクリックしたときの処理
-            document.addEventListener('click', function(e) {
-                // ドロップダウンの外側をクリックしたとき
-                if (!e.target.closest('.nav-item.dropdown')) {
-                    document.querySelectorAll('.nav-item.dropdown.open').forEach(item => {
-                        item.classList.remove('open');
-                    });
-                }
-            });
-            
-            // リサイズ時の処理
-            window.addEventListener('resize', function() {
-                if (window.innerWidth > 992) {
-                    // モバイルメニューをリセット
-                    menuToggle.classList.remove('active');
-                    mainMenu.classList.remove('active');
-                    overlay.classList.remove('active');
-                    document.body.classList.remove('menu-open');
-                    
-                    // ドロップダウンはホバーで動作するようにリセット
-                    document.querySelectorAll('.nav-item.dropdown.open').forEach(item => {
-                        item.classList.remove('open');
-                    });
                 }
             });
         });
+    
+        // ドロップダウン内のリンクを直接クリックできるように
+        const dropdownLinks = document.querySelectorAll('.dropdown-menu a');
+        dropdownLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                // デフォルトのリンク動作を許可（阻止しない）
+                // ただしイベントの親への伝播は停止する
+                e.stopPropagation();
+            });
+        });
+    
+        // デスクトップでのホバー動作
+        const dropdownItems = document.querySelectorAll('.nav-item.dropdown');
+        dropdownItems.forEach(item => {
+            // ホバー開始時
+            item.addEventListener('mouseenter', function() {
+                if (window.innerWidth > 992) {
+                    // 他のすべての開いているドロップダウンを閉じる
+                    document.querySelectorAll('.nav-item.dropdown.open').forEach(openItem => {
+                        if (openItem !== this) {
+                            openItem.classList.remove('open');
+                        }
+                    });
+                
+                    // このドロップダウンを開く
+                    this.classList.add('open');
+                }
+            });
+        
+            // ホバー終了時
+            item.addEventListener('mouseleave', function() {
+                if (window.innerWidth > 992) {
+                    // ドロップダウンを閉じる
+                    this.classList.remove('open');
+                }
+            });
+        });
+    
+        // ドロップダウン以外の場所をクリックしたときの処理
+        document.addEventListener('click', function(e) {
+            // ドロップダウンの外側をクリックしたとき
+            if (!e.target.closest('.nav-item.dropdown')) {
+                document.querySelectorAll('.nav-item.dropdown.open').forEach(item => {
+                    item.classList.remove('open');
+                });
+            }
+        });
+    
+        // リサイズ時の処理
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 992) {
+                // モバイルメニューをリセット
+                menuToggle.classList.remove('active');
+                mainMenu.classList.remove('active');
+                overlay.classList.remove('active');
+                document.body.classList.remove('menu-open');
+            
+                // ドロップダウンはホバーで動作するようにリセット
+                document.querySelectorAll('.nav-item.dropdown.open').forEach(item => {
+                    item.classList.remove('open');
+                });
+            }
+        });
+    });
     </script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block extra_js %}{% endblock %}
