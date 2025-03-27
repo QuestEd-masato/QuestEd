@@ -556,7 +556,12 @@ def solve_problem(problem_id):
 @login_required
 def submit_answer(problem_id):
     if current_user.role != 'student':
-        return jsonify({'error': 'この機能は学生のみ利用可能です。'}), 403
+        # AJAX/通常フォーム送信を区別
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'error': 'この機能は学生のみ利用可能です。'}), 403
+        else:
+            flash('この機能は学生のみ利用可能です。')
+            return redirect(url_for('basebuilder_module.index'))
     
     # 問題を取得
     problem = BasicKnowledgeItem.query.get_or_404(problem_id)
@@ -567,7 +572,11 @@ def submit_answer(problem_id):
     
     # 解答必須
     if not answer:
-        return jsonify({'error': '解答が入力されていません。'}), 400
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'error': '解答が入力されていません。'}), 400
+        else:
+            flash('解答を入力してください。')
+            return redirect(url_for('basebuilder_module.solve_problem', problem_id=problem_id))
     
     # 解答が正しいかチェック
     is_correct = False
@@ -638,14 +647,28 @@ def submit_answer(problem_id):
             # 次の問題へのURLを設定
             next_url = url_for('basebuilder_module.next_problem')
     
-    # フィードバックを返す
-    return jsonify({
-        'is_correct': is_correct,
-        'correct_answer': problem.title,  # 問題のタイトルを正解として返す
-        'explanation': problem.explanation,
-        'next_url': next_url,
-        'proficiency_level': proficiency.level if proficiency else 0
-    })
+    # AJAXリクエストとフォーム送信を区別して応答
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        # AJAXリクエストの場合はJSONを返す
+        return jsonify({
+            'is_correct': is_correct,
+            'correct_answer': problem.title,  # 問題のタイトルを正解として返す
+            'explanation': problem.explanation,
+            'next_url': next_url,
+            'proficiency_level': proficiency.level if proficiency else 0
+        })
+    else:
+        # 通常のフォーム送信の場合はリダイレクト
+        if is_correct:
+            flash('正解です！ 定着度が上がりました。')
+        else:
+            flash(f'不正解です。正解は: {problem.title}')
+        
+        # セッション中なら次の問題へ、そうでなければ問題一覧へ
+        if next_url:
+            return redirect(next_url)
+        else:
+            return redirect(url_for('basebuilder_module.problems'))
 
 @basebuilder_module.route('/start_session')
 @login_required

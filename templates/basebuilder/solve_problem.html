@@ -70,6 +70,17 @@
     box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
   }
   
+  .choice-item.selected::after {
+    content: "✓";
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #0d6efd;
+    font-weight: bold;
+    font-size: 1.2rem;
+  }
+  
   .proficiency-indicator {
     display: flex;
     margin-bottom: 15px;
@@ -98,6 +109,16 @@
   
   .session-progress {
     margin-bottom: 20px;
+  }
+  
+  #selected-answer {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background-color: #e9f7fe;
+    border-radius: 4px;
+    font-weight: bold;
+    display: none;
+    border-left: 4px solid #0d6efd;
   }
 </style>
 {% endblock %}
@@ -142,7 +163,11 @@
     {% if problem.choices %}
       {% set example_data = [] %}
       {% if problem.choices|default('{}') != '{}' %}
-        {% set example_data = problem.choices|fromjson|default([]) %}
+        {% set error = False %}
+        {% set example_data = [] %}
+        {% if not error %}
+          {% set example_data = problem.choices|fromjson|default([]) %}
+        {% endif %}
       {% endif %}
       
       {% if example_data and example_data|length > 0 and example_data[0].text %}
@@ -164,13 +189,13 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="problem_id" value="{{ problem.id }}">
       <input type="hidden" name="answer_time" id="answer-time" value="0">
-      
+    
       {% if is_choice_mode %}
         <!-- 選択問題（熟練度0-2ポイント） -->
         <div class="choices-container">
           {% if all_choices %}
             {% for choice in all_choices %}
-              <div class="choice-item" id="choice-container-{{ loop.index }}">
+              <div class="choice-item" data-value="{{ choice }}">
                 <input type="radio" name="answer" id="choice-{{ loop.index }}" 
                        value="{{ choice }}" class="visually-hidden">
                 <label for="choice-{{ loop.index }}" style="cursor:pointer; display:block; width:100%;">{{ choice }}</label>
@@ -178,13 +203,13 @@
             {% endfor %}
           {% else %}
             <!-- 選択肢が提供されていない場合のフォールバック -->
-            <div class="choice-item" id="choice-container-1">
+            <div class="choice-item" data-value="{{ problem.title }}">
               <input type="radio" name="answer" id="choice-1" value="{{ problem.title }}" class="visually-hidden">
               <label for="choice-1" style="cursor:pointer; display:block; width:100%;">{{ problem.title }}</label>
             </div>
-            
+          
             {% for choice in dummy_choices %}
-              <div class="choice-item" id="choice-container-{{ loop.index + 1 }}">
+              <div class="choice-item" data-value="{{ choice }}">
                 <input type="radio" name="answer" id="choice-{{ loop.index + 1 }}" 
                        value="{{ choice }}" class="visually-hidden">
                 <label for="choice-{{ loop.index + 1 }}" style="cursor:pointer; display:block; width:100%;">{{ choice }}</label>
@@ -192,6 +217,9 @@
             {% endfor %}
           {% endif %}
         </div>
+        
+        <!-- 選択した答えを表示するエリア -->
+        <div id="selected-answer"></div>
       {% else %}
         <!-- 入力問題（熟練度3-5ポイント） -->
         <div class="form-group">
@@ -199,9 +227,9 @@
           <input type="text" name="answer" id="text-answer" class="form-control" required autocomplete="off">
         </div>
       {% endif %}
-      
+    
       <div class="d-grid gap-2 mt-4">
-        <button type="button" class="btn btn-primary" id="submit-btn">解答する</button>
+        <button type="submit" class="btn btn-primary" id="submit-btn">解答する</button>
         {% if in_session and learning_session is defined and learning_session %}
           <a href="{{ url_for('basebuilder_module.next_problem') }}" class="btn btn-outline-secondary">
             スキップする
@@ -231,7 +259,11 @@
       {% if problem.choices %}
         {% set example_data = [] %}
         {% if problem.choices|default('{}') != '{}' %}
-          {% set example_data = problem.choices|fromjson|default([]) %}
+          {% set error = False %}
+          {% set example_data = [] %}
+          {% if not error %}
+            {% set example_data = problem.choices|fromjson|default([]) %}
+          {% endif %}
         {% endif %}
         
         {% if example_data and example_data|length > 0 and example_data[0].text %}
@@ -276,42 +308,29 @@
     }
     
     // 選択肢クリックのイベントハンドラ
-    document.querySelectorAll('.choice-item').forEach(item => {
+    const choiceItems = document.querySelectorAll('.choice-item');
+    const selectedAnswerDisplay = document.getElementById('selected-answer');
+    
+    choiceItems.forEach(item => {
       item.addEventListener('click', function() {
         // すべての選択肢から選択状態を解除
-        document.querySelectorAll('.choice-item').forEach(choice => {
+        choiceItems.forEach(choice => {
           choice.classList.remove('selected');
         });
         
         // この選択肢を選択状態に
         this.classList.add('selected');
         
-        // この選択肢内のラジオボタンを選択
+        // ラジオボタンを選択
         const radio = this.querySelector('input[type="radio"]');
         if (radio) {
           radio.checked = true;
-        }
-      });
-    });
-    
-    // ラベルクリックイベントも設定
-    document.querySelectorAll('.choice-item label').forEach(label => {
-      label.addEventListener('click', function(e) {
-        // イベントバブリングを防止（2重クリックを避けるため）
-        e.stopPropagation();
-        
-        // 対応する選択肢アイテムを選択済みに
-        const choiceItem = this.closest('.choice-item');
-        document.querySelectorAll('.choice-item').forEach(choice => {
-          choice.classList.remove('selected');
-        });
-        choiceItem.classList.add('selected');
-        
-        // ラジオボタンを選択
-        const radioId = this.getAttribute('for');
-        const radio = document.getElementById(radioId);
-        if (radio) {
-          radio.checked = true;
+          
+          // 選択した答えを表示
+          if (selectedAnswerDisplay) {
+            selectedAnswerDisplay.textContent = `選択した答え: ${radio.value}`;
+            selectedAnswerDisplay.style.display = 'block';
+          }
         }
       });
     });
@@ -322,34 +341,34 @@
       textInput.focus();
     }
     
-    // 送信ボタンのイベントハンドラ（type="button"に注意）
-    const submitBtn = document.getElementById('submit-btn');
-    submitBtn.addEventListener('click', function() {
-      // フォームを取得
-      const form = document.getElementById('answer-form');
+    // フォーム送信処理
+    const answerForm = document.getElementById('answer-form');
+    answerForm.addEventListener('submit', function(e) {
+      e.preventDefault(); // 通常のフォーム送信を防止
       
       // タイマーを停止
       clearInterval(timerInterval);
       
       // フォームデータを収集
-      const formData = new FormData(form);
+      const formData = new FormData(answerForm);
       
-      // 回答が入力・選択されているか確認
+      // 回答が入力されているか確認
       const answer = formData.get('answer');
       if (!answer) {
         alert('解答を入力または選択してください。');
-        return;
+        return false;
       }
       
       // 送信ボタンを無効化
-      submitBtn.disabled = true;
+      document.getElementById('submit-btn').disabled = true;
       
-      // 回答を送信（AJAX）
-      fetch(form.action, {
+      // 回答を送信
+      fetch(answerForm.action, {
         method: 'POST',
         body: formData,
         headers: {
-          'X-Requested-With': 'XMLHttpRequest'
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': '{{ csrf_token() }}'
         }
       })
       .then(response => {
@@ -393,18 +412,18 @@
       })
       .catch(error => {
         console.error('Error:', error);
+        
+        // JSONが直接表示される問題対策
+        if (error.message.includes('JSON')) {
+          // ページをリロードして回避
+          window.location.href = '{{ url_for("basebuilder_module.problems") }}';
+          return;
+        }
+        
         alert('解答の送信中にエラーが発生しました: ' + error.message);
         // 送信ボタンを再度有効化
-        submitBtn.disabled = false;
+        document.getElementById('submit-btn').disabled = false;
       });
-    });
-    
-    // フォームの通常送信を防止
-    const answerForm = document.getElementById('answer-form');
-    answerForm.addEventListener('submit', function(e) {
-      e.preventDefault();
-      // 送信ボタンのクリックイベントを手動で発火
-      document.getElementById('submit-btn').click();
     });
   });
 </script>
