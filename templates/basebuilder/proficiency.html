@@ -2,7 +2,7 @@
 
 {% block basebuilder_content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-  <h1 class="section-title">基礎学力熟練度</h1>
+  <h1 class="section-title">熟練度表示</h1>
   <a href="{{ url_for('basebuilder_module.problems') }}" class="btn btn-primary">
     <i class="fas fa-book"></i> 学習を続ける
   </a>
@@ -26,14 +26,14 @@
                     {{ record.level }}%
                   </span>
                 </div>
-                
+              
                 <div class="proficiency-meter">
                   <div class="proficiency-bar" style="width: {{ record.level }}%"></div>
                 </div>
-                
-                <div class="d-flex justify-content-between">
+              
+                <div class="d-flex justify-content-between align-items-center">
                   <small class="text-muted">最終更新: {{ record.last_updated.strftime('%Y-%m-%d %H:%M') }}</small>
-                  
+                
                   <small>
                     {% if record.level >= 80 %}
                       <span class="text-success">マスター</span>
@@ -45,6 +45,13 @@
                       <span class="text-danger">初心者</span>
                     {% endif %}
                   </small>
+                </div>
+              
+                <!-- カテゴリ別セッション開始リンクを追加 -->
+                <div class="mt-2">
+                  <a href="{{ url_for('basebuilder_module.category_texts', category_id=record.category.id) }}" class="btn btn-sm btn-outline">
+                    <i class="fas fa-play"></i> このカテゴリで学習
+                  </a>
                 </div>
               </div>
             {% endfor %}

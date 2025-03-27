@@ -207,7 +207,7 @@ def import_text_from_csv(csv_content, title, description, category_id, db, TextS
     
     Args:
         csv_content: CSVファイルの内容（文字列）
-        title: テキストセットのタイトル
+        title: テキストセットのタイトル（空の場合は自動生成）
         description: テキストセットの説明
         category_id: カテゴリID
         db: SQLAlchemyのdbオブジェクト
@@ -229,6 +229,16 @@ def import_text_from_csv(csv_content, title, description, category_id, db, TextS
         return success_count, error_count, errors
     
     try:
+        # カテゴリ情報を取得
+        category = ProblemCategory.query.get(category_id)
+        category_name = category.name if category else "カテゴリ"
+        
+        # タイトルが空の場合は自動生成
+        if not title.strip():
+            # 同じカテゴリの既存テキスト数を取得
+            existing_count = TextSet.query.filter_by(category_id=category_id).count()
+            title = f"【{category_name}】No.{existing_count + 1}"
+        
         # 新しいテキストセットを作成
         new_text_set = TextSet(
             title=title,

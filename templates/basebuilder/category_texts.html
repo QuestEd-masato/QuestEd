@@ -1,0 +1,61 @@
+<!-- templates/basebuilder/category_texts.html -->
+{% extends 'basebuilder/layout.html' %}
+
+{% block basebuilder_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="section-title">{{ category.name }} の学習セット</h1>
+  <a href="{{ url_for('basebuilder_module.view_proficiency') }}" class="btn btn-outline">
+    <i class="fas fa-arrow-left"></i> ホームに戻る
+  </a>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header">
+    <h5 class="card-title">セッション開始</h5>
+  </div>
+  <div class="card-body">
+    <p>このカテゴリには合計 {{ total_problems }} 個の問題があります。</p>
+    <p>以下の学習セットから選択するか、すべての問題からセッションを開始できます。</p>
+    
+    <div class="d-grid gap-2 mt-3">
+      <a href="{{ url_for('basebuilder_module.start_category_session', category_id=category.id) }}" class="btn btn-primary">
+        <i class="fas fa-play"></i> すべての問題でセッションを開始
+      </a>
+    </div>
+  </div>
+</div>
+
+{% if text_sets %}
+<div class="card">
+  <div class="card-header">
+    <h5 class="card-title">学習セット一覧</h5>
+  </div>
+  <div class="card-body">
+    <div class="row">
+      {% for text_set in text_sets %}
+        <div class="col-md-6 mb-4">
+          <div class="card h-100">
+            <div class="card-body">
+              <h5 class="card-title">{{ text_set.title }}</h5>
+              {% if text_set.description %}
+                <p class="text-muted">{{ text_set.description }}</p>
+              {% endif %}
+              <p>問題数: {{ text_problem_counts[text_set.id] }}問</p>
+              <div class="mt-3">
+                <a href="{{ url_for('basebuilder_module.start_text_session', text_id=text_set.id) }}" class="btn btn-primary">
+                  <i class="fas fa-play"></i> このセットでセッションを開始
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+  <p>このカテゴリにはまだ学習セットがありません。自動的にすべての問題から学習できます。</p>
+</div>
+{% endif %}
+{% endblock %}

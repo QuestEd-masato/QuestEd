@@ -37,9 +37,11 @@
         <form method="POST" action="{{ url_for('basebuilder_module.import_text_set') }}" enctype="multipart/form-data">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           
+          <!-- templates/basebuilder/import_text.html -->
           <div class="form-group mb-3">
-            <label for="title" class="form-label">テキストタイトル <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" id="title" name="title" required>
+            <label for="title" class="form-label">テキストタイトル</label>
+            <input type="text" class="form-control" id="title" name="title">
+            <div class="form-text">空白の場合は自動的に「【カテゴリ名】No.X」の形式で生成されます。</div>
           </div>
           
           <div class="form-group mb-3">

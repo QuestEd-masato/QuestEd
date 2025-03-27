@@ -152,9 +152,6 @@ def index():
         # 教師が作成した学習パスの数を取得
         path_count = LearningPath.query.filter_by(created_by=current_user.id).count()
         
-        # 教師が作成したテキストの数を取得
-        text_count = TextSet.query.filter_by(created_by=current_user.id).count()
-        
         # 教師が担当するクラスを取得
         classes = getattr(current_user, 'classes_teaching', [])
         
@@ -168,7 +165,6 @@ def index():
             problem_count=problem_count,
             category_count=category_count,
             path_count=path_count,
-            text_count=text_count,
             classes=classes,
             recent_problems=recent_problems
         )
@@ -551,6 +547,40 @@ def solve_problem(problem_id):
         in_session=in_session,
         learning_session=learning_session  # 追加: learning_session 変数をテンプレートに渡す
     )
+# basebuilder/routes.py に追加する関数
+@basebuilder_module.route('/category/<int:category_id>/texts')
+@login_required
+def category_texts(category_id):
+    """カテゴリ内の問題をテキストに分割して表示する"""
+    if current_user.role != 'student':
+        flash('この機能は学生のみ利用可能です。')
+        return redirect(url_for('basebuilder_module.index'))
+    
+    # カテゴリを取得
+    category = ProblemCategory.query.get_or_404(category_id)
+    
+    # カテゴリ内の問題を取得
+    problems = BasicKnowledgeItem.query.filter_by(
+        category_id=category_id,
+        is_active=True
+    ).all()
+    
+    # 既存のテキストセットを取得
+    text_sets = TextSet.query.filter_by(category_id=category_id).all()
+    
+    # 各テキストセットの問題数をカウント
+    text_problem_counts = {}
+    for text_set in text_sets:
+        count = BasicKnowledgeItem.query.filter_by(text_set_id=text_set.id).count()
+        text_problem_counts[text_set.id] = count
+    
+    return render_template(
+        'basebuilder/category_texts.html',
+        category=category,
+        text_sets=text_sets,
+        text_problem_counts=text_problem_counts,
+        total_problems=len(problems)
+    )
 
 @basebuilder_module.route('/problem/<int:problem_id>/submit', methods=['POST'])
 @login_required
@@ -678,9 +708,36 @@ def start_session():
         flash('この機能は学生のみ利用可能です。')
         return redirect(url_for('basebuilder_module.index'))
     
+    # 今日復習すべき問題を取得
+    today = datetime.now().date()
+    proficiency_records = ProficiencyRecord.query.filter(
+        ProficiencyRecord.student_id == current_user.id,
+        ProficiencyRecord.review_date <= today
+    ).all()
+    
+    # 復習すべき問題のカテゴリIDを取得
+    category_ids = [record.category_id for record in proficiency_records]
+    
+    # これらのカテゴリの問題IDを取得
+    problem_ids = []
+    if category_ids:
+        problem_ids_query = db.session.query(BasicKnowledgeItem.id).filter(
+            BasicKnowledgeItem.category_id.in_(category_ids),
+            BasicKnowledgeItem.is_active == True
+        ).all()
+        problem_ids = [id[0] for id in problem_ids_query]
+    
+    # 問題がなければ、全問題から取得
+    if not problem_ids:
+        problem_ids_query = db.session.query(BasicKnowledgeItem.id).filter(
+            BasicKnowledgeItem.is_active == True
+        ).all()
+        problem_ids = [id[0] for id in problem_ids_query]
+    
     # セッション情報を初期化
     session['learning_session'] = {
-        'total_problems': 10,  # 1回のセッションで学習する単語数
+        'problem_ids': problem_ids,  # 問題IDのリストを追加
+        'total_problems': min(10, len(problem_ids)),  # 最大10問
         'max_attempts': 15,    # 最大解答回数
         'current_attempt': 0,  # 現在の解答回数
         'completed_problems': [],  # 完了した問題ID
@@ -691,6 +748,83 @@ def start_session():
     # 最初の問題を選択
     return redirect(url_for('basebuilder_module.next_problem'))
 
+# ここに追加 - カテゴリごとのセッション開始
+@basebuilder_module.route('/category/<int:category_id>/start_session')
+@login_required
+def start_category_session(category_id):
+    """カテゴリ内の問題でセッションを開始する"""
+    if current_user.role != 'student':
+        flash('この機能は学生のみ利用可能です。')
+        return redirect(url_for('basebuilder_module.index'))
+    
+    # カテゴリを取得
+    category = ProblemCategory.query.get_or_404(category_id)
+    
+    # カテゴリ内の問題のIDを取得
+    problem_ids = db.session.query(BasicKnowledgeItem.id).filter_by(
+        category_id=category_id,
+        is_active=True
+    ).all()
+    problem_ids = [id[0] for id in problem_ids]
+    
+    if not problem_ids:
+        flash('このカテゴリには学習できる問題がありません。')
+        return redirect(url_for('basebuilder_module.category_texts', category_id=category_id))
+    
+    # セッション情報を初期化
+    session['learning_session'] = {
+        'category_id': category_id,
+        'problem_ids': problem_ids,  # すべての問題IDをリストで保持
+        'total_problems': min(10, len(problem_ids)),  # 最大10問
+        'max_attempts': 15,         # 最大解答回数
+        'current_attempt': 0,       # 現在の解答回数
+        'completed_problems': [],   # 完了した問題ID
+        'current_problem_id': None, # 現在の問題ID
+        'session_start': datetime.now().isoformat()  # セッション開始時間
+    }
+    
+    # 最初の問題を選択
+    return redirect(url_for('basebuilder_module.next_problem'))
+
+@basebuilder_module.route('/text/<int:text_id>/start_session')
+@login_required
+def start_text_session(text_id):
+    """テキスト内の問題でセッションを開始する"""
+    if current_user.role != 'student':
+        flash('この機能は学生のみ利用可能です。')
+        return redirect(url_for('basebuilder_module.index'))
+    
+    # テキストを取得
+    text_set = TextSet.query.get_or_404(text_id)
+    
+    # テキスト内の問題のIDを取得
+    problem_ids = db.session.query(BasicKnowledgeItem.id).filter_by(
+        text_set_id=text_id,
+        is_active=True
+    ).all()
+    problem_ids = [id[0] for id in problem_ids]
+    
+    if not problem_ids:
+        flash('このテキストには学習できる問題がありません。')
+        return redirect(url_for('basebuilder_module.category_texts', category_id=text_set.category_id))
+    
+    # セッション情報を初期化
+    session['learning_session'] = {
+        'text_id': text_id,
+        'category_id': text_set.category_id,
+        'problem_ids': problem_ids,  # すべての問題IDをリストで保持
+        'total_problems': min(10, len(problem_ids)),  # 最大10問
+        'max_attempts': 15,         # 最大解答回数
+        'current_attempt': 0,       # 現在の解答回数
+        'completed_problems': [],   # 完了した問題ID
+        'current_problem_id': None, # 現在の問題ID
+        'session_start': datetime.now().isoformat()  # セッション開始時間
+    }
+    
+    # 最初の問題を選択
+    return redirect(url_for('basebuilder_module.next_problem'))
+
+# このコードを置き換える
 @basebuilder_module.route('/next_problem')
 @login_required
 def next_problem():
@@ -710,44 +844,47 @@ def next_problem():
         flash('学習セッションが終了しました。お疲れ様でした！')
         return redirect(url_for('basebuilder_module.session_summary'))
     
-    # すべての単語を学習し終えたかチェック
+    # すべての単語を学習し終えたかチェック（セッション内の問題数に達したか）
     if len(learning_session['completed_problems']) >= learning_session['total_problems']:
         flash('すべての単語を学習しました。お疲れ様でした！')
         return redirect(url_for('basebuilder_module.session_summary'))
     
-    # 今日学習すべき単語を優先して取得
-    today = datetime.now().date()
+    # 利用可能な問題ID (problem_idsキーが存在しない場合の対応)
+    available_problem_ids = learning_session.get('problem_ids', [])
     
-    # 1. 今日学習すべき単語（review_date <= today）から未学習のものを取得
-    due_problems = db.session.query(BasicKnowledgeItem).join(
-        ProficiencyRecord, 
-        BasicKnowledgeItem.category_id == ProficiencyRecord.category_id
-    ).filter(
-        ProficiencyRecord.student_id == current_user.id,
-        ProficiencyRecord.review_date <= today,
-        ~BasicKnowledgeItem.id.in_(learning_session['completed_problems']),
-        BasicKnowledgeItem.is_active == True
-    ).order_by(func.random()).limit(1).all()
-    
-    # 2. 今日学習すべき単語がない場合は、ランダムに未学習の単語を取得
-    if not due_problems:
-        due_problems = BasicKnowledgeItem.query.filter(
-            ~BasicKnowledgeItem.id.in_(learning_session['completed_problems']),
+    # 問題IDがない場合は全体から取得
+    if not available_problem_ids:
+        problem_ids_query = db.session.query(BasicKnowledgeItem.id).filter(
             BasicKnowledgeItem.is_active == True
-        ).order_by(func.random()).limit(1).all()
+        ).limit(20).all()
+        available_problem_ids = [id[0] for id in problem_ids_query]
+        learning_session['problem_ids'] = available_problem_ids
     
-    # 利用可能な単語がない場合
-    if not due_problems:
-        flash('学習できる単語がありません。新しい単語を追加してください。')
+    # 問題がまだない場合はエラーメッセージ
+    if not available_problem_ids:
+        flash('学習可能な問題がありません。問題を追加してください。')
         return redirect(url_for('basebuilder_module.index'))
     
+    # 問題が少ない場合、completed_problemsをリセット
+    if len(available_problem_ids) <= learning_session['total_problems'] and len(learning_session['completed_problems']) >= len(available_problem_ids):
+        learning_session['completed_problems'] = []
+    
+    # まだ解いていない問題からランダムに選択
+    unfinished_problems = [pid for pid in available_problem_ids if pid not in learning_session['completed_problems']]
+    
+    if unfinished_problems:
+        # ランダムに一つ選択
+        problem_id = random.choice(unfinished_problems)
+    else:
+        # 全問題からランダムに選択（通常はここには来ないはず）
+        problem_id = random.choice(available_problem_ids)
+    
     # 選択した問題をセッションに記録
-    problem = due_problems[0]
-    learning_session['current_problem_id'] = problem.id
+    learning_session['current_problem_id'] = problem_id
     session['learning_session'] = learning_session
     
     # 問題解答ページにリダイレクト
-    return redirect(url_for('basebuilder_module.solve_problem', problem_id=problem.id))
+    return redirect(url_for('basebuilder_module.solve_problem', problem_id=problem_id))
 
 @basebuilder_module.route('/session_summary')
 @login_required
@@ -1511,27 +1648,7 @@ def import_problems():
     # GETリクエストの場合、インポートフォームを表示
     return render_template('basebuilder/import_problems.html')
 
-# テキスト一覧
-@basebuilder_module.route('/text_sets')
-@login_required
-def text_sets():
-    if current_user.role == 'student':
-        # 学生用のテキスト一覧へリダイレクト
-        return redirect(url_for('basebuilder_module.my_texts'))
-    
-    elif current_user.role == 'teacher':
-        # 教師が作成したテキストセットを取得
-        text_sets = TextSet.query.filter_by(created_by=current_user.id).all()
-        
-        return render_template(
-            'basebuilder/text_sets.html',
-            text_sets=text_sets
-        )
-    
-    # その他のロールの場合
-    return redirect(url_for('basebuilder_module.index'))
-
-# テキスト作成・インポート
+# ここに追加 - テキストセットとしてインポート
 @basebuilder_module.route('/text_set/import', methods=['GET', 'POST'])
 @login_required
 def import_text_set():
@@ -1543,12 +1660,12 @@ def import_text_set():
     categories = ProblemCategory.query.all()
     
     if request.method == 'POST':
-        title = request.form.get('title')
+        title = request.form.get('title', '')  # 空でも許容
         description = request.form.get('description', '')
         category_id = request.form.get('category_id', type=int)
         
-        if not title or not category_id:
-            flash('タイトルとカテゴリは必須です。')
+        if not category_id:
+            flash('カテゴリは必須です。')
             return render_template(
                 'basebuilder/import_text.html',
                 categories=categories
@@ -1577,7 +1694,7 @@ def import_text_set():
                 
                 # 結果を表示
                 if success_count > 0:
-                    flash(f'{success_count}個の問題を含むテキスト「{title}」が作成されました。')
+                    flash(f'{success_count}個の問題を含むテキストがインポートされました。')
                 
                 if error_count > 0:
                     for error in errors:
@@ -1597,6 +1714,26 @@ def import_text_set():
         'basebuilder/import_text.html',
         categories=categories
     )
+
+# テキスト一覧
+@basebuilder_module.route('/text_sets')
+@login_required
+def text_sets():
+    if current_user.role == 'student':
+        # 学生用のテキスト一覧へリダイレクト
+        return redirect(url_for('basebuilder_module.my_texts'))
+    
+    elif current_user.role == 'teacher':
+        # 教師が作成したテキストセットを取得
+        text_sets = TextSet.query.filter_by(created_by=current_user.id).all()
+        
+        return render_template(
+            'basebuilder/text_sets.html',
+            text_sets=text_sets
+        )
+    
+    # その他のロールの場合
+    return redirect(url_for('basebuilder_module.index'))
 
 # テキスト詳細表示
 @basebuilder_module.route('/text_set/<int:text_id>')
