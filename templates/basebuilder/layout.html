@@ -382,24 +382,23 @@
                 <span></span>
             </div>
             
+            <!-- ナビゲーションの修正部分 -->
             <div class="main-nav">
                 <ul id="main-menu">
                     <li><a href="{{ url_for('basebuilder_module.index') }}"><i class="fas fa-home"></i> ホーム</a></li>
-                    
+        
                     {% if current_user.role == 'student' %}
-    　　　　　　　　　　　<li><a href="{{ url_for('basebuilder_module.index') }}"><i class="fas fa-home"></i> ホーム</a></li>
-    　　　　　　　　　　　<li><a href="{{ url_for('basebuilder_module.problems') }}"><i class="fas fa-book"></i> 問題に挑戦</a></li>
-    　　　　　　　　　　　<li><a href="{{ url_for('basebuilder_module.view_proficiency') }}"><i class="fas fa-chart-line"></i> 熟練度</a></li>
-    　　　　　　　　　　　<li><a href="{{ url_for('basebuilder_module.view_history') }}"><i class="fas fa-history"></i> 学習履歴</a></li>
-    　　　　　　　　　　　<li><a href="{{ url_for('basebuilder_module.learning_paths') }}"><i class="fas fa-road"></i> 学習パス</a></li>
-　　　　　　　　　　　{% elif current_user.role == 'teacher' %}
-    　　　　　　　　　　　<li><a href="{{ url_for('basebuilder_module.index') }}"><i class="fas fa-home"></i> ホーム</a></li>
-    　　　　　　　　　　　<li><a href="{{ url_for('basebuilder_module.categories') }}"><i class="fas fa-folder"></i> カテゴリ管理</a></li>
-    　　　　　　　　　　　<li><a href="{{ url_for('basebuilder_module.problems') }}"><i class="fas fa-tasks"></i> 問題管理</a></li>
-    　　　　　　　　　　　<li><a href="{{ url_for('basebuilder_module.theme_relations') }}"><i class="fas fa-link"></i> テーマ関連付け</a></li>
-    　　　　　　　　　　　<li><a href="{{ url_for('basebuilder_module.analysis') }}"><i class="fas fa-chart-bar"></i> 理解度分析</a></li>
-　　　　　　　　　　　{% endif %}
-                    
+                        <li><a href="{{ url_for('basebuilder_module.problems') }}"><i class="fas fa-book"></i> 問題に挑戦</a></li>
+                        <li><a href="{{ url_for('basebuilder_module.view_proficiency') }}"><i class="fas fa-chart-line"></i> 熟練度</a></li>
+                        <li><a href="{{ url_for('basebuilder_module.view_history') }}"><i class="fas fa-history"></i> 学習履歴</a></li>
+                        <li><a href="{{ url_for('basebuilder_module.learning_paths') }}"><i class="fas fa-road"></i> 学習パス</a></li>
+                    {% elif current_user.role == 'teacher' %}
+                        <li><a href="{{ url_for('basebuilder_module.categories') }}"><i class="fas fa-folder"></i> カテゴリ管理</a></li>
+                        <li><a href="{{ url_for('basebuilder_module.problems') }}"><i class="fas fa-tasks"></i> 問題管理</a></li>
+                        <li><a href="{{ url_for('basebuilder_module.theme_relations') }}"><i class="fas fa-link"></i> テーマ関連付け</a></li>
+                        <li><a href="{{ url_for('basebuilder_module.analysis') }}"><i class="fas fa-chart-bar"></i> 理解度分析</a></li>
+                    {% endif %}
+        
                     <li><a href="{{ url_for('index') }}"><i class="fas fa-arrow-left"></i> QuestEdに戻る</a></li>
                 </ul>
             </div>

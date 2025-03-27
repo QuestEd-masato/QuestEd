@@ -26,6 +26,13 @@
                 <a href="{{ url_for('basebuilder_module.problems', category_id=category.id) }}" class="btn btn-sm btn-outline">
                   <i class="fas fa-list"></i> 問題一覧
                 </a>
+                <!-- 削除ボタンを追加 -->
+                <form method="POST" action="{{ url_for('basebuilder_module.delete_category', category_id=category.id) }}" class="d-inline">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('このカテゴリとそれに含まれる全問題を削除してもよろしいですか？')">
+                    <i class="fas fa-trash"></i> 削除
+                  </button>
+                </form>
               </div>
             </div>
             
@@ -48,6 +55,13 @@
                           <a href="{{ url_for('basebuilder_module.problems', category_id=subcategory.id) }}" class="btn btn-sm btn-outline">
                             <i class="fas fa-list"></i> 問題一覧
                           </a>
+                          <!-- サブカテゴリの削除ボタンも追加 -->
+                          <form method="POST" action="{{ url_for('basebuilder_module.delete_category', category_id=subcategory.id) }}" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('このサブカテゴリとそれに含まれる全問題を削除してもよろしいですか？')">
+                              <i class="fas fa-trash"></i> 削除
+                            </button>
+                          </form>
                         </div>
                       </div>
                       {% if subcategory.description %}

@@ -1,0 +1,84 @@
+{% extends 'basebuilder/layout.html' %}
+
+{% block basebuilder_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="section-title">生徒の理解度分析</h1>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="card-title">クラス選択</h5>
+  </div>
+  <div class="card-body">
+    {% if classes %}
+      <div class="list-group">
+        {% for class_obj in classes %}
+          <a href="{{ url_for('basebuilder_module.analysis', class_id=class_obj.id) }}" class="list-group-item list-group-item-action">
+            <div class="d-flex w-100 justify-content-between">
+              <h5 class="mb-1">{{ class_obj.name }}</h5>
+              <small>{{ class_obj.students.count() }}人</small>
+            </div>
+            <p class="mb-1">クラス全体の理解度分析を表示します</p>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-muted">担当クラスがありません。</p>
+    {% endif %}
+  </div>
+</div>
+
+{% if selected_class %}
+  <div class="card mt-4">
+    <div class="card-header">
+      <h5 class="card-title">{{ selected_class.name }} - 生徒一覧</h5>
+    </div>
+    <div class="card-body">
+      {% if class_students %}
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>名前</th>
+                <th>総合理解度</th>
+                <th>最終学習日</th>
+                <th>アクション</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for student in class_students %}
+                <tr>
+                  <td>{{ student.username }}</td>
+                  <td>
+                    <!-- 理解度プログレスバー -->
+                    <div class="progress" style="height: 15px;">
+                      <div class="progress-bar bg-info" role="progressbar" style="width: {{ student_progress.get(student.id, 0) }}%" 
+                          aria-valuenow="{{ student_progress.get(student.id, 0) }}" aria-valuemin="0" aria-valuemax="100">
+                        {{ student_progress.get(student.id, 0) }}%
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    {% if student_last_activity.get(student.id) %}
+                      {{ student_last_activity.get(student.id).strftime('%Y-%m-%d') }}
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                  <td>
+                    <a href="{{ url_for('basebuilder_module.student_analysis', student_id=student.id) }}" class="btn btn-sm btn-outline">
+                      <i class="fas fa-chart-bar"></i> 詳細分析
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-muted">このクラスには生徒がいません。</p>
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

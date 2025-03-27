@@ -1,0 +1,133 @@
+{% extends 'basebuilder/layout.html' %}
+
+{% block basebuilder_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="section-title">生徒詳細分析 - {{ student.username }}</h1>
+  <a href="{{ url_for('basebuilder_module.analysis') }}" class="btn btn-outline">
+    <i class="fas fa-arrow-left"></i> 分析一覧に戻る
+  </a>
+</div>
+
+<div class="row">
+  <!-- 左側 - 基本情報と総合熟練度 -->
+  <div class="col-md-4">
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5 class="card-title">基本情報</h5>
+      </div>
+      <div class="card-body">
+        <p><strong>ユーザー名:</strong> {{ student.username }}</p>
+        <p><strong>クラス:</strong> 
+          {% for class_obj in student.enrolled_classes %}
+            {{ class_obj.name }}{% if not loop.last %}, {% endif %}
+          {% endfor %}
+        </p>
+        <p><strong>最終学習日:</strong> 
+          {% if last_activity %}
+            {{ last_activity.strftime('%Y-%m-%d %H:%M') }}
+          {% else %}
+            まだ学習記録がありません
+          {% endif %}
+        </p>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title">総合熟練度</h5>
+      </div>
+      <div class="card-body text-center">
+        <div class="display-4 mb-3">{{ avg_proficiency|default(0)|round|int }}%</div>
+        <div class="progress" style="height: 20px;">
+          <div class="progress-bar bg-primary" role="progressbar" 
+               style="width: {{ avg_proficiency }}%;" 
+               aria-valuenow="{{ avg_proficiency }}" 
+               aria-valuemin="0" 
+               aria-valuemax="100">
+          </div>
+        </div>
+        <div class="mt-3">
+          <strong>解答数:</strong> {{ answer_count }}
+        </div>
+        <div>
+          <strong>正解率:</strong> {{ correct_rate|default(0)|round|int }}%
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 右側 - カテゴリ別熟練度と解答履歴 -->
+  <div class="col-md-8">
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5 class="card-title">カテゴリ別熟練度</h5>
+      </div>
+      <div class="card-body">
+        {% if proficiency_records %}
+          {% for record in proficiency_records %}
+            <div class="mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <h6 class="mb-0">{{ record.category.name }}</h6>
+                <span class="badge {% if record.level >= 4 %}bg-success{% elif record.level >= 2 %}bg-primary{% else %}bg-warning{% endif %}">
+                  レベル {{ record.level }}/5
+                </span>
+              </div>
+              <div class="progress" style="height: 10px;">
+                <div class="progress-bar" role="progressbar" 
+                     style="width: {{ record.level / 5 * 100 }}%;" 
+                     aria-valuenow="{{ record.level }}" 
+                     aria-valuemin="0" 
+                     aria-valuemax="5">
+                </div>
+              </div>
+              <small class="text-muted">最終更新: {{ record.last_updated.strftime('%Y-%m-%d') }}</small>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-muted">熟練度データがありません。</p>
+        {% endif %}
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title">最近の解答履歴</h5>
+      </div>
+      <div class="card-body">
+        {% if answer_records %}
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>日時</th>
+                  <th>問題</th>
+                  <th>カテゴリ</th>
+                  <th>結果</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for record in answer_records %}
+                  <tr>
+                    <td>{{ record.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ record.problem.title }}</td>
+                    <td>{{ record.problem.category.name }}</td>
+                    <td>
+                      {% if record.is_correct %}
+                        <span class="badge bg-success">正解</span>
+                      {% else %}
+                        <span class="badge bg-danger">不正解</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="text-muted">解答履歴がありません。</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

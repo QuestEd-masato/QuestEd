@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'basebuilder/layout.html' %}
 
 {% block basebuilder_content %}
 <h1 class="section-title">基礎学力トレーニング</h1>
@@ -28,7 +28,7 @@
         {% else %}
           <p class="text-muted">まだ熟練度データがありません。問題を解いて熟練度を上げましょう。</p>
         {% endif %}
-        <a href="{{ url_for('basebuilder_module.proficiency') }}" class="btn btn-outline">詳細を見る</a>
+        <a href="{{ url_for('basebuilder_module.view_proficiency') }}" class="btn btn-outline">詳細を見る</a>
       </div>
     </div>
     
@@ -125,8 +125,8 @@
       </div>
       <div class="card-body">
         <div class="d-grid gap-2">
-          <a href="{{ url_for('basebuilder_module.my_texts') }}" class="btn btn-primary">テキストを学習する</a>
-          <a href="{{ url_for('basebuilder_module.problems') }}" class="btn btn-outline">単語一覧を見る</a>
+          <a href="{{ url_for('basebuilder_module.problems') }}" class="btn btn-primary">問題を解く</a>
+          <a href="{{ url_for('basebuilder_module.learning_paths') }}" class="btn btn-outline">学習パスを見る</a>
         </div>
       </div>
     </div>

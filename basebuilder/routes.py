@@ -288,6 +288,45 @@ def edit_category(category_id):
         parent_categories=parent_categories
     )
 
+@basebuilder_module.route('/category/<int:category_id>/delete', methods=['POST'])
+@login_required
+def delete_category(category_id):
+    if current_user.role != 'teacher':
+        flash('この機能は教師のみ利用可能です。')
+        return redirect(url_for('basebuilder_module.index'))
+    
+    # カテゴリを取得
+    category = ProblemCategory.query.get_or_404(category_id)
+    
+    try:
+        # このカテゴリに関連する問題を取得
+        problems = BasicKnowledgeItem.query.filter_by(category_id=category_id).all()
+        
+        # 各問題に関連する解答記録・関連付けを削除
+        for problem in problems:
+            # 解答記録の削除
+            AnswerRecord.query.filter_by(problem_id=problem.id).delete()
+            
+            # テーマとの関連付けを削除
+            KnowledgeThemeRelation.query.filter_by(problem_id=problem.id).delete()
+            
+            # 問題を削除
+            db.session.delete(problem)
+        
+        # カテゴリの熟練度記録を削除
+        ProficiencyRecord.query.filter_by(category_id=category_id).delete()
+        
+        # カテゴリを削除
+        db.session.delete(category)
+        db.session.commit()
+        
+        flash(f'カテゴリ"{category.name}"とそれに含まれる全ての問題が削除されました。')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'カテゴリの削除中にエラーが発生しました: {str(e)}')
+    
+    return redirect(url_for('basebuilder_module.categories'))
+
 # 問題一覧
 @basebuilder_module.route('/problems')
 @login_required
@@ -906,25 +945,39 @@ def session_summary():
         BasicKnowledgeItem.id.in_(learning_session['completed_problems'])
     ).all()
     
-    # 解答履歴を取得
+    # セッション開始時間を正しく変換
+    session_start = datetime.fromisoformat(learning_session['session_start'])
+    
+    # 解答履歴を取得 - セッション開始時間以降のみを取得
     answer_records = AnswerRecord.query.filter(
         AnswerRecord.student_id == current_user.id,
         AnswerRecord.problem_id.in_(learning_session['completed_problems']),
-        AnswerRecord.timestamp >= datetime.fromisoformat(learning_session['session_start'])
+        AnswerRecord.timestamp >= session_start
     ).order_by(AnswerRecord.timestamp).all()
     
+    # 問題IDごとに最新の解答記録を取得
+    latest_records = {}
+    for record in answer_records:
+        latest_records[record.problem_id] = record
+    
     # 正解数・不正解数をカウント
-    correct_count = sum(1 for record in answer_records if record.is_correct)
-    incorrect_count = len(answer_records) - correct_count
+    correct_count = sum(1 for record in latest_records.values() if record.is_correct)
+    incorrect_count = len(latest_records) - correct_count
+    
+    # 各カテゴリの熟練度を取得
+    proficiency_records = ProficiencyRecord.query.filter_by(
+        student_id=current_user.id
+    ).all()
     
     return render_template(
         'basebuilder/session_summary.html',
         completed_problems=completed_problems,
-        answer_records=answer_records,
+        answer_records=latest_records,
         correct_count=correct_count,
         incorrect_count=incorrect_count,
         total_attempts=learning_session['current_attempt'],
-        max_attempts=learning_session['max_attempts']
+        max_attempts=learning_session['max_attempts'],
+        proficiency_records=proficiency_records
     )
 
 # 熟練度を更新する関数
@@ -1083,8 +1136,9 @@ def view_history():
 
 # 教師向け分析ページ
 @basebuilder_module.route('/analysis')
+@basebuilder_module.route('/analysis/<int:class_id>')
 @login_required
-def analysis():
+def analysis(class_id=None):
     if current_user.role != 'teacher':
         flash('この機能は教師のみ利用可能です。')
         return redirect(url_for('basebuilder_module.index'))
@@ -1092,10 +1146,10 @@ def analysis():
     # 教師が担当するクラスを取得
     classes = getattr(current_user, 'classes_teaching', [])
     
-    # クエリパラメータからクラスIDを取得
-    class_id = request.args.get('class_id', type=int)
     selected_class = None
     class_students = []
+    student_progress = {}
+    student_last_activity = {}
     
     if class_id and classes:
         # 選択されたクラスを取得
@@ -1107,12 +1161,39 @@ def analysis():
         if selected_class:
             # クラスの学生を取得
             class_students = selected_class.students.all()
+            
+            # 各学生の進捗率とアクティビティを計算
+            for student in class_students:
+                # 学生の熟練度記録を取得
+                proficiency_records = ProficiencyRecord.query.filter_by(
+                    student_id=student.id
+                ).all()
+                
+                # 総合進捗率を計算（カテゴリごとの熟練度の平均）
+                if proficiency_records:
+                    total_level = sum(record.level for record in proficiency_records)
+                    avg_level = total_level / len(proficiency_records)
+                    # 5段階を100%に変換
+                    progress = (avg_level / 5) * 100
+                    student_progress[student.id] = round(progress)
+                else:
+                    student_progress[student.id] = 0
+                
+                # 最後の活動日時を取得
+                last_answer = AnswerRecord.query.filter_by(
+                    student_id=student.id
+                ).order_by(AnswerRecord.timestamp.desc()).first()
+                
+                if last_answer:
+                    student_last_activity[student.id] = last_answer.timestamp
     
     return render_template(
         'basebuilder/analysis.html',
         classes=classes,
         selected_class=selected_class,
-        class_students=class_students
+        class_students=class_students,
+        student_progress=student_progress,
+        student_last_activity=student_last_activity
     )
 
 # 生徒別の詳細分析
@@ -1142,10 +1223,25 @@ def student_analysis(student_id):
         student_id=student_id
     ).all()
     
-    # 学生の解答履歴を取得
+    # 学生の解答履歴を取得（最新20件）
     answer_records = AnswerRecord.query.filter_by(
         student_id=student_id
     ).order_by(AnswerRecord.timestamp.desc()).limit(20).all()
+    
+    # 総合熟練度を計算
+    avg_proficiency = 0
+    if proficiency_records:
+        total_level = sum(record.level for record in proficiency_records)
+        avg_proficiency = (total_level / len(proficiency_records) / 5) * 100
+    
+    # 解答数と正解率を計算
+    all_answers = AnswerRecord.query.filter_by(student_id=student_id).all()
+    answer_count = len(all_answers)
+    correct_count = sum(1 for answer in all_answers if answer.is_correct)
+    correct_rate = (correct_count / answer_count * 100) if answer_count > 0 else 0
+    
+    # 最後の活動日時
+    last_activity = answer_records[0].timestamp if answer_records else None
     
     # カテゴリ別の正解率を計算
     category_stats = {}
@@ -1165,13 +1261,17 @@ def student_analysis(student_id):
     
     # 正解率を計算
     for stats in category_stats.values():
-        stats['accuracy'] = (stats['correct'] / stats['total']) * 100 if stats['total'] > 0 else 0
+        stats['accuracy'] = (stats['correct'] / stats['total'] * 100) if stats['total'] > 0 else 0
     
     return render_template(
         'basebuilder/student_analysis.html',
         student=student,
         proficiency_records=proficiency_records,
         answer_records=answer_records,
+        avg_proficiency=avg_proficiency,
+        correct_rate=correct_rate,
+        answer_count=answer_count,
+        last_activity=last_activity,
         category_stats=category_stats
     )
 
@@ -1301,7 +1401,6 @@ def delete_problem(problem_id):
     return redirect(url_for('basebuilder_module.problems'))
 
 # 学習パスの管理
-# 学習パスの管理（続き）
 @basebuilder_module.route('/learning_paths')
 @login_required
 def learning_paths():
@@ -1569,6 +1668,78 @@ def update_path_progress(assignment_id):
         'progress': progress,
         'completed': assignment.completed
     })
+
+@basebuilder_module.route('/api/category/<int:category_id>/problems')
+@login_required
+def api_category_problems(category_id):
+    """カテゴリの問題を提供するAPIエンドポイント"""
+    if current_user.role != 'student':
+        return jsonify({'error': '権限がありません'}), 403
+    
+    # リクエストパラメータ
+    count = request.args.get('count', type=int, default=5)
+    skip = request.args.get('skip', type=int, default=0)
+    
+    # 学習パスのセッション情報を確認
+    learning_session = session.get('learning_session', {})
+    path_id = learning_session.get('path_id')
+    
+    if path_id:
+        # 学習パスの場合、現在のステップを確認
+        path = LearningPath.query.get_or_404(path_id)
+        
+        try:
+            steps = json.loads(path.steps)
+            current_step_index = learning_session.get('current_step_index', 0)
+            
+            if current_step_index < len(steps):
+                current_step = steps[current_step_index]
+                
+                # カテゴリステップの場合のみ許可
+                if current_step.get('type') == 'category' and str(current_step.get('category_id')) == str(category_id):
+                    # カテゴリに含まれる問題を取得（アクティブなもののみ）
+                    problems = BasicKnowledgeItem.query.filter_by(
+                        category_id=category_id,
+                        is_active=True
+                    ).order_by(func.random()).offset(skip).limit(count).all()
+                    
+                    # 解答済みの問題を確認
+                    completed = {}
+                    for problem in problems:
+                        answer = AnswerRecord.query.filter_by(
+                            student_id=current_user.id,
+                            problem_id=problem.id
+                        ).order_by(AnswerRecord.timestamp.desc()).first()
+                        
+                        completed[problem.id] = answer and answer.is_correct
+                    
+                    # 問題データを整形
+                    problem_data = []
+                    for problem in problems:
+                        data = {
+                            'id': problem.id,
+                            'title': problem.title,
+                            'question': problem.question,
+                            'answer_type': problem.answer_type,
+                            'choices': json.loads(problem.choices) if problem.choices else [],
+                            'difficulty': problem.difficulty,
+                            'category': {
+                                'id': problem.category_id,
+                                'name': problem.category.name
+                            },
+                            'completed': completed.get(problem.id, False)
+                        }
+                        problem_data.append(data)
+                    
+                    return jsonify({
+                        'problems': problem_data,
+                        'completed': all(completed.values()) if completed else False
+                    })
+        except Exception as e:
+            return jsonify({'error': f'学習パスデータの処理中にエラーが発生しました: {str(e)}'}), 500
+    
+    # 通常の問題閲覧または不正なアクセスの場合は拒否
+    return jsonify({'error': '指定されたカテゴリの問題にアクセスする権限がありません'}), 403
 
 # 問題テンプレートのダウンロード用ルート
 @basebuilder_module.route('/problems/template/<template_type>')
