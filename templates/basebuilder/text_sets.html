@@ -1,11 +1,14 @@
-{% extends 'basebuilder/layout.html' %}
-
-{% block basebuilder_content %}
+<!-- text_sets.html を修正 -->
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h1 class="section-title">テキスト管理</h1>
-  <a href="{{ url_for('basebuilder_module.import_text_set') }}" class="btn btn-primary">
-    <i class="fas fa-plus"></i> 新規テキスト
-  </a>
+  <div>
+    <button type="button" id="delete-selected-btn" class="btn btn-danger me-2" disabled>
+      <i class="fas fa-trash"></i> 選択したテキストを削除
+    </button>
+    <a href="{{ url_for('basebuilder_module.import_text_set') }}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> 新規テキスト
+    </a>
+  </div>
 </div>
 
 <div class="card">
@@ -13,46 +16,119 @@
     <h5 class="card-title">テキスト一覧</h5>
   </div>
   <div class="card-body">
-    {% if text_sets %}
-      <div class="table-responsive">
-        <table class="table table-hover">
-          <thead>
-            <tr>
-              <th>タイトル</th>
-              <th>カテゴリ</th>
-              <th>問題数</th>
-              <th>作成日</th>
-              <th>アクション</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for text in text_sets %}
+    <form id="bulk-delete-form" method="POST" action="{{ url_for('basebuilder_module.delete_text_sets') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      
+      {% if text_sets %}
+        <div class="mb-3">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="select-all-texts">
+            <label class="form-check-label" for="select-all-texts">すべて選択</label>
+          </div>
+        </div>
+        
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
               <tr>
-                <td>{{ text.title }}</td>
-                <td>{{ text.category.name }}</td>
-                <td>{{ text.problems|length }}</td>
-                <td>{{ text.created_at.strftime('%Y-%m-%d') }}</td>
-                <td>
-                  <a href="{{ url_for('basebuilder_module.view_text_set', text_id=text.id) }}" class="btn btn-sm btn-outline">
-                    詳細
-                  </a>
-                  <a href="{{ url_for('basebuilder_module.deliver_text', text_id=text.id) }}" class="btn btn-sm btn-primary">
-                    配信
-                  </a>
-                </td>
+                <th width="40px"></th>
+                <th>タイトル</th>
+                <th>カテゴリ</th>
+                <th>問題数</th>
+                <th>作成日</th>
+                <th>アクション</th>
               </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    {% else %}
-      <p class="text-muted">テキストがまだありません。</p>
-      <div class="text-center mt-3">
-        <a href="{{ url_for('basebuilder_module.import_text_set') }}" class="btn btn-primary">
-          <i class="fas fa-plus"></i> 新規テキストを作成
-        </a>
-      </div>
-    {% endif %}
+            </thead>
+            <tbody>
+              {% for text in text_sets %}
+                <tr>
+                  <td>
+                    <div class="form-check">
+                      <input class="form-check-input text-checkbox" type="checkbox" name="text_ids" value="{{ text.id }}" id="text-{{ text.id }}">
+                    </div>
+                  </td>
+                  <td>{{ text.title }}</td>
+                  <td>{{ text.category.name }}</td>
+                  <td>{{ text.problems|length }}</td>
+                  <td>{{ text.created_at.strftime('%Y-%m-%d') }}</td>
+                  <td>
+                    <a href="{{ url_for('basebuilder_module.view_text_set', text_id=text.id) }}" class="btn btn-sm btn-outline">
+                      詳細
+                    </a>
+                    <a href="{{ url_for('basebuilder_module.deliver_text', text_id=text.id) }}" class="btn btn-sm btn-primary">
+                      配信
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-muted">テキストがまだありません。</p>
+        <div class="text-center mt-3">
+          <a href="{{ url_for('basebuilder_module.import_text_set') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> 新規テキストを作成
+          </a>
+        </div>
+      {% endif %}
+    </form>
   </div>
 </div>
-{% endblock %}
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const selectAllCheckbox = document.getElementById('select-all-texts');
+    const textCheckboxes = document.querySelectorAll('.text-checkbox');
+    const deleteSelectedBtn = document.getElementById('delete-selected-btn');
+    const bulkDeleteForm = document.getElementById('bulk-delete-form');
+    
+    // チェックボックスの状態を監視して削除ボタンの状態を更新
+    function updateDeleteButtonState() {
+      const checkedBoxes = document.querySelectorAll('.text-checkbox:checked');
+      deleteSelectedBtn.disabled = checkedBoxes.length === 0;
+    }
+    
+    // 「すべて選択」チェックボックスのイベント
+    if (selectAllCheckbox) {
+      selectAllCheckbox.addEventListener('change', function() {
+        textCheckboxes.forEach(checkbox => {
+          checkbox.checked = this.checked;
+        });
+        updateDeleteButtonState();
+      });
+    }
+    
+    // 各テキストのチェックボックスのイベント
+    textCheckboxes.forEach(checkbox => {
+      checkbox.addEventListener('change', function() {
+        updateDeleteButtonState();
+        
+        // すべてが選択されているか確認
+        const allChecked = document.querySelectorAll('.text-checkbox:checked').length === textCheckboxes.length;
+        if (selectAllCheckbox) {
+          selectAllCheckbox.checked = allChecked;
+          selectAllCheckbox.indeterminate = !allChecked && document.querySelectorAll('.text-checkbox:checked').length > 0;
+        }
+      });
+    });
+    
+    // 削除ボタンのイベント
+    if (deleteSelectedBtn) {
+      deleteSelectedBtn.addEventListener('click', function() {
+        const checkedBoxes = document.querySelectorAll('.text-checkbox:checked');
+        if (checkedBoxes.length === 0) {
+          alert('削除するテキストを選択してください');
+          return;
+        }
+        
+        if (confirm(`選択した ${checkedBoxes.length} 件のテキストを削除してもよろしいですか？`)) {
+          bulkDeleteForm.submit();
+        }
+      });
+    }
+    
+    // 初期状態の設定
+    updateDeleteButtonState();
+  });
+</script>

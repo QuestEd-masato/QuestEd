@@ -1,0 +1,259 @@
+{% extends 'basebuilder/layout.html' %}
+
+{% block basebuilder_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="section-title">テーマと問題の関連付け</h1>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header">
+    <h5 class="card-title">探究テーマの選択</h5>
+  </div>
+  <div class="card-body">
+    <div class="form-group">
+      <label for="theme-select" class="form-label">テーマを選択</label>
+      <select class="form-control" id="theme-select">
+        <option value="">テーマを選択してください</option>
+        {% for theme in themes %}
+          <option value="{{ theme.id }}">{{ theme.title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4" id="theme-details" style="display: none;">
+  <div class="card-header">
+    <h5 class="card-title">テーマ詳細</h5>
+  </div>
+  <div class="card-body">
+    <h4 id="theme-title"></h4>
+    <p id="theme-description"></p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6">
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5 class="card-title">関連付けられた問題</h5>
+      </div>
+      <div class="card-body">
+        <div id="related-problems-list">
+          <p class="text-muted">テーマを選択すると関連問題が表示されます</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title">問題を追加</h5>
+      </div>
+      <div class="card-body">
+        <div class="form-group mb-3">
+          <label for="problem-select" class="form-label">問題を選択</label>
+          <select class="form-control" id="problem-select">
+            <option value="">問題を選択してください</option>
+            {% for problem in problems %}
+              <option value="{{ problem.id }}">{{ problem.title }} ({{ problem.category.name }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        
+        <div class="form-group mb-3">
+          <label for="relevance" class="form-label">関連性</label>
+          <select class="form-control" id="relevance">
+            <option value="1">1 - 弱い関連性</option>
+            <option value="2">2 - やや弱い関連性</option>
+            <option value="3" selected>3 - 普通の関連性</option>
+            <option value="4">4 - やや強い関連性</option>
+            <option value="5">5 - 強い関連性</option>
+          </select>
+        </div>
+        
+        <div class="d-grid">
+          <button id="add-relation-btn" class="btn btn-primary" disabled>関連付けを追加</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  // テーマと問題の関連付けを管理するJavaScript
+  document.addEventListener('DOMContentLoaded', function() {
+    // 要素の取得
+    const themeSelect = document.getElementById('theme-select');
+    const problemSelect = document.getElementById('problem-select');
+    const relevanceSelect = document.getElementById('relevance');
+    const addRelationBtn = document.getElementById('add-relation-btn');
+    const themeDetails = document.getElementById('theme-details');
+    const themeTitle = document.getElementById('theme-title');
+    const themeDescription = document.getElementById('theme-description');
+    const relatedProblemsList = document.getElementById('related-problems-list');
+    
+    // テーマ選択時の処理
+    themeSelect.addEventListener('change', function() {
+      const themeId = this.value;
+      
+      if (themeId) {
+        // テーマの詳細を表示
+        fetch(`/basebuilder/api/theme/${themeId}`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.theme) {
+              themeTitle.textContent = data.theme.title;
+              themeDescription.textContent = data.theme.description || '説明なし';
+              themeDetails.style.display = 'block';
+              
+              // 関連問題を表示
+              loadRelatedProblems(themeId);
+            }
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            alert('テーマ情報の取得中にエラーが発生しました。');
+          });
+        
+        // 関連付けボタンを有効化
+        addRelationBtn.disabled = false;
+      } else {
+        // テーマが選択されていない場合
+        themeDetails.style.display = 'none';
+        relatedProblemsList.innerHTML = '<p class="text-muted">テーマを選択すると関連問題が表示されます</p>';
+        addRelationBtn.disabled = true;
+      }
+    });
+    
+    // 関連問題を読み込む関数
+    function loadRelatedProblems(themeId) {
+      fetch(`/basebuilder/api/theme/${themeId}/problems`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.problems && data.problems.length > 0) {
+            let html = '<ul class="list-group">';
+            data.problems.forEach(problem => {
+              html += `
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <div>
+                    <strong>${problem.title}</strong>
+                    <p class="mb-0 text-muted">${problem.category}</p>
+                  </div>
+                  <div>
+                    <span class="badge bg-primary me-2">関連性: ${problem.relevance}</span>
+                    <button class="btn btn-sm btn-danger delete-relation" data-theme-id="${themeId}" data-problem-id="${problem.id}">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </li>
+              `;
+            });
+            html += '</ul>';
+            relatedProblemsList.innerHTML = html;
+            
+            // 削除ボタンにイベントリスナーを追加
+            document.querySelectorAll('.delete-relation').forEach(button => {
+              button.addEventListener('click', deleteRelation);
+            });
+          } else {
+            relatedProblemsList.innerHTML = '<p class="text-muted">このテーマにはまだ問題が関連付けられていません</p>';
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          relatedProblemsList.innerHTML = '<div class="alert alert-danger">関連問題の取得中にエラーが発生しました</div>';
+        });
+    }
+    
+    // 関連付け追加ボタンのイベント
+    addRelationBtn.addEventListener('click', function() {
+      const themeId = themeSelect.value;
+      const problemId = problemSelect.value;
+      const relevance = relevanceSelect.value;
+      
+      if (!themeId || !problemId) {
+        alert('テーマと問題を選択してください');
+        return;
+      }
+      
+      // CSRFトークンを取得
+      const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+      
+      // フォームデータの作成
+      const formData = new FormData();
+      formData.append('theme_id', themeId);
+      formData.append('problem_id', problemId);
+      formData.append('relevance', relevance);
+      formData.append('csrf_token', csrfToken);
+      
+      // 関連付けを作成するAPIを呼び出す
+      fetch('/basebuilder/theme_relation/create', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // 関連問題リストを再読み込み
+          loadRelatedProblems(themeId);
+          // 問題選択をリセット
+          problemSelect.value = '';
+          // 成功メッセージ
+          alert('関連付けが作成されました');
+        } else {
+          alert(data.error || '関連付けの作成に失敗しました');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('関連付けの作成中にエラーが発生しました');
+      });
+    });
+    
+    // 関連付け削除の処理
+    function deleteRelation() {
+      if (!confirm('この関連付けを削除してもよろしいですか？')) {
+        return;
+      }
+      
+      const themeId = this.dataset.themeId;
+      const problemId = this.dataset.problemId;
+      
+      // CSRFトークンを取得
+      const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+      
+      // フォームデータの作成
+      const formData = new FormData();
+      formData.append('theme_id', themeId);
+      formData.append('problem_id', problemId);
+      formData.append('csrf_token', csrfToken);
+      
+      // 関連付けを削除するAPIを呼び出す
+      fetch('/basebuilder/theme_relation/delete', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // 関連問題リストを再読み込み
+          loadRelatedProblems(themeId);
+          // 成功メッセージ
+          alert('関連付けが削除されました');
+        } else {
+          alert(data.error || '関連付けの削除に失敗しました');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('関連付けの削除中にエラーが発生しました');
+      });
+    }
+  });
+</script>
+{% endblock %}

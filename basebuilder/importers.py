@@ -120,86 +120,61 @@ def validate_problem_csv(csv_content, current_user_id):
     except Exception as e:
         return [], [f"CSVファイル処理中にエラーが発生しました: {str(e)}"]
 
-def import_problems_from_csv(csv_content, db, ProblemCategory, BasicKnowledgeItem, current_user_id):
+# basebuilder/routes.py に追加
+def update_category_proficiency(student_id, category_id):
     """
-    CSVファイルから問題をインポートする
+    カテゴリの熟練度を単語の熟練度から計算して更新する
     
     Args:
-        csv_content: CSVファイルの内容（文字列）
-        db: SQLAlchemyのdbオブジェクト
-        ProblemCategory: ProblemCategoryモデルクラス
-        BasicKnowledgeItem: BasicKnowledgeItemモデルクラス
-        current_user_id: インポート実行ユーザーのID
+        student_id: 学生ID
+        category_id: カテゴリID
         
     Returns:
-        tuple: (success_count, error_count, errors)
-            - success_count: 正常にインポートされた問題数
-            - error_count: エラーのあった問題数
-            - errors: エラーメッセージのリスト
+        更新された熟練度レコード
     """
-    # CSVデータの検証
-    valid_problems, errors = validate_problem_csv(csv_content, current_user_id)
+    # カテゴリに属する問題のIDを取得
+    problem_ids = [p.id for p in BasicKnowledgeItem.query.filter_by(category_id=category_id).all()]
     
-    success_count = 0
-    error_count = len(errors)
+    if not problem_ids:
+        return None
     
-    # 有効なデータがない場合は終了
-    if not valid_problems:
-        return success_count, error_count, errors
+    # カテゴリ内の単語の熟練度を取得
+    word_proficiencies = WordProficiency.query.filter(
+        WordProficiency.student_id == student_id,
+        WordProficiency.problem_id.in_(problem_ids)
+    ).all()
     
-    # カテゴリのキャッシュを作成
-    categories = {}
-    for category_obj in ProblemCategory.query.all():
-        categories[category_obj.name.lower()] = category_obj
+    # 熟練度レコードがない場合、デフォルト値は0
+    total_level = sum(wp.level for wp in word_proficiencies) if word_proficiencies else 0
+    avg_level = total_level / len(problem_ids)
     
-    # 各問題をデータベースに追加
-    for problem in valid_problems:
-        try:
-            # カテゴリを検索または作成
-            category_name = problem['category']
-            category_key = category_name.lower()
-            
-            if category_key in categories:
-                category = categories[category_key]
-            else:
-                # 新しいカテゴリを作成
-                category = ProblemCategory(
-                    name=category_name,
-                    created_by=current_user_id
-                )
-                db.session.add(category)
-                db.session.flush()  # IDを取得するためにフラッシュ
-                categories[category_key] = category
-            
-            # 問題の作成
-            new_problem = BasicKnowledgeItem(
-                category_id=category.id,
-                title=problem['title'],
-                question=problem['question'],
-                answer_type=problem['answer_type'],
-                correct_answer=problem['correct_answer'],
-                explanation=problem['explanation'],
-                difficulty=problem['difficulty'],
-                choices=problem['choices'],
-                created_by=current_user_id
-            )
-            
-            db.session.add(new_problem)
-            success_count += 1
-            
-        except Exception as e:
-            errors.append(f"問題 '{problem['title']}' のインポート中にエラーが発生しました: {str(e)}")
-            error_count += 1
+    # カテゴリの熟練度を更新
+    proficiency = ProficiencyRecord.query.filter_by(
+        student_id=student_id,
+        category_id=category_id
+    ).first()
     
-    # 変更をコミット
-    try:
-        db.session.commit()
-    except Exception as e:
-        db.session.rollback()
-        errors.append(f"データベースへの保存中にエラーが発生しました: {str(e)}")
-        return 0, len(valid_problems), errors
+    if not proficiency:
+        proficiency = ProficiencyRecord(
+            student_id=student_id,
+            category_id=category_id,
+            level=0,
+            review_date=datetime.now().date()
+        )
+        db.session.add(proficiency)
     
-    return success_count, error_count, errors
+    # 熟練度は平均値を整数に切り捨て
+    proficiency.level = int(avg_level)
+    proficiency.last_updated = datetime.utcnow()
+    
+    # 次回復習日は最も早い単語の復習日
+    if word_proficiencies:
+        earliest_review = min(wp.review_date for wp in word_proficiencies)
+        proficiency.review_date = earliest_review
+    
+    db.session.commit()
+    
+    return proficiency
 
 def import_text_from_csv(csv_content, title, description, category_id, db, TextSet, BasicKnowledgeItem, current_user_id):
     """
@@ -280,6 +255,114 @@ def import_text_from_csv(csv_content, title, description, category_id, db, TextS
     except Exception as e:
         db.session.rollback()
         errors.append(f"テキストセットの作成中にエラーが発生しました: {str(e)}")
+        return 0, len(valid_problems), errors
+    
+    return success_count, error_count, errors
+
+def import_problems_from_csv(csv_content, db, ProblemCategory, BasicKnowledgeItem, current_user_id, TextSet=None):
+    """
+    CSVファイルから問題をインポートする
+    
+    Args:
+        csv_content: CSVファイルの内容（文字列）
+        db: SQLAlchemyのdbオブジェクト
+        ProblemCategory: ProblemCategoryモデルクラス
+        BasicKnowledgeItem: BasicKnowledgeItemモデルクラス
+        current_user_id: インポート実行ユーザーのID
+        TextSet: テキストセットモデル（Noneでなければ自動分割モード）
+        
+    Returns:
+        tuple: (success_count, error_count, errors)
+    """
+    # CSVデータの検証
+    valid_problems, errors = validate_problem_csv(csv_content, current_user_id)
+    
+    success_count = 0
+    error_count = len(errors)
+    
+    # 有効なデータがない場合は終了
+    if not valid_problems:
+        return success_count, error_count, errors
+    
+    # カテゴリのキャッシュを作成
+    categories = {}
+    for category_obj in ProblemCategory.query.all():
+        categories[category_obj.name.lower()] = category_obj
+    
+    # 自動分割モードかどうか確認
+    auto_split_mode = TextSet is not None
+    text_sets = []
+    current_text_set = None
+    problems_in_current_text = 0
+    
+    # 各問題をデータベースに追加
+    for i, problem in enumerate(valid_problems):
+        try:
+            # カテゴリを検索または作成
+            category_name = problem['category']
+            category_key = category_name.lower()
+            
+            if category_key in categories:
+                category = categories[category_key]
+            else:
+                # 新しいカテゴリを作成
+                category = ProblemCategory(
+                    name=category_name,
+                    created_by=current_user_id
+                )
+                db.session.add(category)
+                db.session.flush()  # IDを取得するためにフラッシュ
+                categories[category_key] = category
+            
+            # 自動分割モードの場合、10問ごとに新しいテキストセットを作成
+            if auto_split_mode:
+                if i % 10 == 0 or current_text_set is None:
+                    # 同じカテゴリの既存テキスト数を取得
+                    existing_count = TextSet.query.filter_by(category_id=category.id).count()
+                    # 新しいテキストセットを作成
+                    current_text_set = TextSet(
+                        title=f"【{category_name}】No.{existing_count + 1}",
+                        description=f"{category_name}の単語集",
+                        category_id=category.id,
+                        created_by=current_user_id
+                    )
+                    db.session.add(current_text_set)
+                    db.session.flush()  # IDを取得するためにフラッシュ
+                    text_sets.append(current_text_set)
+                    problems_in_current_text = 0
+            
+            # 問題の作成
+            new_problem = BasicKnowledgeItem(
+                category_id=category.id,
+                title=problem['title'],
+                question=problem['question'],
+                answer_type=problem['answer_type'],
+                correct_answer=problem['correct_answer'],
+                explanation=problem.get('explanation', ''),
+                difficulty=problem.get('difficulty', 2),
+                choices=problem.get('choices'),
+                created_by=current_user_id
+            )
+            
+            # 自動分割モードの場合はテキストセットに関連付け
+            if auto_split_mode and current_text_set:
+                new_problem.text_set_id = current_text_set.id
+                new_problem.order_in_text = problems_in_current_text + 1
+                problems_in_current_text += 1
+            
+            db.session.add(new_problem)
+            success_count += 1
+            
+        except Exception as e:
+            errors.append(f"問題 '{problem['title']}' のインポート中にエラーが発生しました: {str(e)}")
+            error_count += 1
+    
+    # 変更をコミット
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        errors.append(f"データベースへの保存中にエラーが発生しました: {str(e)}")
         return 0, len(valid_problems), errors
     
     return success_count, error_count, errors
