@@ -22,6 +22,14 @@
                 <div class="proficiency-meter">
                   <div class="proficiency-bar" style="width: {{ level }}%"></div>
                 </div>
+                <!-- 追加: カテゴリセッション開始ボタン -->
+                {% for category in all_categories if category.name == category_name %}
+                <div class="text-end mt-1">
+                  <a href="{{ url_for('basebuilder_module.start_category_session', category_id=category.id) }}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-play"></i> このカテゴリで学習
+                  </a>
+                </div>
+                {% endfor %}
               </div>
             {% endfor %}
           </div>
@@ -125,7 +133,8 @@
       </div>
       <div class="card-body">
         <div class="d-grid gap-2">
-          <a href="{{ url_for('basebuilder_module.problems') }}" class="btn btn-primary">問題を解く</a>
+          <a href="{{ url_for('basebuilder_module.start_session') }}" class="btn btn-primary">学習セッション開始</a>
+          <a href="{{ url_for('basebuilder_module.problems') }}" class="btn btn-outline">カテゴリ一覧</a>
           <a href="{{ url_for('basebuilder_module.learning_paths') }}" class="btn btn-outline">学習パスを見る</a>
         </div>
       </div>

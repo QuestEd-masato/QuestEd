@@ -2,7 +2,7 @@
 
 {% block basebuilder_content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-  <h1 class="section-title">単語一覧</h1>
+  <h1 class="section-title">学習カテゴリ一覧</h1>
   {% if current_user.role == 'teacher' %}
     <div>
       <a href="{{ url_for('basebuilder_module.import_problems') }}" class="btn btn-outline me-2">
@@ -18,7 +18,7 @@
 <!-- 検索・フィルターエリア -->
 <div class="card mb-4">
   <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="card-title">検索とフィルター</h5>
+    <h5 class="card-title">フィルター</h5>
     {% if current_user.role == 'student' %}
       <a href="{{ url_for('basebuilder_module.start_session') }}" class="btn btn-primary">
         <i class="fas fa-play"></i> 学習セッションを開始
@@ -30,33 +30,7 @@
       <!-- テキスト検索 -->
       <div class="col-md-4">
         <label for="search" class="form-label">キーワード検索</label>
-        <input type="text" class="form-control" id="search" name="search" value="{{ search or '' }}" placeholder="単語や意味で検索">
-      </div>
-      
-      <!-- カテゴリフィルター -->
-      <div class="col-md-4">
-        <label for="category_id" class="form-label">カテゴリ</label>
-        <select class="form-control" id="category_id" name="category_id">
-          <option value="">すべてのカテゴリ</option>
-          {% for category in categories %}
-            <option value="{{ category.id }}" {% if selected_category_id == category.id %}selected{% endif %}>
-              {{ category.name }}
-            </option>
-          {% endfor %}
-        </select>
-      </div>
-      
-      <!-- 難易度フィルター -->
-      <div class="col-md-4">
-        <label for="difficulty" class="form-label">難易度</label>
-        <select class="form-control" id="difficulty" name="difficulty">
-          <option value="">すべての難易度</option>
-          {% for i in range(1, 6) %}
-            <option value="{{ i }}" {% if selected_difficulty == i %}selected{% endif %}>
-              {{ i }} {% if i == 1 %}（最も簡単）{% elif i == 5 %}（最も難しい）{% endif %}
-            </option>
-          {% endfor %}
-        </select>
+        <input type="text" class="form-control" id="search" name="search" value="{{ search or '' }}" placeholder="カテゴリ名で検索">
       </div>
       
       <!-- ボタン -->
@@ -72,13 +46,13 @@
   </div>
 </div>
 
-<!-- 単語一覧 -->
+<!-- カテゴリ一覧 -->
 <div class="card">
   <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="card-title">単語一覧</h5>
+    <h5 class="card-title">カテゴリ一覧</h5>
     {% if current_user.role == 'student' %}
       <div>
-        <span class="badge bg-info me-2">総単語数: {{ problems|length }}</span>
+        <span class="badge bg-info me-2">総カテゴリ数: {{ categories|length }}</span>
         {% if today_review_count is defined %}
           <span class="badge bg-warning">今日の復習: {{ today_review_count }}</span>
         {% endif %}
@@ -86,75 +60,57 @@
     {% endif %}
   </div>
   <div class="card-body">
-    {% if problems %}
-      <div class="table-responsive">
-        <table class="table table-hover">
-          <thead>
-            <tr>
-              <th>単語</th>
-              <th>意味</th>
-              <th>カテゴリ</th>
-              <th>難易度</th>
-              {% if current_user.role == 'student' %}
-                <th>熟練度</th>
-              {% elif current_user.role == 'teacher' %}
-                <th>作成日</th>
-              {% endif %}
-              <th>アクション</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for problem in problems %}
-              <tr>
-                <td>{{ problem.title }}</td>
-                <td>{{ problem.question }}</td>
-                <td>{{ problem.category.name }}</td>
-                <td>
-                  <span class="problem-difficulty difficulty-{{ problem.difficulty }}">
-                    {{ problem.difficulty }}
-                  </span>
-                </td>
+    {% if categories %}
+      <div class="row">
+        {% for category in categories %}
+          <div class="col-md-4 mb-4">
+            <div class="card h-100">
+              <div class="card-body">
+                <h5 class="card-title">{{ category.name }}</h5>
+                {% if category.description %}
+                  <p class="text-muted">{{ category.description }}</p>
+                {% endif %}
+                
                 {% if current_user.role == 'student' %}
-                  <td>
-                    {% set proficiency = namespace(level=0) %}
-                    {% for record in proficiency_records if record.category_id == problem.category_id %}
-                      {% set proficiency.level = record.level %}
-                    {% endfor %}
-                    
+                  {% set proficiency = namespace(level=0) %}
+                  {% for record in proficiency_records if record.category_id == category.id %}
+                    {% set proficiency.level = record.level %}
+                  {% endfor %}
+                  
+                  <div class="mb-3">
+                    <label class="form-label d-flex justify-content-between">
+                      <span>熟練度</span>
+                      <span>{{ proficiency.level }}/5</span>
+                    </label>
                     <div class="progress" style="height: 15px;">
                       <div class="progress-bar bg-info" role="progressbar" style="width: {{ proficiency.level * 20 }}%" 
                            aria-valuenow="{{ proficiency.level }}" aria-valuemin="0" aria-valuemax="5">
-                        {{ proficiency.level }}/5
                       </div>
                     </div>
-                  </td>
-                {% elif current_user.role == 'teacher' %}
-                  <td>{{ problem.created_at.strftime('%Y-%m-%d') }}</td>
+                  </div>
                 {% endif %}
-                <td>
+                
+                <div class="d-grid gap-2 mt-3">
                   {% if current_user.role == 'student' %}
-                    <a href="{{ url_for('basebuilder_module.solve_problem', problem_id=problem.id) }}" class="btn btn-sm btn-primary">
+                    <a href="{{ url_for('basebuilder_module.category_texts', category_id=category.id) }}" class="btn btn-primary">
                       学習する
                     </a>
                   {% else %}
-                    <a href="{{ url_for('basebuilder_module.edit_problem', problem_id=problem.id) }}" class="btn btn-sm btn-outline">
+                    <a href="{{ url_for('basebuilder_module.problems', category_id=category.id) }}" class="btn btn-primary">
+                      単語一覧を見る
+                    </a>
+                    <a href="{{ url_for('basebuilder_module.edit_category', category_id=category.id) }}" class="btn btn-outline">
                       編集
                     </a>
-                    <form method="POST" action="{{ url_for('basebuilder_module.delete_problem', problem_id=problem.id) }}" class="d-inline">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                      <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('本当にこの単語を削除しますか？')">
-                        削除
-                      </button>
-                    </form>
                   {% endif %}
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
       </div>
     {% else %}
-      <p class="text-muted">条件に一致する単語が見つかりませんでした。</p>
+      <p class="text-muted">条件に一致するカテゴリが見つかりませんでした。</p>
     {% endif %}
   </div>
 </div>

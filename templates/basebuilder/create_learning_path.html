@@ -167,10 +167,27 @@
           <!-- 問題選択欄 -->
           <div id="problem-selection" class="step-type-content" style="display: none;">
             <div class="mb-3">
+              <label for="step-category-filter" class="form-label">カテゴリでフィルター</label>
+              <select class="form-control" id="step-category-filter">
+                <option value="">すべてのカテゴリ</option>
+                {% for category in categories %}
+                  <option value="{{ category.id }}">{{ category.name }}</option>
+                  {% if category.subcategories %}
+                    {% for subcategory in category.subcategories %}
+                      <option value="{{ subcategory.id }}">-- {{ subcategory.name }}</option>
+                    {% endfor %}
+                  {% endif %}
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-3">
               <label for="step-problem" class="form-label">問題 <span class="text-danger">*</span></label>
               <select class="form-control" id="step-problem">
                 <option value="">問題を選択してください</option>
-                <!-- ここにJavaScriptで問題リストを動的に追加 -->
+                <!-- プリロードされた問題を追加 -->
+                {% for problem in problems if problems is defined %}
+                  <option value="{{ problem.id }}" data-category="{{ problem.category_id }}">{{ problem.title }}</option>
+                {% endfor %}
               </select>
             </div>
           </div>
@@ -198,8 +215,23 @@
 {{ super() }}
 <script>
   document.addEventListener('DOMContentLoaded', function() {
+    // Bootstrap 5のモーダルの確実な初期化
+    const stepModalElement = document.getElementById('stepModal');
+    if (stepModalElement && typeof bootstrap !== 'undefined') {
+      if (!bootstrap.Modal.getInstance(stepModalElement)) {
+        const stepModal = new bootstrap.Modal(stepModalElement);
+        window.stepModal = stepModal; // グローバル変数に保存
+      }
+    } else {
+      console.error('モーダル要素またはbootstrapが見つかりません');
+      return;
+    }
+    
     // ステップデータを管理する配列
     let steps = [];
+    
+    // 問題データのキャッシュ
+    let problemsData = [];
     
     // DOM要素
     const stepsContainer = document.getElementById('steps-container');
@@ -210,117 +242,256 @@
     const saveStepBtn = document.getElementById('save-step-btn');
     
     // モーダル関連
-    const stepModal = new bootstrap.Modal(document.getElementById('stepModal'));
+    const stepModal = window.stepModal || new bootstrap.Modal(document.getElementById('stepModal'));
     const stepType = document.getElementById('step-type');
     const categorySelection = document.getElementById('category-selection');
     const problemSelection = document.getElementById('problem-selection');
     const textContent = document.getElementById('text-content');
     
-    // ステップタイプの切り替え
-    stepType.addEventListener('change', function() {
-      // すべての選択欄を非表示
-      categorySelection.style.display = 'none';
-      problemSelection.style.display = 'none';
-      textContent.style.display = 'none';
+    // カテゴリフィルターの変更イベント
+    const categoryFilter = document.getElementById('step-category-filter');
+    if (categoryFilter) {
+      categoryFilter.addEventListener('change', function() {
+        const categoryId = this.value;
+        const problemSelect = document.getElementById('step-problem');
+        
+        if (!problemSelect) return;
+        
+        // 全オプションを削除（最初のオプションは維持）
+        while (problemSelect.options.length > 1) {
+          problemSelect.remove(1);
+        }
+        
+        if (!problemsData.length) {
+          // 問題データが未取得の場合はAPIから取得
+          fetch('/basebuilder/api/problems')
+            .then(response => {
+              if (!response.ok) {
+                throw new Error('問題データの取得に失敗しました');
+              }
+              return response.json();
+            })
+            .then(data => {
+              problemsData = data.problems || [];
+              filterProblems(categoryId);
+            })
+            .catch(error => {
+              console.error('問題データの取得エラー:', error);
+              alert('問題データの取得中にエラーが発生しました。ページをリロードしてお試しください。');
+            });
+        } else {
+          // 既に取得済みならフィルターのみ適用
+          filterProblems(categoryId);
+        }
+      });
+    }
+    
+    // 問題リストをフィルタリングする関数
+    function filterProblems(categoryId) {
+      const problemSelect = document.getElementById('step-problem');
+      if (!problemSelect) return;
       
-      // 選択されたタイプの欄を表示
-      switch(this.value) {
-        case 'category':
-          categorySelection.style.display = 'block';
-          break;
-        case 'problem':
-          problemSelection.style.display = 'block';
-          break;
-        case 'text':
-          textContent.style.display = 'block';
-          break;
+      // カテゴリでフィルター
+      const filtered = categoryId ? 
+        problemsData.filter(p => p.category_id.toString() === categoryId) : 
+        problemsData;
+      
+      // 選択肢を追加
+      filtered.forEach(problem => {
+        const option = new Option(problem.title, problem.id);
+        option.dataset.category = problem.category_id;
+        problemSelect.add(option);
+      });
+      
+      // フィルター結果がない場合のメッセージ
+      if (filtered.length === 0) {
+        const option = new Option('該当する問題がありません', '');
+        option.disabled = true;
+        problemSelect.add(option);
       }
-    });
+    }
+    
+    // ページ読み込み時に問題データを取得
+    function loadProblems() {
+      const problemSelect = document.getElementById('step-problem');
+      if (!problemSelect) return;
+      
+      fetch('/basebuilder/api/problems')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('問題データの取得に失敗しました');
+          }
+          return response.json();
+        })
+        .then(data => {
+          problemsData = data.problems || [];
+          
+          // 問題選択欄にオプションを追加
+          problemsData.forEach(problem => {
+            const option = new Option(problem.title, problem.id);
+            option.dataset.category = problem.category_id;
+            problemSelect.add(option);
+          });
+        })
+        .catch(error => {
+          console.error('問題データの取得エラー:', error);
+          const option = new Option('問題を取得できませんでした', '');
+          option.disabled = true;
+          problemSelect.add(option);
+        });
+    }
+    
+    // ページ読み込み時に問題データを取得
+    loadProblems();
+    
+    // ステップタイプの切り替え
+    if (stepType) {
+      stepType.addEventListener('change', function() {
+        // すべての選択欄を非表示
+        categorySelection.style.display = 'none';
+        problemSelection.style.display = 'none';
+        textContent.style.display = 'none';
+        
+        // 選択されたタイプの欄を表示
+        switch(this.value) {
+          case 'category':
+            categorySelection.style.display = 'block';
+            break;
+          case 'problem':
+            problemSelection.style.display = 'block';
+            break;
+          case 'text':
+            textContent.style.display = 'block';
+            break;
+        }
+      });
+    }
     
     // ステップ追加ボタンクリック時の処理
-    addStepBtn.addEventListener('click', function() {
-      // フォームをリセット
-      stepForm.reset();
-      
-      // デフォルトのステップタイプを表示
-      stepType.value = 'category';
-      categorySelection.style.display = 'block';
-      problemSelection.style.display = 'none';
-      textContent.style.display = 'none';
-      
-      // モーダルを表示
-      stepModal.show();
-    });
+    if (addStepBtn) {
+      addStepBtn.addEventListener('click', function() {
+        // フォームをリセット
+        if (stepForm) stepForm.reset();
+        
+        // デフォルトのステップタイプを表示
+        if (stepType) stepType.value = 'category';
+        if (categorySelection) categorySelection.style.display = 'block';
+        if (problemSelection) problemSelection.style.display = 'none';
+        if (textContent) textContent.style.display = 'none';
+        
+        // モーダルを表示
+        try {
+          stepModal.show();
+        } catch (error) {
+          console.error('モーダル表示エラー:', error);
+          alert('ステップ追加ウィンドウを表示できませんでした。ページをリロードしてお試しください。');
+        }
+      });
+    }
     
     // ステップ保存ボタンクリック時の処理
-    saveStepBtn.addEventListener('click', function() {
-      // バリデーション
-      const stepTitle = document.getElementById('step-title').value;
-      if (!stepTitle) {
-        alert('ステップタイトルを入力してください。');
-        return;
-      }
-      
-      // 選択されたステップタイプに基づいて必要なデータを取得
-      const type = stepType.value;
-      let stepData = {
-        id: 'step_' + Date.now(),
-        title: stepTitle,
-        description: document.getElementById('step-description').value,
-        type: type
-      };
-      
-      switch(type) {
-        case 'category':
-          const categoryId = document.getElementById('step-category').value;
-          const problemCount = document.getElementById('step-problem-count').value;
-          
-          if (!categoryId) {
-            alert('カテゴリを選択してください。');
-            return;
-          }
-          
-          stepData.category_id = categoryId;
-          stepData.category_name = document.getElementById('step-category').options[document.getElementById('step-category').selectedIndex].text;
-          stepData.problem_count = problemCount;
-          break;
-          
-        case 'problem':
-          const problemId = document.getElementById('step-problem').value;
-          
-          if (!problemId) {
-            alert('問題を選択してください。');
-            return;
-          }
-          
-          stepData.problem_id = problemId;
-          stepData.problem_title = document.getElementById('step-problem').options[document.getElementById('step-problem').selectedIndex].text;
-          break;
-          
-        case 'text':
-          const contentText = document.getElementById('step-content-text').value;
-          
-          if (!contentText) {
-            alert('内容を入力してください。');
-            return;
-          }
-          
-          stepData.content = contentText;
-          break;
-      }
-      
-      // ステップを追加
-      steps.push(stepData);
-      
-      // ステップリストを更新
-      renderSteps();
-      
-      // モーダルを閉じる
-      stepModal.hide();
-    });
+    if (saveStepBtn) {
+      saveStepBtn.addEventListener('click', function() {
+        // バリデーション
+        const stepTitle = document.getElementById('step-title').value;
+        if (!stepTitle) {
+          alert('ステップタイトルを入力してください。');
+          return;
+        }
+        
+        // 選択されたステップタイプに基づいて必要なデータを取得
+        const type = stepType ? stepType.value : 'text';
+        let stepData = {
+          id: 'step_' + Date.now(),
+          title: stepTitle,
+          description: document.getElementById('step-description') ? document.getElementById('step-description').value : '',
+          type: type
+        };
+        
+        switch(type) {
+          case 'category':
+            const categoryElement = document.getElementById('step-category');
+            const problemCountElement = document.getElementById('step-problem-count');
+            
+            if (!categoryElement) {
+              alert('カテゴリ選択欄が見つかりません。');
+              return;
+            }
+            
+            const categoryId = categoryElement.value;
+            const problemCount = problemCountElement ? problemCountElement.value : '5';
+            
+            if (!categoryId) {
+              alert('カテゴリを選択してください。');
+              return;
+            }
+            
+            stepData.category_id = categoryId;
+            stepData.category_name = categoryElement.options[categoryElement.selectedIndex].text;
+            stepData.problem_count = problemCount;
+            break;
+            
+          case 'problem':
+            const problemElement = document.getElementById('step-problem');
+            
+            if (!problemElement) {
+              alert('問題選択欄が見つかりません。');
+              return;
+            }
+            
+            const problemId = problemElement.value;
+            
+            if (!problemId) {
+              alert('問題を選択してください。');
+              return;
+            }
+            
+            stepData.problem_id = problemId;
+            stepData.problem_title = problemElement.options[problemElement.selectedIndex].text;
+            break;
+            
+          case 'text':
+            const contentElement = document.getElementById('step-content-text');
+            
+            if (!contentElement) {
+              alert('内容入力欄が見つかりません。');
+              return;
+            }
+            
+            const contentText = contentElement.value;
+            
+            if (!contentText) {
+              alert('内容を入力してください。');
+              return;
+            }
+            
+            stepData.content = contentText;
+            break;
+        }
+        
+        // ステップを追加
+        steps.push(stepData);
+        
+        // ステップリストを更新
+        renderSteps();
+        
+        // モーダルを閉じる
+        try {
+          stepModal.hide();
+        } catch (error) {
+          console.error('モーダル非表示エラー:', error);
+          location.reload(); // モーダルが閉じられない場合はページリロード
+        }
+      });
+    }
     
     // ステップリストを描画する関数
     function renderSteps() {
+      if (!stepsContainer || !emptyStepsMessage || !stepsDataInput) {
+        console.error('必要なDOM要素が見つかりません');
+        return;
+      }
+      
       // 空メッセージの表示/非表示
       if (steps.length === 0) {
         emptyStepsMessage.style.display = 'block';
@@ -348,8 +519,8 @@
           case 'category':
             stepContent = `
               <div>
-                <strong>カテゴリ:</strong> ${step.category_name}<br>
-                <strong>問題数:</strong> ${step.problem_count}問
+                <strong>カテゴリ:</strong> ${step.category_name || '未設定'}<br>
+                <strong>問題数:</strong> ${step.problem_count || '5'}問
               </div>
             `;
             break;
@@ -357,7 +528,7 @@
           case 'problem':
             stepContent = `
               <div>
-                <strong>問題:</strong> ${step.problem_title}
+                <strong>問題:</strong> ${step.problem_title || '未設定'}
               </div>
             `;
             break;
@@ -365,7 +536,7 @@
           case 'text':
             stepContent = `
               <div>
-                <strong>内容:</strong> ${step.content.substring(0, 100)}${step.content.length > 100 ? '...' : ''}
+                <strong>内容:</strong> ${step.content ? (step.content.substring(0, 100) + (step.content.length > 100 ? '...' : '')) : '未設定'}
               </div>
             `;
             break;
@@ -403,20 +574,60 @@
       });
       
       // 隠しフィールドにステップデータをJSON形式で設定
-      stepsDataInput.value = JSON.stringify(steps);
+      try {
+        stepsDataInput.value = JSON.stringify(steps);
+      } catch (error) {
+        console.error('ステップデータのJSON変換エラー:', error);
+        alert('ステップデータの保存中にエラーが発生しました。');
+      }
     }
     
     // フォーム送信時の処理
-    document.getElementById('learning-path-form').addEventListener('submit', function(e) {
-      if (steps.length === 0) {
-        e.preventDefault();
-        alert('少なくとも1つの学習ステップを追加してください。');
-        return;
-      }
-    });
+    const learningPathForm = document.getElementById('learning-path-form');
+    if (learningPathForm) {
+      learningPathForm.addEventListener('submit', function(e) {
+        if (steps.length === 0) {
+          e.preventDefault();
+          alert('少なくとも1つの学習ステップを追加してください。');
+          return;
+        }
+        
+        // ステップデータを最終確認
+        try {
+          const stepsJSON = JSON.stringify(steps);
+          stepsDataInput.value = stepsJSON;
+        } catch (error) {
+          e.preventDefault();
+          console.error('ステップデータのJSON変換エラー:', error);
+          alert('ステップデータの保存中にエラーが発生しました。フォームを送信できません。');
+        }
+      });
+    }
     
     // ページ読み込み時に空メッセージを表示
     renderSteps();
+    
+    // Drag & Drop機能の初期化（オプション）
+    if (typeof Sortable !== 'undefined' && stepsContainer) {
+      new Sortable(stepsContainer, {
+        handle: '.draggable-handle',
+        animation: 150,
+        onEnd: function() {
+          // ステップの順序を更新
+          const stepElements = stepsContainer.querySelectorAll('.step-container');
+          const newSteps = [];
+          
+          stepElements.forEach(element => {
+            const stepId = element.dataset.id;
+            const step = steps.find(s => s.id === stepId);
+            if (step) newSteps.push(step);
+          });
+          
+          steps = newSteps;
+          renderSteps();
+        }
+      });
+    }
   });
 </script>
 {% endblock %}

@@ -389,12 +389,15 @@
         
                     {% if current_user.role == 'student' %}
                         <li><a href="{{ url_for('basebuilder_module.problems') }}"><i class="fas fa-book"></i> 問題に挑戦</a></li>
+                        <li><a href="{{ url_for('basebuilder_module.my_texts') }}"><i class="fas fa-file-alt"></i> テキスト</a></li>
                         <li><a href="{{ url_for('basebuilder_module.view_proficiency') }}"><i class="fas fa-chart-line"></i> 熟練度</a></li>
                         <li><a href="{{ url_for('basebuilder_module.view_history') }}"><i class="fas fa-history"></i> 学習履歴</a></li>
                         <li><a href="{{ url_for('basebuilder_module.learning_paths') }}"><i class="fas fa-road"></i> 学習パス</a></li>
                     {% elif current_user.role == 'teacher' %}
                         <li><a href="{{ url_for('basebuilder_module.categories') }}"><i class="fas fa-folder"></i> カテゴリ管理</a></li>
                         <li><a href="{{ url_for('basebuilder_module.problems') }}"><i class="fas fa-tasks"></i> 問題管理</a></li>
+                        <li><a href="{{ url_for('basebuilder_module.text_sets') }}"><i class="fas fa-file-alt"></i> テキスト管理</a></li>
+                        <li><a href="{{ url_for('basebuilder_module.learning_paths') }}"><i class="fas fa-road"></i> 学習パス</a></li>
                         <li><a href="{{ url_for('basebuilder_module.theme_relations') }}"><i class="fas fa-link"></i> テーマ関連付け</a></li>
                         <li><a href="{{ url_for('basebuilder_module.analysis') }}"><i class="fas fa-chart-bar"></i> 理解度分析</a></li>
                     {% endif %}

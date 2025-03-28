@@ -1,4 +1,6 @@
-<!-- text_sets.html を修正 -->
+{% extends 'basebuilder/layout.html' %}
+
+{% block basebuilder_content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h1 class="section-title">テキスト管理</h1>
   <div>
@@ -16,7 +18,7 @@
     <h5 class="card-title">テキスト一覧</h5>
   </div>
   <div class="card-body">
-    <form id="bulk-delete-form" method="POST" action="{{ url_for('basebuilder_module.delete_text_sets') }}">
+    <form id="bulk-delete-form" method="POST" action="{{ url_for('basebuilder_module.bulk_delete_text_sets') }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       
       {% if text_sets %}
@@ -75,7 +77,10 @@
     </form>
   </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
+{{ super() }}
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     const selectAllCheckbox = document.getElementById('select-all-texts');
@@ -132,3 +137,4 @@
     updateDeleteButtonState();
   });
 </script>
+{% endblock %}

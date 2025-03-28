@@ -126,6 +126,9 @@ def index():
                 'percent': progress_percent
             }
         
+        # 追加: すべてのカテゴリを取得
+        all_categories = ProblemCategory.query.all()
+        
         return render_template(
             'basebuilder/student_dashboard.html',
             category_proficiency=category_proficiency,
@@ -137,7 +140,8 @@ def index():
             proficiency_counts=proficiency_counts,
             today=today,
             delivered_texts=delivered_texts,
-            text_progress=text_progress
+            text_progress=text_progress,
+            all_categories=all_categories  # これを追加
         )
     
     elif current_user.role == 'teacher':
@@ -299,11 +303,45 @@ def delete_category(category_id):
     category = ProblemCategory.query.get_or_404(category_id)
     
     try:
-        # このカテゴリに関連する問題を取得
+        # このカテゴリに関連するテキストセットを取得
+        text_sets = TextSet.query.filter_by(category_id=category_id).all()
+        
+        # 各テキストセットとその関連レコードを削除
+        for text_set in text_sets:
+            # テキストセットに含まれる問題を取得
+            text_problems = BasicKnowledgeItem.query.filter_by(text_set_id=text_set.id).all()
+            
+            # 各問題に関連するレコードを削除
+            for problem in text_problems:
+                # 単語の熟練度記録を削除
+                WordProficiency.query.filter_by(problem_id=problem.id).delete()
+                
+                # 解答記録の削除
+                AnswerRecord.query.filter_by(problem_id=problem.id).delete()
+                
+                # テーマとの関連付けを削除
+                KnowledgeThemeRelation.query.filter_by(problem_id=problem.id).delete()
+                
+                # 問題を削除
+                db.session.delete(problem)
+            
+            # テキストの熟練度記録を削除
+            TextProficiencyRecord.query.filter_by(text_set_id=text_set.id).delete()
+            
+            # テキスト配信を削除
+            TextDelivery.query.filter_by(text_set_id=text_set.id).delete()
+            
+            # テキストセットを削除
+            db.session.delete(text_set)
+        
+        # このカテゴリに直接関連する問題を取得
         problems = BasicKnowledgeItem.query.filter_by(category_id=category_id).all()
         
         # 各問題に関連する解答記録・関連付けを削除
         for problem in problems:
+            # 単語の熟練度記録を削除
+            WordProficiency.query.filter_by(problem_id=problem.id).delete()
+            
             # 解答記録の削除
             AnswerRecord.query.filter_by(problem_id=problem.id).delete()
             
@@ -333,39 +371,78 @@ def delete_category(category_id):
 def problems():
     # クエリパラメータからフィルタリング条件を取得
     category_id = request.args.get('category_id', type=int)
-    difficulty = request.args.get('difficulty', type=int)
     search = request.args.get('search', '')
     
-    # 基本クエリ
-    query = BasicKnowledgeItem.query
-    
-    # フィルタリング条件の適用
     if category_id:
-        query = query.filter_by(category_id=category_id)
-    
-    if difficulty:
-        query = query.filter_by(difficulty=difficulty)
-    
-    if search:
-        query = query.filter(
-            (BasicKnowledgeItem.title.like(f'%{search}%')) |
-            (BasicKnowledgeItem.question.like(f'%{search}%'))
+        # カテゴリIDが指定されている場合は、そのカテゴリの問題を表示
+        # この部分は既存のコード - カテゴリ内の問題表示用
+        query = BasicKnowledgeItem.query.filter_by(category_id=category_id)
+        
+        if search:
+            query = query.filter(
+                (BasicKnowledgeItem.title.like(f'%{search}%')) |
+                (BasicKnowledgeItem.question.like(f'%{search}%'))
+            )
+        
+        problems = query.order_by(BasicKnowledgeItem.created_at.desc()).all()
+        categories = ProblemCategory.query.all()
+        
+        # カテゴリ情報を取得
+        current_category = ProblemCategory.query.get_or_404(category_id)
+        
+        return render_template(
+            'basebuilder/category_problems.html',  # 新しいテンプレート
+            problems=problems,
+            categories=categories,
+            current_category=current_category,
+            search=search
         )
-    
-    # 問題の取得
-    problems = query.order_by(BasicKnowledgeItem.created_at.desc()).all()
-    
-    # カテゴリの取得
-    categories = ProblemCategory.query.all()
-    
-    return render_template(
-        'basebuilder/problems.html',
-        problems=problems,
-        categories=categories,
-        selected_category_id=category_id,
-        selected_difficulty=difficulty,
-        search=search
-    )
+    else:
+        # カテゴリIDが指定されていない場合は、カテゴリ一覧を表示
+        query = ProblemCategory.query
+        
+        if search:
+            query = query.filter(ProblemCategory.name.like(f'%{search}%'))
+        
+        categories = query.order_by(ProblemCategory.name).all()
+        
+        # 学生の場合は熟練度情報も取得
+        proficiency_records = []
+        mastered_count = 0
+        learning_count = 0
+        new_count = 0
+        
+        if current_user.role == 'student':
+            proficiency_records = ProficiencyRecord.query.filter_by(
+                student_id=current_user.id
+            ).all()
+            
+            # 熟練度レベル別の単語数をカウント
+            for record in proficiency_records:
+                if record.level == 5:
+                    mastered_count += 1
+                elif record.level > 0:
+                    learning_count += 1
+                else:
+                    new_count += 1
+            
+            # 今日復習すべき問題数を取得
+            today = datetime.now().date()
+            today_review_count = ProficiencyRecord.query.filter(
+                ProficiencyRecord.student_id == current_user.id,
+                ProficiencyRecord.review_date <= today
+            ).count()
+        
+        return render_template(
+            'basebuilder/problems.html',
+            categories=categories,
+            proficiency_records=proficiency_records,
+            search=search,
+            mastered_count=mastered_count,
+            learning_count=learning_count,
+            new_count=new_count,
+            today_review_count=today_review_count if current_user.role == 'student' else None
+        )
 
 # 問題の作成と編集
 @basebuilder_module.route('/problem/create', methods=['GET', 'POST'])
@@ -1059,7 +1136,7 @@ def session_summary():
     session_start = datetime.fromisoformat(learning_session['session_start'])
     
     # 解答履歴を取得 - セッション開始時間以降のみを取得
-    answer_records = AnswerRecord.query.filter(
+    answer_records_list = AnswerRecord.query.filter(
         AnswerRecord.student_id == current_user.id,
         AnswerRecord.problem_id.in_(learning_session['completed_problems']),
         AnswerRecord.timestamp >= session_start
@@ -1067,12 +1144,18 @@ def session_summary():
     
     # 問題IDごとに最新の解答記録を取得
     latest_records = {}
-    for record in answer_records:
+    for record in answer_records_list:
         latest_records[record.problem_id] = record
     
     # 正解数・不正解数をカウント
     correct_count = sum(1 for record in latest_records.values() if record.is_correct)
     incorrect_count = len(latest_records) - correct_count
+    
+    # 各単語の熟練度を取得
+    word_proficiencies = WordProficiency.query.filter(
+        WordProficiency.student_id == current_user.id,
+        WordProficiency.problem_id.in_(learning_session['completed_problems'])
+    ).all()
     
     # 各カテゴリの熟練度を取得
     proficiency_records = ProficiencyRecord.query.filter_by(
@@ -1083,6 +1166,7 @@ def session_summary():
         'basebuilder/session_summary.html',
         completed_problems=completed_problems,
         answer_records=latest_records,
+        word_proficiencies=word_proficiencies,
         correct_count=correct_count,
         incorrect_count=incorrect_count,
         total_attempts=learning_session['current_attempt'],
@@ -1973,6 +2057,30 @@ def api_category_problems(category_id):
     # 通常の問題閲覧または不正なアクセスの場合は拒否
     return jsonify({'error': '指定されたカテゴリの問題にアクセスする権限がありません'}), 403
 
+@basebuilder_module.route('/api/problems')
+@login_required
+def api_problems():
+    """問題一覧を提供するAPIエンドポイント"""
+    if current_user.role not in ['teacher', 'student']:
+        return jsonify({'error': '権限がありません'}), 403
+    
+    # アクティブな問題を取得
+    problems = BasicKnowledgeItem.query.filter_by(is_active=True).all()
+    
+    # 問題データをJSON形式で返す
+    problem_data = []
+    for problem in problems:
+        data = {
+            'id': problem.id,
+            'title': problem.title,
+            'category_id': problem.category_id,
+            'category_name': problem.category.name,
+            'difficulty': problem.difficulty
+        }
+        problem_data.append(data)
+    
+    return jsonify({'problems': problem_data})
+
 # 問題テンプレートのダウンロード用ルート
 @basebuilder_module.route('/problems/template/<template_type>')
 @login_required
@@ -2144,6 +2252,55 @@ def text_sets():
     
     # その他のロールの場合
     return redirect(url_for('basebuilder_module.index'))
+
+@basebuilder_module.route('/text_sets/bulk_delete', methods=['POST'])  # URLパスを変更
+@login_required
+def bulk_delete_text_sets():  # 関数名を変更
+    if current_user.role != 'teacher':
+        flash('この機能は教師のみ利用可能です。')
+        return redirect(url_for('basebuilder_module.index'))
+    
+    # 選択されたテキストIDを取得
+    text_ids = request.form.getlist('text_ids')
+    
+    if not text_ids:
+        flash('削除するテキストが選択されていません。')
+        return redirect(url_for('basebuilder_module.text_sets'))
+    
+    try:
+        deleted_count = 0
+        for text_id in text_ids:
+            # テキストを取得
+            text_set = TextSet.query.get(int(text_id))
+            
+            # 作成者チェック
+            if text_set and text_set.created_by == current_user.id:
+                # テキストに含まれる問題を取得
+                problems = BasicKnowledgeItem.query.filter_by(text_set_id=text_set.id).all()
+                
+                # 問題の解答記録を削除
+                for problem in problems:
+                    AnswerRecord.query.filter_by(problem_id=problem.id).delete()
+                    db.session.delete(problem)
+                
+                # テキストの配信記録を削除
+                TextDelivery.query.filter_by(text_set_id=text_set.id).delete()
+                
+                # テキストの熟練度記録を削除
+                TextProficiencyRecord.query.filter_by(text_set_id=text_set.id).delete()
+                
+                # テキストを削除
+                db.session.delete(text_set)
+                deleted_count += 1
+        
+        db.session.commit()
+        flash(f'{deleted_count}件のテキストを削除しました。')
+    
+    except Exception as e:
+        db.session.rollback()
+        flash(f'テキストの削除中にエラーが発生しました: {str(e)}')
+    
+    return redirect(url_for('basebuilder_module.text_sets'))
 
 # テキスト詳細表示
 @basebuilder_module.route('/text_set/<int:text_id>')

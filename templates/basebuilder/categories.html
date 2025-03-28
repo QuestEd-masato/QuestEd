@@ -26,18 +26,44 @@
                 <a href="{{ url_for('basebuilder_module.problems', category_id=category.id) }}" class="btn btn-sm btn-outline">
                   <i class="fas fa-list"></i> 問題一覧
                 </a>
-                <!-- 削除ボタンを追加 -->
+                <!-- 追加: セッション開始ボタン（学生用） -->
+                {% if current_user.role == 'student' %}
+                <a href="{{ url_for('basebuilder_module.start_category_session', category_id=category.id) }}" class="btn btn-sm btn-primary">
+                  <i class="fas fa-play"></i> セッション開始
+                </a>
+                {% endif %}
+                <!-- 削除ボタン（教師用） -->
+                {% if current_user.role == 'teacher' %}
                 <form method="POST" action="{{ url_for('basebuilder_module.delete_category', category_id=category.id) }}" class="d-inline">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('このカテゴリとそれに含まれる全問題を削除してもよろしいですか？')">
                     <i class="fas fa-trash"></i> 削除
                   </button>
                 </form>
+                {% endif %}
               </div>
             </div>
             
             {% if category.description %}
               <p class="text-muted">{{ category.description }}</p>
+            {% endif %}
+            
+            <!-- 追加: カテゴリの熟練度表示 -->
+            {% if current_user.role == 'student' %}
+              {% set proficiency_level = 0 %}
+              {% for record in proficiency_records if record.category_id == category.id %}
+                {% set proficiency_level = record.level %}
+              {% endfor %}
+              <div class="proficiency-meter mb-2">
+                <div class="d-flex justify-content-between mb-1">
+                  <span>熟練度:</span>
+                  <span>{{ proficiency_level }}/5</span>
+                </div>
+                <div class="progress" style="height: 8px;">
+                  <div class="progress-bar {% if proficiency_level >= 4 %}bg-success{% elif proficiency_level >= 2 %}bg-primary{% else %}bg-warning{% endif %}" 
+                       style="width: {{ proficiency_level * 20 }}%"></div>
+                </div>
+              </div>
             {% endif %}
             
             {% if category.subcategories %}
@@ -55,17 +81,43 @@
                           <a href="{{ url_for('basebuilder_module.problems', category_id=subcategory.id) }}" class="btn btn-sm btn-outline">
                             <i class="fas fa-list"></i> 問題一覧
                           </a>
-                          <!-- サブカテゴリの削除ボタンも追加 -->
+                          <!-- 追加: セッション開始ボタン（学生用） -->
+                          {% if current_user.role == 'student' %}
+                          <a href="{{ url_for('basebuilder_module.start_category_session', category_id=subcategory.id) }}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-play"></i> セッション開始
+                          </a>
+                          {% endif %}
+                          <!-- サブカテゴリの削除ボタン（教師用） -->
+                          {% if current_user.role == 'teacher' %}
                           <form method="POST" action="{{ url_for('basebuilder_module.delete_category', category_id=subcategory.id) }}" class="d-inline">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('このサブカテゴリとそれに含まれる全問題を削除してもよろしいですか？')">
                               <i class="fas fa-trash"></i> 削除
                             </button>
                           </form>
+                          {% endif %}
                         </div>
                       </div>
                       {% if subcategory.description %}
                         <p class="text-muted">{{ subcategory.description }}</p>
+                      {% endif %}
+                      
+                      <!-- 追加: サブカテゴリの熟練度表示 -->
+                      {% if current_user.role == 'student' %}
+                        {% set sub_proficiency_level = 0 %}
+                        {% for record in proficiency_records if record.category_id == subcategory.id %}
+                          {% set sub_proficiency_level = record.level %}
+                        {% endfor %}
+                        <div class="proficiency-meter mt-2">
+                          <div class="d-flex justify-content-between mb-1">
+                            <span>熟練度:</span>
+                            <span>{{ sub_proficiency_level }}/5</span>
+                          </div>
+                          <div class="progress" style="height: 8px;">
+                            <div class="progress-bar {% if sub_proficiency_level >= 4 %}bg-success{% elif sub_proficiency_level >= 2 %}bg-primary{% else %}bg-warning{% endif %}" 
+                                 style="width: {{ sub_proficiency_level * 20 }}%"></div>
+                          </div>
+                        </div>
                       {% endif %}
                     </li>
                   {% endfor %}
