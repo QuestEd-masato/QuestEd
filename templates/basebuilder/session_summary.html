@@ -25,10 +25,17 @@
       </div>
       
       <div class="progress mb-3">
-        <div class="progress-bar bg-success" role="progressbar" style="width: {{ (correct_count / total_attempts * 100)|round|int }}%" 
-             aria-valuenow="{{ correct_count }}" aria-valuemin="0" aria-valuemax="{{ total_attempts }}">
-          {{ (correct_count / total_attempts * 100)|round|int }}%
-        </div>
+        {% if total_attempts > 0 %}
+          <div class="progress-bar bg-success" role="progressbar" style="width: {{ (correct_count / total_attempts * 100)|round|int }}%" 
+               aria-valuenow="{{ correct_count }}" aria-valuemin="0" aria-valuemax="{{ total_attempts }}">
+            {{ (correct_count / total_attempts * 100)|round|int }}%
+          </div>
+        {% else %}
+          <div class="progress-bar bg-success" role="progressbar" style="width: 0%" 
+               aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+            0%
+          </div>
+        {% endif %}
       </div>
       
       <p>解答回数: {{ total_attempts }} / {{ max_attempts }}</p>
@@ -53,11 +60,13 @@
           </thead>
           <tbody>
             {% for problem in completed_problems %}
-              {% set records = answer_records|selectattr('problem_id', 'eq', problem.id)|list %}
-              {% set latest_record = records|sort(attribute='timestamp')|last %}
-              {% set proficiency = namespace(level=0) %}
-              {% for record in proficiency_records if record.category_id == problem.category_id %}
-                {% set proficiency.level = record.level %}
+              {% set problem_id = problem.id %}
+              {% set latest_record = answer_records.get(problem_id) %}
+              
+              <!-- 単語の熟練度を取得 -->
+              {% set word_proficiency = namespace(level=0) %}
+              {% for wp in word_proficiencies if wp.problem_id == problem_id %}
+                {% set word_proficiency.level = wp.level %}
               {% endfor %}
               
               <tr>
@@ -72,9 +81,9 @@
                 </td>
                 <td>
                   <div class="progress" style="height: 20px;">
-                    <div class="progress-bar bg-info" role="progressbar" style="width: {{ proficiency.level * 20 }}%" 
-                         aria-valuenow="{{ proficiency.level }}" aria-valuemin="0" aria-valuemax="5">
-                      {{ proficiency.level }}
+                    <div class="progress-bar bg-info" role="progressbar" style="width: {{ word_proficiency.level * 20 }}%" 
+                         aria-valuenow="{{ word_proficiency.level }}" aria-valuemin="0" aria-valuemax="5">
+                      {{ word_proficiency.level }}/5
                     </div>
                   </div>
                 </td>
