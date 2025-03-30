@@ -71,24 +71,6 @@ class BasicKnowledgeItem(db.Model):
     answer_records = db.relationship('AnswerRecord', backref='problem', lazy=True)
     theme_relations = db.relationship('KnowledgeThemeRelation', backref='problem', lazy=True)
 
-# basebuilder/models.py に追加
-# 単語熟練度記録モデル（新規）
-class WordProficiency(db.Model):
-    __tablename__ = 'word_proficiency_records'
-    id = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    problem_id = db.Column(db.Integer, db.ForeignKey('basic_knowledge_items.id'), nullable=False)
-    level = db.Column(db.Integer, default=0)  # 0-5のスケール → ポイントとして使用
-    last_updated = db.Column(db.DateTime, default=datetime.utcnow)
-    review_date = db.Column(db.Date, default=datetime.now().date())  # 次回復習日
-    
-    # リレーションシップ
-    student = db.relationship('User', backref=db.backref('word_proficiency_records', lazy=True))
-    problem = db.relationship('BasicKnowledgeItem', backref=db.backref('proficiency_records', lazy=True))
-    
-    # ユニーク制約（学生+問題の組み合わせは一意）
-    __table_args__ = (db.UniqueConstraint('student_id', 'problem_id'),)
-
 # 問題と探究テーマの関連付けモデル
 class KnowledgeThemeRelation(db.Model):
     __tablename__ = 'knowledge_theme_relations'
@@ -183,3 +165,21 @@ class PathAssignment(db.Model):
     
     # ユニーク制約（学生+パスの組み合わせは一意）
     __table_args__ = (db.UniqueConstraint('path_id', 'student_id'),)
+
+# basebuilder/models.py に追加
+# 単語ごとの熟練度モデル
+class WordProficiency(db.Model):
+    __tablename__ = 'word_proficiency_records'
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    problem_id = db.Column(db.Integer, db.ForeignKey('basic_knowledge_items.id'), nullable=False)
+    level = db.Column(db.Integer, default=0)  # 0-5のスケール → ポイントとして使用
+    last_updated = db.Column(db.DateTime, default=datetime.utcnow)
+    review_date = db.Column(db.Date, default=datetime.now().date())  # 次回復習日
+    
+    # リレーションシップ
+    student = db.relationship('User', backref=db.backref('word_proficiency_records', lazy=True))
+    problem = db.relationship('BasicKnowledgeItem', backref=db.backref('word_proficiency_records', lazy=True))
+    
+    # ユニーク制約（学生+問題の組み合わせは一意）
+    __table_args__ = (db.UniqueConstraint('student_id', 'problem_id'),)

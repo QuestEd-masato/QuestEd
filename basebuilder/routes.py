@@ -58,43 +58,58 @@ def index():
         
         # 5. テキストの定着度を計算
         text_proficiency = {}
-        for record in TextProficiencyRecord.query.filter_by(student_id=current_user.id).all():
-            text_proficiency[record.text_set_id] = {
-                'level': record.level,
-                'last_updated': record.last_updated
-            }
-        
-        # 各テキストセットの定着度を計算（レコードがない場合）
+        for text_set in TextSet.query.all():
+            # テキストの定着度レコードを取得
+            text_prof_record = TextProficiencyRecord.query.filter_by(
+                student_id=current_user.id,
+                text_set_id=text_set.id
+            ).first()
+    
+            if text_prof_record:
+                # 定着度レコードが存在する場合
+                text_proficiency[text_set.id] = {
+                    'level': text_prof_record.level,
+                    'last_updated': text_prof_record.last_updated
+                }
+            else:
+                # 定着度レコードが存在しない場合
+                text_proficiency[text_set.id] = {
+                    'level': 0,
+                    'last_updated': None
+                }
+
+        # テキスト学習進捗状況を計算（解答済み問題数ベース）
+        text_progress = {}
         for delivery in delivered_texts:
-            if delivery.text_set_id not in text_proficiency:
-                # テキストに含まれる問題を取得
-                problems = BasicKnowledgeItem.query.filter_by(text_set_id=delivery.text_set_id).all()
-                
-                if problems:
-                    # 正解数をカウント
-                    correct_count = 0
-                    total_count = len(problems)
-                    
-                    for problem in problems:
-                        answer = AnswerRecord.query.filter_by(
-                            student_id=current_user.id,
-                            problem_id=problem.id,
-                            is_correct=True
-                        ).order_by(AnswerRecord.timestamp.desc()).first()
-                        
-                        if answer:
-                            correct_count += 1
-                    
-                    # 定着度を計算
-                    if total_count > 0:
-                        level = int((correct_count / total_count) * 100)
-                    else:
-                        level = 0
-                    
-                    text_proficiency[delivery.text_set_id] = {
-                        'level': level,
-                        'last_updated': datetime.now()
-                    }
+            # テキストの問題総数
+            problems = BasicKnowledgeItem.query.filter_by(
+                text_set_id=delivery.text_set_id
+            ).all()
+    
+            total_problems = len(problems)
+    
+            # 解答済みの問題数
+            answered_count = 0
+            for problem in problems:
+                answer = AnswerRecord.query.filter_by(
+                    student_id=current_user.id,
+                    problem_id=problem.id
+                ).first()
+        
+                if answer:
+                    answered_count += 1
+    
+            # 進捗率を計算
+            if total_problems > 0:
+                progress_percent = int((answered_count / total_problems) * 100)
+            else:
+                progress_percent = 0
+    
+            text_progress[delivery.text_set_id] = {
+                'answered': answered_count,
+                'total': total_problems,
+                'percent': progress_percent
+            }
         
         # 6. 学生の最近の解答履歴を取得（最新10件）
         recent_answers = AnswerRecord.query.filter_by(
@@ -354,6 +369,15 @@ def problems():
     search = request.args.get('search', '')
     proficiency = request.args.get('proficiency', '')  # 新たに追加
     
+    # 検索パラメータをセッションに保存（「この検索結果から学習」のため）
+    session['search_params'] = {
+        'category_id': category_id,
+        'text_id': text_id, 
+        'difficulty': difficulty,
+        'search': search,
+        'proficiency': proficiency
+    }
+    
     # 基本クエリ
     query = BasicKnowledgeItem.query
     
@@ -489,6 +513,119 @@ def problems():
         search=search,
         word_proficiencies=word_proficiency_records
     )
+
+@basebuilder_module.route('/start_search_session')
+@login_required
+def start_search_session():
+    """検索結果の単語からセッションを開始する"""
+    if current_user.role != 'student':
+        flash('この機能は学生のみ利用可能です。')
+        return redirect(url_for('basebuilder_module.index'))
+    
+    # 検索条件をセッションから取得
+    search_params = session.get('search_params', {})
+    
+    # 検索条件に一致する問題を取得
+    query = BasicKnowledgeItem.query.filter_by(is_active=True)
+    
+    # 配信されたテキストに限定
+    enrolled_class_ids = [c.id for c in current_user.enrolled_classes]
+    delivered_text_ids = db.session.query(TextDelivery.text_set_id).filter(
+        TextDelivery.class_id.in_(enrolled_class_ids)
+    ).distinct().all()
+    delivered_text_ids = [id[0] for id in delivered_text_ids]
+    
+    query = query.filter(BasicKnowledgeItem.text_set_id.in_(delivered_text_ids))
+    
+    # その他の検索条件を適用
+    if 'category_id' in search_params and search_params['category_id']:
+        query = query.filter_by(category_id=search_params['category_id'])
+    
+    if 'text_id' in search_params and search_params['text_id']:
+        query = query.filter_by(text_set_id=search_params['text_id'])
+    
+    if 'difficulty' in search_params and search_params['difficulty']:
+        query = query.filter_by(difficulty=search_params['difficulty'])
+    
+    if 'search' in search_params and search_params['search']:
+        search_term = search_params['search']
+        query = query.filter(
+            (BasicKnowledgeItem.title.like(f'%{search_term}%')) |
+            (BasicKnowledgeItem.question.like(f'%{search_term}%'))
+        )
+    
+    # 全ての問題を取得（定着度フィルター前）
+    all_problems = query.all()
+    problem_ids = [p.id for p in all_problems]
+    
+    # 定着度フィルターの適用
+    if 'proficiency' in search_params and search_params['proficiency']:
+        proficiency = search_params['proficiency']
+        
+        # 単語ごとの定着度を計算
+        word_proficiency_records = {}
+        for problem_id in problem_ids:
+            # 解答履歴を取得（最新5件）
+            answers = AnswerRecord.query.filter_by(
+                student_id=current_user.id,
+                problem_id=problem_id
+            ).order_by(AnswerRecord.timestamp.desc()).limit(5).all()
+            
+            if answers:
+                # 解答があれば定着度を計算
+                correct_count = sum(1 for a in answers if a.is_correct)
+                level = min(5, int((correct_count / len(answers)) * 5))
+            else:
+                # 解答がなければ0
+                level = 0
+            
+            word_proficiency_records[problem_id] = level
+        
+        # 定着度フィルターに基づいてフィルタリング
+        filtered_ids = []
+        
+        if proficiency == '0':
+            # 未学習 (level = 0)
+            for pid, level in word_proficiency_records.items():
+                if level == 0:
+                    filtered_ids.append(pid)
+        elif proficiency == '1-2':
+            # 初級 (level = 1-2)
+            for pid, level in word_proficiency_records.items():
+                if 1 <= level <= 2:
+                    filtered_ids.append(pid)
+        elif proficiency == '3-4':
+            # 中級 (level = 3-4)
+            for pid, level in word_proficiency_records.items():
+                if 3 <= level <= 4:
+                    filtered_ids.append(pid)
+        elif proficiency == '5':
+            # マスター (level = 5)
+            for pid, level in word_proficiency_records.items():
+                if level == 5:
+                    filtered_ids.append(pid)
+        
+        if filtered_ids:
+            problem_ids = filtered_ids
+    
+    if not problem_ids:
+        flash('該当する問題が見つかりませんでした。検索条件を変更してください。')
+        return redirect(url_for('basebuilder_module.problems'))
+    
+    # セッション情報を初期化
+    session['learning_session'] = {
+        'problem_ids': problem_ids,
+        'total_problems': min(10, len(problem_ids)),
+        'max_attempts': 15,
+        'current_attempt': 0,
+        'completed_problems': [],
+        'current_problem_id': None,
+        'session_start': datetime.now().isoformat(),
+        'is_search_session': True  # 検索結果からのセッションであることを示すフラグ
+    }
+    
+    # 最初の問題を選択
+    return redirect(url_for('basebuilder_module.next_problem'))
 
 # 問題の作成と編集
 @basebuilder_module.route('/problem/create', methods=['GET', 'POST'])
@@ -2502,17 +2639,24 @@ def solve_problem(problem_id):
         learning_session = session['learning_session']
         in_session = (learning_session.get('current_problem_id') == problem_id)
     
+    # 単語ごとの熟練度も取得
+    word_proficiency = WordProficiency.query.filter_by(
+        student_id=current_user.id,
+        problem_id=problem_id
+    ).first()
+
     return render_template(
         'basebuilder/solve_problem.html',
         problem=problem,
         proficiency_record=proficiency_record,
+        word_proficiency=word_proficiency,
         dummy_choices=dummy_choices,
         all_choices=all_choices if is_choice_mode else None,
         correct_index=correct_index if is_choice_mode else None,
         is_choice_mode=is_choice_mode,
         in_session=in_session,
         learning_session=learning_session,
-        text_context=text_context  # テキストコンテキスト情報を渡す
+        text_context=text_context
     )
 
 @basebuilder_module.route('/problem/<int:problem_id>/submit', methods=['POST'])
@@ -2586,13 +2730,19 @@ def submit_answer(problem_id):
     db.session.add(answer_record)
     db.session.commit()
     
-    # 単語の熟練度を更新
+    # カテゴリの熟練度を更新
     proficiency = update_proficiency(current_user.id, problem.category_id, is_correct)
-    
+
+    # 単語ごとの熟練度も更新 - 新規追加
+    word_proficiency = update_word_proficiency(current_user.id, problem_id, is_correct)
+
     # テキストの定着度も更新
     if problem.text_set_id:
-        text_proficiency = update_text_proficiency(current_user.id, problem_id)
-    
+        text_proficiency = update_text_proficiency(current_user.id, problem.text_set_id)
+
+    # すべての更新をコミット
+    db.session.commit()
+
     # セッション情報を更新
     next_url = None
     
@@ -2759,45 +2909,52 @@ def update_word_proficiency(student_id, problem_id, is_correct):
     return proficiency
 
 # テキスト熟練度を更新する関数
-def update_text_proficiency(student_id, problem_id):
+def update_text_proficiency(student_id, text_set_id):
     """
-    問題に解答した後、関連するテキストの定着度を更新する
+    テキストセットの定着度を更新する関数
+    
+    Args:
+        student_id: 学生ID
+        text_set_id: テキストセットID
+        
+    Returns:
+        更新された熟練度レコード
     """
-    # 問題を取得
-    problem = BasicKnowledgeItem.query.get(problem_id)
-    
-    # テキストに属していない場合は何もしない
-    if not problem or not problem.text_set_id:
-        return
-    
     # テキストセットを取得
-    text_set_id = problem.text_set_id
+    text_set = TextSet.query.get(text_set_id)
+    if not text_set:
+        return None
     
     # テキストに含まれる問題を取得
     problems = BasicKnowledgeItem.query.filter_by(
-        text_set_id=text_set_id
+        text_set_id=text_set_id,
+        is_active=True
     ).all()
     
     if not problems:
-        return
+        return None
     
-    # 各問題の正解状況を確認
-    correct_count = 0
-    total_count = len(problems)
+    # テキスト内の各問題の単語熟練度を合計
+    total_level = 0
+    potential_max = len(problems) * 5  # 各問題の最大レベルは5
     
-    for p in problems:
-        # 最新の解答を取得
-        answer = AnswerRecord.query.filter_by(
+    for problem in problems:
+        # 単語の熟練度レコードを取得
+        word_prof = WordProficiency.query.filter_by(
             student_id=student_id,
-            problem_id=p.id,
-            is_correct=True
-        ).order_by(AnswerRecord.timestamp.desc()).first()
+            problem_id=problem.id
+        ).first()
         
-        if answer:
-            correct_count += 1
+        # 熟練度があれば加算
+        if word_prof:
+            total_level += word_prof.level
     
-    # 定着度を計算（正解数÷問題数×100）
-    level = int((correct_count / total_count) * 100)
+    # 定着度を計算（合計レベル÷最大可能レベル×100）
+    # 小数点以下を切り捨て
+    if potential_max > 0:
+        level = int((total_level / potential_max) * 100)
+    else:
+        level = 0
     
     # 熟練度レコードを取得または作成
     proficiency = TextProficiencyRecord.query.filter_by(

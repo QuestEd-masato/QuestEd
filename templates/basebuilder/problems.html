@@ -20,8 +20,8 @@
   <div class="card-header d-flex justify-content-between align-items-center">
     <h5 class="card-title">検索とフィルター</h5>
     {% if current_user.role == 'student' %}
-      <a href="{{ url_for('basebuilder_module.start_session') }}" class="btn btn-primary">
-        <i class="fas fa-play"></i> ランダム学習
+      <a href="{{ url_for('basebuilder_module.start_search_session') }}" class="btn btn-primary">
+        <i class="fas fa-play"></i> この検索結果から学習
       </a>
     {% endif %}
   </div>
