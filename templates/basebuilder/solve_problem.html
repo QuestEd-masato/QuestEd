@@ -295,15 +295,7 @@
     </div>
     <div class="timer" id="timer">00:00</div>
   </div>
-  
-  <!-- 熟練度表示 -->
-  <div class="proficiency-indicator">
-    {% for i in range(6) %}
-      <div class="proficiency-dot {% if proficiency_record and proficiency_record.level >= i %}active{% endif %}"></div>
-    {% endfor %}
-    <span class="ms-2 text-muted">定着度: {{ proficiency_record.level if proficiency_record else 0 }}/5</span>
-  </div>
-  
+    
   <!-- 単語熟練度表示 -->
   {% if word_proficiency %}
     <div class="word-proficiency-indicator mt-2 mb-3">

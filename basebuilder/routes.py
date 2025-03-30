@@ -2333,40 +2333,8 @@ def view_text_set(text_id):
     word_proficiencies = {}
     
     if current_user.role == 'student':
-        # テキストの定着度レコードを取得
-        text_proficiency = TextProficiencyRecord.query.filter_by(
-            student_id=current_user.id,
-            text_set_id=text_id
-        ).first()
-        
-        # レコードがなければ計算して作成
-        if not text_proficiency:
-            if problems:
-                correct_count = 0
-                total_count = len(problems)
-                
-                for problem in problems:
-                    # 最新の解答を取得
-                    answer = AnswerRecord.query.filter_by(
-                        student_id=current_user.id,
-                        problem_id=problem.id,
-                        is_correct=True
-                    ).order_by(AnswerRecord.timestamp.desc()).first()
-                    
-                    if answer:
-                        correct_count += 1
-                
-                # 定着度を計算
-                level = int((correct_count / total_count * 100)) if total_count > 0 else 0
-                
-                # 新しいレコードを作成
-                text_proficiency = TextProficiencyRecord(
-                    student_id=current_user.id,
-                    text_set_id=text_id,
-                    level=level
-                )
-                db.session.add(text_proficiency)
-                db.session.commit()
+        # テキストの定着度を更新または作成
+        text_proficiency = calculate_text_proficiency(current_user.id, text_id, problems)
         
         # 各単語の定着度を計算
         for problem in problems:
@@ -2408,6 +2376,71 @@ def view_text_set(text_id):
         text_proficiency=text_proficiency,
         word_proficiencies=word_proficiencies
     )
+
+def calculate_text_proficiency(student_id, text_id, problems=None):
+    """
+    テキスト全体の定着度を計算する関数
+    
+    Args:
+        student_id: 学生ID
+        text_id: テキストID
+        problems: すでに取得済みの問題リスト（省略可）
+        
+    Returns:
+        TextProficiencyRecord: 更新または作成されたテキスト定着度レコード
+    """
+    # 既存のレコードを取得
+    text_proficiency = TextProficiencyRecord.query.filter_by(
+        student_id=student_id,
+        text_set_id=text_id
+    ).first()
+    
+    # 問題が渡されていない場合は取得
+    if problems is None:
+        problems = BasicKnowledgeItem.query.filter_by(
+            text_set_id=text_id
+        ).all()
+    
+    if problems:
+        answered_problems = 0
+        correct_problems = 0
+        
+        for problem in problems:
+            # 各問題の最新の解答を取得
+            latest_answer = AnswerRecord.query.filter_by(
+                student_id=student_id,
+                problem_id=problem.id
+            ).order_by(AnswerRecord.timestamp.desc()).first()
+            
+            if latest_answer:
+                answered_problems += 1
+                if latest_answer.is_correct:
+                    correct_problems += 1
+        
+        # 解答済み問題がある場合のみ定着度を計算
+        if answered_problems > 0:
+            level = int((correct_problems / answered_problems) * 100)
+        else:
+            level = 0
+            
+        # 全体の進捗率も考慮（全問題中何％解答済みか）
+        completion_rate = int((answered_problems / len(problems)) * 100) if problems else 0
+        
+        # 既存のレコードを更新または新規作成
+        if text_proficiency:
+            text_proficiency.level = level
+            text_proficiency.last_updated = datetime.utcnow()
+        else:
+            text_proficiency = TextProficiencyRecord(
+                student_id=student_id,
+                text_set_id=text_id,
+                level=level
+            )
+            db.session.add(text_proficiency)
+        
+        db.session.commit()
+    
+    return text_proficiency
 
 # テキスト配信
 @basebuilder_module.route('/text_set/<int:text_id>/deliver', methods=['GET', 'POST'])
