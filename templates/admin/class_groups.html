@@ -1,0 +1,41 @@
+<!-- templates/admin/class_groups.html -->
+{% extends 'shared/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>{{ school_year.school.name }} - {{ school_year.year }} - クラス管理</h1>
+    
+    <div class="mb-3">
+        <a href="{{ url_for('academic.list_years', school_id=school_year.school_id) }}" class="btn btn-secondary">年度一覧に戻る</a>
+        <a href="{{ url_for('academic.create_class', year_id=school_year.id) }}" class="btn btn-primary">新規クラス作成</a>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>クラス名</th>
+                    <th>学年</th>
+                    <th>担当教師</th>
+                    <th>説明</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for class_group in classes %}
+                <tr>
+                    <td>{{ class_group.name }}</td>
+                    <td>{{ class_group.grade }}</td>
+                    <td>{{ class_group.teacher.username }}</td>
+                    <td>{{ class_group.description }}</td>
+                    <td>
+                        <a href="{{ url_for('enrollment.list_students', class_id=class_group.id) }}" class="btn btn-sm btn-primary">生徒管理</a>
+                        <a href="{{ url_for('academic.edit_class', class_id=class_group.id) }}" class="btn btn-sm btn-secondary">編集</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,41 @@
+<!-- templates/admin/school_years.html -->
+{% extends 'shared/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>{{ school.name }} - 年度管理</h1>
+    
+    <div class="mb-3">
+        <a href="{{ url_for('school.list_schools') }}" class="btn btn-secondary">学校一覧に戻る</a>
+        <a href="{{ url_for('academic.create_year', school_id=school.id) }}" class="btn btn-primary">新規年度作成</a>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>年度</th>
+                    <th>開始日</th>
+                    <th>終了日</th>
+                    <th>現在の年度</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for year in years %}
+                <tr>
+                    <td>{{ year.year }}</td>
+                    <td>{{ year.start_date }}</td>
+                    <td>{{ year.end_date }}</td>
+                    <td>{% if year.is_current %}<span class="badge bg-success">現在</span>{% endif %}</td>
+                    <td>
+                        <a href="{{ url_for('academic.list_classes', year_id=year.id) }}" class="btn btn-sm btn-primary">クラス管理</a>
+                        <a href="{{ url_for('academic.edit_year', year_id=year.id) }}" class="btn btn-sm btn-secondary">編集</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

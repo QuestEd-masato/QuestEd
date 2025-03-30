@@ -1,0 +1,59 @@
+<!-- templates/admin/promote_students.html -->
+{% extends 'shared/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>{{ from_year.school.name }} - 進級処理</h1>
+    <h3>{{ from_year.year }} → {{ to_year.year }}</h3>
+    
+    <div class="mb-3">
+        <a href="{{ url_for('academic.list_years', school_id=from_year.school_id) }}" class="btn btn-secondary">年度一覧に戻る</a>
+    </div>
+    
+    <form method="post">
+        {% for from_class in from_classes %}
+        <div class="card mb-4">
+            <div class="card-header">{{ from_class.name }} の生徒</div>
+            <div class="card-body">
+                {% if students[from_class.id] %}
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>生徒名</th>
+                            <th>現在の出席番号</th>
+                            <th>新しい出席番号</th>
+                            <th>進級先クラス</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students[from_class.id] %}
+                        <tr>
+                            <td>{{ student.name }}</td>
+                            <td>{{ student.student_number }}</td>
+                            <td>
+                                <input type="number" name="student_numbers" class="form-control" 
+                                       value="{{ student.student_number }}" min="1">
+                            </td>
+                            <td>
+                                <select name="promotions" class="form-select">
+                                    <option value="">進級させない</option>
+                                    {% for to_class in to_classes %}
+                                    <option value="{{ student.id }}_{{ to_class.id }}">{{ to_class.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p>このクラスには生徒がいません。</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        
+        <button type="submit" class="btn btn-primary">進級処理を実行</button>
+    </form>
+</div>
+{% endblock %}

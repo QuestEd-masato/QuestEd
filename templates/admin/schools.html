@@ -1,0 +1,43 @@
+<!-- templates/admin/schools.html -->
+{% extends 'shared/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>学校管理</h1>
+    
+    <div class="mb-3">
+        <a href="{{ url_for('school.create_school') }}" class="btn btn-primary">新規学校登録</a>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>学校名</th>
+                    <th>コード</th>
+                    <th>住所</th>
+                    <th>連絡先メール</th>
+                    <th>登録日</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for school in schools %}
+                <tr>
+                    <td>{{ school.name }}</td>
+                    <td>{{ school.code }}</td>
+                    <td>{{ school.address }}</td>
+                    <td>{{ school.contact_email }}</td>
+                    <td>{{ school.created_at|date }}</td>
+                    <td>
+                        <!-- templates/admin/schools.html -->
+                        <a href="{{ url_for('academic.list_years', school_id=school.id) }}" class="btn btn-sm btn-primary">年度管理</a>
+                        <a href="{{ url_for('school.edit_school', school_id=school.id) }}" class="btn btn-sm btn-secondary">編集</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

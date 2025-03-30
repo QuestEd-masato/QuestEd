@@ -31,19 +31,20 @@
         </div>
         <div class="card-body">
             <p>以下のヘッダーを持つCSVファイルを準備してください：</p>
-            <pre>username,email,password,role</pre>
+            <pre>username,email,password,role,school_id</pre>
             
             <ul>
                 <li><strong>username</strong>: ユーザー名（必須）</li>
                 <li><strong>email</strong>: メールアドレス（必須）</li>
                 <li><strong>password</strong>: パスワード（空白の場合はランダムなパスワードが生成されます）</li>
                 <li><strong>role</strong>: ロール（'student'または'teacher'）（必須）</li>
+                <li><strong>school_id</strong>: 学校ID（任意、数値）</li>
             </ul>
             
             <p>例：</p>
-            <pre>username,email,password,role
-student1,student1@example.com,password123,student
-teacher1,teacher1@example.com,secure456,teacher</pre>
+            <pre>username,email,password,role,school_id
+student1,student1@example.com,password123,student,1
+teacher1,teacher1@example.com,secure456,teacher,1</pre>
             
             <div class="mt-3">
                 <a href="{{ url_for('download_user_template') }}" class="btn btn-outline-primary">

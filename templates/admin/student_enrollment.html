@@ -1,0 +1,41 @@
+<!-- templates/admin/student_enrollment.html -->
+{% extends 'shared/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>{{ class_group.school_year.school.name }} - {{ class_group.name }} - 生徒管理</h1>
+    
+    <div class="mb-3">
+        <a href="{{ url_for('academic.list_classes', year_id=class_group.school_year_id) }}" class="btn btn-secondary">クラス一覧に戻る</a>
+        <a href="{{ url_for('enrollment.import_students', class_id=class_group.id) }}" class="btn btn-primary">生徒一括登録</a>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>出席番号</th>
+                    <th>名前</th>
+                    <th>メールアドレス</th>
+                    <th>登録日</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for enrollment in enrollments %}
+                <tr>
+                    <td>{{ enrollment.student_number }}</td>
+                    <td>{{ enrollment.student.username }}</td>
+                    <td>{{ enrollment.student.email }}</td>
+                    <td>{{ enrollment.enrolled_at|date }}</td>
+                    <td>
+                        <a href="{{ url_for('enrollment.edit_student', enrollment_id=enrollment.id) }}" class="btn btn-sm btn-secondary">編集</a>
+                        <a href="#" class="btn btn-sm btn-danger" onclick="confirmDelete({{ enrollment.id }})">削除</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

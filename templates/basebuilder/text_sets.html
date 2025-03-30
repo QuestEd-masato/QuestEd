@@ -4,9 +4,6 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h1 class="section-title">テキスト管理</h1>
   <div>
-    <button type="button" id="delete-selected-btn" class="btn btn-danger me-2" disabled>
-      <i class="fas fa-trash"></i> 選択したテキストを削除
-    </button>
     <a href="{{ url_for('basebuilder_module.import_text_set') }}" class="btn btn-primary">
       <i class="fas fa-plus"></i> 新規テキスト
     </a>
@@ -18,14 +15,20 @@
     <h5 class="card-title">テキスト一覧</h5>
   </div>
   <div class="card-body">
-    <form id="bulk-delete-form" method="POST" action="{{ url_for('basebuilder_module.bulk_delete_text_sets') }}">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      
-      {% if text_sets %}
+    {% if text_sets %}
+      <!-- 一括削除フォーム -->
+      <form action="{{ url_for('basebuilder_module.delete_text_sets') }}" method="POST" id="bulk-delete-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
         <div class="mb-3">
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="select-all-texts">
-            <label class="form-check-label" for="select-all-texts">すべて選択</label>
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="select-all-texts">
+              <label class="form-check-label" for="select-all-texts">すべて選択</label>
+            </div>
+            <button type="submit" class="btn btn-danger" id="delete-selected-btn" disabled>
+              <i class="fas fa-trash"></i> 選択したテキストを削除
+            </button>
           </div>
         </div>
         
@@ -37,7 +40,7 @@
                 <th>タイトル</th>
                 <th>カテゴリ</th>
                 <th>問題数</th>
-                <th>作成日</th>
+                <th>配信状況</th>
                 <th>アクション</th>
               </tr>
             </thead>
@@ -52,29 +55,96 @@
                   <td>{{ text.title }}</td>
                   <td>{{ text.category.name }}</td>
                   <td>{{ text.problems|length }}</td>
-                  <td>{{ text.created_at.strftime('%Y-%m-%d') }}</td>
                   <td>
-                    <a href="{{ url_for('basebuilder_module.view_text_set', text_id=text.id) }}" class="btn btn-sm btn-outline">
-                      詳細
-                    </a>
-                    <a href="{{ url_for('basebuilder_module.deliver_text', text_id=text.id) }}" class="btn btn-sm btn-primary">
-                      配信
-                    </a>
+                    {% if text.deliveries|length > 0 %}
+                      <span class="badge bg-success">配信中 ({{ text.deliveries|length }}クラス)</span>
+                    {% else %}
+                      <span class="badge bg-secondary">未配信</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <div class="d-flex gap-1">
+                      <a href="{{ url_for('basebuilder_module.view_text_set', text_id=text.id) }}" class="btn btn-sm btn-outline">
+                        <i class="fas fa-eye"></i>
+                      </a>
+                      
+                      {% if text.deliveries|length > 0 %}
+                        <a href="#" class="btn btn-sm btn-warning" data-bs-toggle="collapse" data-bs-target="#delivery-list-{{ text.id }}">
+                          <i class="fas fa-paper-plane"></i>
+                        </a>
+                      {% else %}
+                        <a href="{{ url_for('basebuilder_module.deliver_text', text_id=text.id) }}" class="btn btn-sm btn-primary">
+                          <i class="fas fa-paper-plane"></i>
+                        </a>
+                      {% endif %}
+                      
+                      <form method="POST" action="{{ url_for('basebuilder_module.delete_single_text', text_id=text.id) }}" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('このテキストを削除してもよろしいですか？');">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </form>
+                    </div>
                   </td>
                 </tr>
+                
+                <!-- 配信詳細（折りたたみ可能） -->
+                {% if text.deliveries|length > 0 %}
+                <tr class="collapse" id="delivery-list-{{ text.id }}">
+                  <td colspan="6" class="p-0">
+                    <div class="card card-body border-0 bg-light m-2">
+                      <h6 class="mb-3">配信先一覧: {{ text.title }}</h6>
+                      <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                          <thead>
+                            <tr>
+                              <th>クラス</th>
+                              <th>配信日</th>
+                              <th>期限</th>
+                              <th>アクション</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for delivery in text.deliveries %}
+                              <tr>
+                                <td>{{ delivery.delivered_class.name if delivery.delivered_class else '不明なクラス' }}</td>
+                                <td>{{ delivery.delivered_at.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ delivery.due_date.strftime('%Y-%m-%d') if delivery.due_date else '期限なし' }}</td>
+                                <td>
+                                  <form method="POST" action="{{ url_for('basebuilder_module.cancel_text_delivery', delivery_id=delivery.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('この配信を解除してもよろしいですか？');">
+                                      <i class="fas fa-times"></i> 配信解除
+                                    </button>
+                                  </form>
+                                </td>
+                              </tr>
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div class="mt-3">
+                        <a href="{{ url_for('basebuilder_module.deliver_text', text_id=text.id) }}" class="btn btn-sm btn-primary">
+                          <i class="fas fa-plus"></i> 新規配信
+                        </a>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+                {% endif %}
               {% endfor %}
             </tbody>
           </table>
         </div>
-      {% else %}
-        <p class="text-muted">テキストがまだありません。</p>
-        <div class="text-center mt-3">
-          <a href="{{ url_for('basebuilder_module.import_text_set') }}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> 新規テキストを作成
-          </a>
-        </div>
-      {% endif %}
-    </form>
+      </form>
+    {% else %}
+      <p class="text-muted text-center py-4">テキストがまだありません。</p>
+      <div class="text-center">
+        <a href="{{ url_for('basebuilder_module.import_text_set') }}" class="btn btn-primary">
+          <i class="fas fa-plus"></i> 新規テキストを作成
+        </a>
+      </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}
@@ -83,18 +153,25 @@
 {{ super() }}
 <script>
   document.addEventListener('DOMContentLoaded', function() {
+    // チェックボックス関連処理
     const selectAllCheckbox = document.getElementById('select-all-texts');
     const textCheckboxes = document.querySelectorAll('.text-checkbox');
     const deleteSelectedBtn = document.getElementById('delete-selected-btn');
-    const bulkDeleteForm = document.getElementById('bulk-delete-form');
     
-    // チェックボックスの状態を監視して削除ボタンの状態を更新
+    // 関数：削除ボタンの状態を更新
     function updateDeleteButtonState() {
-      const checkedBoxes = document.querySelectorAll('.text-checkbox:checked');
-      deleteSelectedBtn.disabled = checkedBoxes.length === 0;
+      const checkedCount = document.querySelectorAll('.text-checkbox:checked').length;
+      deleteSelectedBtn.disabled = checkedCount === 0;
+      
+      // 選択数を表示する場合
+      if (checkedCount > 0) {
+        deleteSelectedBtn.innerHTML = `<i class="fas fa-trash"></i> 選択した ${checkedCount} 件を削除`;
+      } else {
+        deleteSelectedBtn.innerHTML = `<i class="fas fa-trash"></i> 選択したテキストを削除`;
+      }
     }
     
-    // 「すべて選択」チェックボックスのイベント
+    // すべて選択チェックボックスのイベント
     if (selectAllCheckbox) {
       selectAllCheckbox.addEventListener('change', function() {
         textCheckboxes.forEach(checkbox => {
@@ -104,36 +181,39 @@
       });
     }
     
-    // 各テキストのチェックボックスのイベント
+    // 各チェックボックスのイベント
     textCheckboxes.forEach(checkbox => {
       checkbox.addEventListener('change', function() {
         updateDeleteButtonState();
         
-        // すべてが選択されているか確認
-        const allChecked = document.querySelectorAll('.text-checkbox:checked').length === textCheckboxes.length;
+        // すべて選択チェックボックスの状態を更新
+        const checkedCount = document.querySelectorAll('.text-checkbox:checked').length;
         if (selectAllCheckbox) {
-          selectAllCheckbox.checked = allChecked;
-          selectAllCheckbox.indeterminate = !allChecked && document.querySelectorAll('.text-checkbox:checked').length > 0;
+          selectAllCheckbox.checked = checkedCount === textCheckboxes.length;
+          selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < textCheckboxes.length;
         }
       });
     });
     
-    // 削除ボタンのイベント
-    if (deleteSelectedBtn) {
-      deleteSelectedBtn.addEventListener('click', function() {
-        const checkedBoxes = document.querySelectorAll('.text-checkbox:checked');
-        if (checkedBoxes.length === 0) {
-          alert('削除するテキストを選択してください');
-          return;
+    // 一括削除フォームの送信前の確認
+    const bulkDeleteForm = document.getElementById('bulk-delete-form');
+    if (bulkDeleteForm) {
+      bulkDeleteForm.addEventListener('submit', function(e) {
+        const checkedCount = document.querySelectorAll('.text-checkbox:checked').length;
+        if (checkedCount === 0) {
+          e.preventDefault();
+          alert('削除するテキストを選択してください。');
+          return false;
         }
         
-        if (confirm(`選択した ${checkedBoxes.length} 件のテキストを削除してもよろしいですか？`)) {
-          bulkDeleteForm.submit();
+        if (!confirm(`選択した ${checkedCount} 件のテキストを削除してもよろしいですか？`)) {
+          e.preventDefault();
+          return false;
         }
       });
     }
     
-    // 初期状態の設定
+    // 初期状態のセットアップ
     updateDeleteButtonState();
   });
 </script>

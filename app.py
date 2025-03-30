@@ -96,6 +96,7 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
     role = db.Column(db.String(10), nullable=False)
+    school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=True)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     
     classes_teaching = db.relationship('Class', backref='teacher', lazy=True)
@@ -105,7 +106,7 @@ class User(UserMixin, db.Model):
     activity_logs = db.relationship('ActivityLog', backref='student', lazy=True)
     todos = db.relationship('Todo', backref='student', lazy=True)
     goals = db.relationship('Goal', backref='student', lazy=True)
-
+  
     def has_completed_surveys(self):
         """学生がすべてのアンケートを完了しているかチェック"""
         if self.role != 'student':
@@ -125,6 +126,65 @@ from basebuilder.models import (
     ProblemCategory, BasicKnowledgeItem, KnowledgeThemeRelation,
     AnswerRecord, ProficiencyRecord, LearningPath, PathAssignment
 )
+
+# 学校管理のモデル定義
+class School(db.Model):
+    __tablename__ = 'schools'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    code = db.Column(db.String(20), unique=True, nullable=False)
+    address = db.Column(db.Text)
+    contact_email = db.Column(db.String(100))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # リレーションシップ
+    years = db.relationship('SchoolYear', backref='school', lazy=True)
+    users = db.relationship('User', backref='school', lazy=True)
+
+class SchoolYear(db.Model):
+    __tablename__ = 'school_years'
+    id = db.Column(db.Integer, primary_key=True)
+    school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=False)
+    year = db.Column(db.String(20), nullable=False)  # 例: '2023-2024'
+    is_current = db.Column(db.Boolean, default=False)
+    start_date = db.Column(db.Date)
+    end_date = db.Column(db.Date)
+    
+    # ユニーク制約 (同じ学校で同じ年度は一つだけ)
+    __table_args__ = (db.UniqueConstraint('school_id', 'year'),)
+    
+    # リレーションシップ
+    class_groups = db.relationship('ClassGroup', backref='school_year', lazy=True)
+
+class ClassGroup(db.Model):
+    __tablename__ = 'class_groups'
+    id = db.Column(db.Integer, primary_key=True)
+    school_year_id = db.Column(db.Integer, db.ForeignKey('school_years.id'), nullable=False)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)  # 例: '1年A組'
+    description = db.Column(db.Text)
+    grade = db.Column(db.String(20))  # 例: '1年', '2年'など
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # リレーションシップ
+    enrollments = db.relationship('StudentEnrollment', backref='class_group', lazy=True)
+    teacher = db.relationship('User', backref='class_groups_teaching', lazy=True)
+
+class StudentEnrollment(db.Model):
+    __tablename__ = 'student_enrollments'
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    class_group_id = db.Column(db.Integer, db.ForeignKey('class_groups.id'), nullable=False)
+    school_year_id = db.Column(db.Integer, db.ForeignKey('school_years.id'), nullable=False)
+    student_number = db.Column(db.Integer)  # 出席番号
+    enrolled_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # ユニーク制約 (同じ生徒は同じ年度・クラスに一度だけ登録可能)
+    __table_args__ = (db.UniqueConstraint('student_id', 'class_group_id', 'school_year_id'),)
+    
+    # リレーションシップ
+    student = db.relationship('User', backref='student_enrollments', lazy=True)
+    school_year = db.relationship('SchoolYear', backref='student_enrollments', lazy=True)
 
 # 他のモデルの定義（必要に応じてフィールドを拡張してください）
 # Class モデルの定義を拡張
@@ -363,6 +423,11 @@ admin.add_view(AdminModelView(GroupMembership, db.session))
 admin.add_view(AdminModelView(Curriculum, db.session))
 admin.add_view(AdminModelView(RubricTemplate, db.session))
 admin.add_view(AdminModelView(StudentEvaluation, db.session))
+# 学校管理モデルを管理画面に追加
+admin.add_view(AdminModelView(School, db.session))
+admin.add_view(AdminModelView(SchoolYear, db.session))
+admin.add_view(AdminModelView(ClassGroup, db.session))
+admin.add_view(AdminModelView(StudentEnrollment, db.session))
 
 # その後、BaseBuilderモジュールを初期化
 from basebuilder import init_app as init_basebuilder
@@ -399,6 +464,268 @@ def admin_users():
     
     users = User.query.all()
     return render_template('admin/users.html', users=users)
+
+# 学校一覧表示
+@app.route('/admin/schools')
+@login_required
+def admin_schools():
+    if current_user.role != 'teacher':
+        flash('この機能は管理者のみ利用可能です。')
+        return redirect(url_for('index'))
+    
+    schools = School.query.all()
+    return render_template('admin/schools.html', schools=schools)
+
+# 学校詳細表示
+@app.route('/admin/school/<int:school_id>')
+@login_required
+def admin_school_detail(school_id):
+    if current_user.role != 'teacher':
+        flash('この機能は管理者のみ利用可能です。')
+        return redirect(url_for('index'))
+    
+    school = School.query.get_or_404(school_id)
+    school_years = SchoolYear.query.filter_by(school_id=school_id).all()
+    
+    return render_template('admin/school_detail.html', 
+                           school=school, 
+                           school_years=school_years)
+
+# 学校作成
+@app.route('/admin/school/create', methods=['GET', 'POST'])
+@login_required
+def admin_create_school():
+    if current_user.role != 'teacher':
+        flash('この機能は管理者のみ利用可能です。')
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        name = request.form.get('name')
+        code = request.form.get('code')
+        address = request.form.get('address', '')
+        contact_email = request.form.get('contact_email', '')
+        
+        if not name or not code:
+            flash('学校名と学校コードは必須です。')
+            return render_template('admin/create_school.html')
+        
+        # コードが既に使われていないか確認
+        existing_school = School.query.filter_by(code=code).first()
+        if existing_school:
+            flash('この学校コードは既に使われています。')
+            return render_template('admin/create_school.html')
+        
+        # 学校を作成
+        new_school = School(
+            name=name,
+            code=code,
+            address=address,
+            contact_email=contact_email
+        )
+        
+        db.session.add(new_school)
+        db.session.commit()
+        
+        flash('学校が作成されました。')
+        return redirect(url_for('admin_schools'))
+    
+    return render_template('admin/create_school.html')
+
+# 学校年度作成
+@app.route('/admin/school/<int:school_id>/year/create', methods=['GET', 'POST'])
+@login_required
+def admin_create_school_year(school_id):
+    if current_user.role != 'teacher':
+        flash('この機能は管理者のみ利用可能です。')
+        return redirect(url_for('index'))
+    
+    school = School.query.get_or_404(school_id)
+    
+    if request.method == 'POST':
+        year = request.form.get('year')
+        start_date_str = request.form.get('start_date')
+        end_date_str = request.form.get('end_date')
+        is_current = 'is_current' in request.form
+        
+        if not year:
+            flash('年度は必須です。')
+            return render_template('admin/create_school_year.html', school=school)
+        
+        # 年度が既に存在するか確認
+        existing_year = SchoolYear.query.filter_by(school_id=school_id, year=year).first()
+        if existing_year:
+            flash('この学校の年度は既に存在します。')
+            return render_template('admin/create_school_year.html', school=school)
+        
+        # 日付文字列をdateオブジェクトに変換
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date() if start_date_str else None
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date() if end_date_str else None
+        
+        # 現在のフラグを設定する場合、他の年度のフラグをリセット
+        if is_current:
+            SchoolYear.query.filter_by(school_id=school_id, is_current=True).update({'is_current': False})
+        
+        # 年度を作成
+        new_year = SchoolYear(
+            school_id=school_id,
+            year=year,
+            start_date=start_date,
+            end_date=end_date,
+            is_current=is_current
+        )
+        
+        db.session.add(new_year)
+        db.session.commit()
+        
+        flash('学校年度が作成されました。')
+        return redirect(url_for('admin_school_detail', school_id=school_id))
+    
+    return render_template('admin/create_school_year.html', school=school)
+
+# クラスグループ作成
+@app.route('/admin/school_year/<int:school_year_id>/class_group/create', methods=['GET', 'POST'])
+@login_required
+def admin_create_class_group(school_year_id):
+    if current_user.role != 'teacher':
+        flash('この機能は管理者のみ利用可能です。')
+        return redirect(url_for('index'))
+    
+    school_year = SchoolYear.query.get_or_404(school_year_id)
+    
+    # 教師一覧を取得
+    teachers = User.query.filter_by(role='teacher').all()
+    
+    if request.method == 'POST':
+        name = request.form.get('name')
+        teacher_id = request.form.get('teacher_id', type=int)
+        description = request.form.get('description', '')
+        grade = request.form.get('grade', '')
+        
+        if not name or not teacher_id:
+            flash('クラス名と担任教師は必須です。')
+            return render_template('admin/create_class_group.html', 
+                                  school_year=school_year,
+                                  teachers=teachers)
+        
+        # クラスグループを作成
+        new_class_group = ClassGroup(
+            school_year_id=school_year_id,
+            teacher_id=teacher_id,
+            name=name,
+            description=description,
+            grade=grade
+        )
+        
+        db.session.add(new_class_group)
+        db.session.commit()
+        
+        flash('クラスグループが作成されました。')
+        return redirect(url_for('admin_school_detail', school_id=school_year.school_id))
+    
+    return render_template('admin/create_class_group.html', 
+                          school_year=school_year,
+                          teachers=teachers)
+
+# クラスグループ詳細
+@app.route('/admin/class_group/<int:class_group_id>')
+@login_required
+def admin_class_group_detail(class_group_id):
+    if current_user.role != 'teacher':
+        flash('この機能は管理者のみ利用可能です。')
+        return redirect(url_for('index'))
+    
+    class_group = ClassGroup.query.get_or_404(class_group_id)
+    
+    # クラスに所属する学生を取得
+    enrollments = StudentEnrollment.query.filter_by(class_group_id=class_group_id).all()
+    students = []
+    for enrollment in enrollments:
+        student = User.query.get(enrollment.student_id)
+        students.append({
+            'id': student.id,
+            'username': student.username,
+            'student_number': enrollment.student_number,
+            'enrollment_id': enrollment.id
+        })
+    
+    # 学生を出席番号順に並べ替え
+    students.sort(key=lambda x: x['student_number'] or 9999)
+    
+    return render_template('admin/class_group_detail.html', 
+                          class_group=class_group,
+                          students=students)
+
+# クラスグループに学生を追加
+@app.route('/admin/class_group/<int:class_group_id>/add_students', methods=['GET', 'POST'])
+@login_required
+def admin_class_group_add_students(class_group_id):
+    if current_user.role != 'teacher':
+        flash('この機能は管理者のみ利用可能です。')
+        return redirect(url_for('index'))
+    
+    class_group = ClassGroup.query.get_or_404(class_group_id)
+    
+    # クラスに既に所属している学生のIDを取得
+    enrolled_student_ids = db.session.query(StudentEnrollment.student_id).filter_by(
+        class_group_id=class_group_id
+    ).all()
+    enrolled_student_ids = [id[0] for id in enrolled_student_ids]
+    
+    # 追加可能な学生（まだクラスに所属していない学生）を取得
+    available_students = User.query.filter(
+        User.role == 'student',
+        ~User.id.in_(enrolled_student_ids) if enrolled_student_ids else True
+    ).all()
+    
+    if request.method == 'POST':
+        student_ids = request.form.getlist('student_ids')
+        
+        if not student_ids:
+            flash('学生が選択されていません。')
+            return render_template('admin/class_group_add_students.html', 
+                                  class_group=class_group,
+                                  available_students=available_students)
+        
+        # 選択された学生をクラスに追加
+        for student_id in student_ids:
+            # 学生番号を取得
+            student_number = request.form.get(f'student_number_{student_id}', type=int)
+            
+            # 登録レコードを作成
+            enrollment = StudentEnrollment(
+                student_id=int(student_id),
+                class_group_id=class_group_id,
+                school_year_id=class_group.school_year_id,
+                student_number=student_number
+            )
+            db.session.add(enrollment)
+        
+        db.session.commit()
+        flash(f'{len(student_ids)}人の学生をクラスに追加しました。')
+        return redirect(url_for('admin_class_group_detail', class_group_id=class_group_id))
+    
+    return render_template('admin/class_group_add_students.html', 
+                          class_group=class_group,
+                          available_students=available_students)
+
+# クラスグループから学生を削除
+@app.route('/admin/enrollment/<int:enrollment_id>/delete', methods=['POST'])
+@login_required
+def admin_delete_enrollment(enrollment_id):
+    if current_user.role != 'teacher':
+        flash('この機能は管理者のみ利用可能です。')
+        return redirect(url_for('index'))
+    
+    # 在籍レコードを取得
+    enrollment = StudentEnrollment.query.get_or_404(enrollment_id)
+    class_group_id = enrollment.class_group_id
+    
+    # 在籍レコードを削除
+    db.session.delete(enrollment)
+    db.session.commit()
+    
+    flash('学生がクラスから削除されました。')
+    return redirect(url_for('admin_class_group_detail', class_group_id=class_group_id))
 
 # app.py に以下を追加
 @app.shell_context_processor
@@ -1757,30 +2084,35 @@ def regenerate_themes():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    # 学校一覧を取得
+    schools = School.query.all()
+    
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
         email = request.form.get('email')
         role = request.form.get('role', 'student')
+        school_id = request.form.get('school_id', type=int)
         
         # 既存のユーザー名チェック
         existing_user = User.query.filter_by(username=username).first()
         if existing_user:
             flash('そのユーザー名は既に使用されています。')
-            return render_template('register.html')
+            return render_template('register.html', schools=schools)
         
         # 既存のメールアドレスチェック
         existing_email = User.query.filter_by(email=email).first()
         if existing_email:
             flash('そのメールアドレスは既に使用されています。')
-            return render_template('register.html')
+            return render_template('register.html', schools=schools)
         
         # 新しいユーザーの作成
         new_user = User(
             username=username,
             password=generate_password_hash(password),
             email=email,
-            role=role
+            role=role,
+            school_id=school_id
         )
         db.session.add(new_user)
         db.session.commit()
@@ -1788,7 +2120,7 @@ def register():
         flash('登録が完了しました。ログインしてください。')
         return redirect(url_for('login'))
     
-    return render_template('register.html')
+    return render_template('register.html', schools=schools)
 # クラス関連のルート
 @app.route('/create_class', methods=['GET', 'POST'])
 @login_required

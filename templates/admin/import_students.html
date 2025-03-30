@@ -1,0 +1,35 @@
+<!-- templates/admin/import_students.html -->
+{% extends 'shared/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>{{ class_group.school_year.school.name }} - {{ class_group.name }} - 生徒一括登録</h1>
+    
+    <div class="mb-3">
+        <a href="{{ url_for('enrollment.list_students', class_id=class_group.id) }}" class="btn btn-secondary">生徒一覧に戻る</a>
+        <a href="{{ url_for('enrollment.download_template') }}" class="btn btn-info">CSVテンプレートをダウンロード</a>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">CSVファイルからのインポート</div>
+        <div class="card-body">
+            <p>以下の形式のCSVファイルをアップロードしてください：</p>
+            <ul>
+                <li><strong>name</strong>: 生徒名（必須）</li>
+                <li><strong>email</strong>: メールアドレス（必須）</li>
+                <li><strong>student_number</strong>: 出席番号（任意）</li>
+            </ul>
+            <p>CSVの1行目はヘッダー行として扱われます。</p>
+            
+            <form method="post" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="csv_file" class="form-label">CSVファイル</label>
+                    <input type="file" class="form-control" id="csv_file" name="csv_file" accept=".csv" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">インポート</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

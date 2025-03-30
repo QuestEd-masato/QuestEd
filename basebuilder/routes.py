@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 import json
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from app import db, User, InquiryTheme
 from basebuilder import exporters
 from sqlalchemy import func
@@ -364,10 +364,10 @@ def delete_category(category_id):
 def problems():
     # クエリパラメータからフィルタリング条件を取得
     category_id = request.args.get('category_id', type=int)
-    text_id = request.args.get('text_id', type=int)  # 新たに追加
+    text_id = request.args.get('text_id', type=int)
     difficulty = request.args.get('difficulty', type=int)
     search = request.args.get('search', '')
-    proficiency = request.args.get('proficiency', '')  # 新たに追加
+    proficiency = request.args.get('proficiency', '')
     
     # 検索パラメータをセッションに保存（「この検索結果から学習」のため）
     session['search_params'] = {
@@ -411,29 +411,22 @@ def problems():
             ProblemCategory.id.in_(delivered_category_ids)
         ).all()
         
-        # 単語ごとの定着度を取得
+        # 問題IDのリストを先に取得（クエリは一旦実行しておく）
         problem_ids = [p.id for p in query.all()]
         word_proficiency_records = {}
         
-        # 単語ごとの定着度を計算
-        for problem_id in problem_ids:
-            # 解答履歴を取得（最新5件）
-            answers = AnswerRecord.query.filter_by(
-                student_id=current_user.id,
-                problem_id=problem_id
-            ).order_by(AnswerRecord.timestamp.desc()).limit(5).all()
-            
-            if answers:
-                # 解答があれば定着度を計算
-                correct_count = sum(1 for a in answers if a.is_correct)
-                level = min(5, int((correct_count / len(answers)) * 5))
-            else:
-                # 解答がなければ0
-                level = 0
-            
-            word_proficiency_records[problem_id] = {
-                'level': level,
-                'last_updated': answers[0].timestamp if answers else None
+        # 修正: WordProficiencyモデルから単語ごとの定着度を取得
+        word_proficiencies = WordProficiency.query.filter(
+            WordProficiency.student_id == current_user.id,
+            WordProficiency.problem_id.in_(problem_ids)
+        ).all()
+        
+        # 熟練度レコードを問題IDでマッピング
+        for wp in word_proficiencies:
+            word_proficiency_records[wp.problem_id] = {
+                'level': wp.level,
+                'last_updated': wp.last_updated,
+                'review_date': wp.review_date
             }
         
     else:
@@ -447,7 +440,7 @@ def problems():
     if category_id:
         query = query.filter_by(category_id=category_id)
     
-    if text_id:  # 新しく追加したフィルター
+    if text_id:
         query = query.filter_by(text_set_id=text_id)
     
     if difficulty:
@@ -466,8 +459,10 @@ def problems():
         
         if proficiency == '0':
             # 未学習 (level = 0)
-            for pid, prof in word_proficiency_records.items():
-                if prof['level'] == 0:
+            # WordProficiencyに登録がない問題も含める
+            wp_problem_ids = [wp_id for wp_id in word_proficiency_records.keys()]
+            for pid in problem_ids:
+                if pid not in wp_problem_ids or word_proficiency_records[pid]['level'] == 0:
                     filtered_ids.append(pid)
         elif proficiency == '1-2':
             # 初級 (level = 1-2)
@@ -489,7 +484,7 @@ def problems():
             query = query.filter(BasicKnowledgeItem.id.in_(filtered_ids))
             filtered_problem_ids = filtered_ids
     
-    # 問題の取得
+    # 問題の取得（フィルター後のクエリを実行）
     problems = query.order_by(BasicKnowledgeItem.title).all()
     
     # 最終的な単語定着度レコードの絞り込み
@@ -1304,7 +1299,6 @@ def update_word_proficiency(student_id, problem_id, is_correct):
     return proficiency
 
 # basebuilder/routes.py に追加
-
 def update_category_proficiency(student_id, category_id):
     """
     カテゴリの熟練度を単語の熟練度から計算して更新する
@@ -1328,11 +1322,18 @@ def update_category_proficiency(student_id, category_id):
         WordProficiency.problem_id.in_(problem_ids)
     ).all()
     
-    # 熟練度レコードがない場合、デフォルト値は0
-    total_level = sum(wp.level for wp in word_proficiencies) if word_proficiencies else 0
-    avg_level = total_level / len(problem_ids)
+    # 単語の熟練度レコードがない場合はデフォルト値0として計算
+    found_problems = len(word_proficiencies)
+    total_problems = len(problem_ids)
     
-    # カテゴリの熟練度を更新
+    # 合計熟練度計算
+    total_level = sum(wp.level for wp in word_proficiencies) if word_proficiencies else 0
+    
+    # 平均熟練度計算 (存在する単語の熟練度の合計 / 全単語数)
+    # 存在しない単語は熟練度0として計算
+    avg_level = total_level / total_problems if total_problems > 0 else 0
+    
+    # カテゴリの熟練度を更新または作成
     proficiency = ProficiencyRecord.query.filter_by(
         student_id=student_id,
         category_id=category_id
@@ -1347,8 +1348,8 @@ def update_category_proficiency(student_id, category_id):
         )
         db.session.add(proficiency)
     
-    # 熟練度は平均値を整数に切り捨て
-    proficiency.level = int(avg_level)
+    # 熟練度は平均値を整数に切り捨て (0-5の範囲)
+    proficiency.level = min(5, int(avg_level))
     proficiency.last_updated = datetime.utcnow()
     
     # 次回復習日は最も早い単語の復習日
@@ -2379,7 +2380,7 @@ def view_text_set(text_id):
 
 def calculate_text_proficiency(student_id, text_id, problems=None):
     """
-    テキスト全体の定着度を計算する関数
+    テキスト全体の定着度を単語の熟練度から計算する関数
     
     Args:
         student_id: 学生ID
@@ -2389,7 +2390,7 @@ def calculate_text_proficiency(student_id, text_id, problems=None):
     Returns:
         TextProficiencyRecord: 更新または作成されたテキスト定着度レコード
     """
-    # 既存のレコードを取得
+    # テキストの定着度レコードを取得
     text_proficiency = TextProficiencyRecord.query.filter_by(
         student_id=student_id,
         text_set_id=text_id
@@ -2398,43 +2399,39 @@ def calculate_text_proficiency(student_id, text_id, problems=None):
     # 問題が渡されていない場合は取得
     if problems is None:
         problems = BasicKnowledgeItem.query.filter_by(
-            text_set_id=text_id
+            text_set_id=text_id,
+            is_active=True
         ).all()
     
     if problems:
-        answered_problems = 0
-        correct_problems = 0
+        # 問題IDのリストを作成
+        problem_ids = [p.id for p in problems]
         
-        for problem in problems:
-            # 各問題の最新の解答を取得
-            latest_answer = AnswerRecord.query.filter_by(
-                student_id=student_id,
-                problem_id=problem.id
-            ).order_by(AnswerRecord.timestamp.desc()).first()
-            
-            if latest_answer:
-                answered_problems += 1
-                if latest_answer.is_correct:
-                    correct_problems += 1
+        # 単語ごとの熟練度を取得
+        word_proficiencies = WordProficiency.query.filter(
+            WordProficiency.student_id == student_id,
+            WordProficiency.problem_id.in_(problem_ids)
+        ).all()
         
-        # 解答済み問題がある場合のみ定着度を計算
-        if answered_problems > 0:
-            level = int((correct_problems / answered_problems) * 100)
-        else:
-            level = 0
-            
-        # 全体の進捗率も考慮（全問題中何％解答済みか）
-        completion_rate = int((answered_problems / len(problems)) * 100) if problems else 0
+        # 熟練度マップを作成
+        proficiency_map = {wp.problem_id: wp.level for wp in word_proficiencies}
+        
+        # 合計熟練度と最大可能熟練度を計算
+        total_level = sum(proficiency_map.get(pid, 0) for pid in problem_ids)
+        max_level = len(problem_ids) * 5  # 各問題の最大熟練度は5
+        
+        # 定着度を計算（%）
+        level_percentage = (total_level / max_level * 100) if max_level > 0 else 0
         
         # 既存のレコードを更新または新規作成
         if text_proficiency:
-            text_proficiency.level = level
+            text_proficiency.level = int(level_percentage)
             text_proficiency.last_updated = datetime.utcnow()
         else:
             text_proficiency = TextProficiencyRecord(
                 student_id=student_id,
                 text_set_id=text_id,
-                level=level
+                level=int(level_percentage)
             )
             db.session.add(text_proficiency)
         
@@ -2446,6 +2443,8 @@ def calculate_text_proficiency(student_id, text_id, problems=None):
 @basebuilder_module.route('/text_set/<int:text_id>/deliver', methods=['GET', 'POST'])
 @login_required
 def deliver_text(text_id):
+    from datetime import datetime  # ローカルでインポートして確実に使用できるようにする
+    
     if current_user.role != 'teacher':
         flash('この機能は教師のみ利用可能です。')
         return redirect(url_for('basebuilder_module.index'))
@@ -2476,8 +2475,15 @@ def deliver_text(text_id):
         # 期限日の変換
         due_date = None
         if due_date_str:
-            from datetime import datetime
-            due_date = datetime.strptime(due_date_str, '%Y-%m-%d').date()
+            try:
+                due_date = datetime.strptime(due_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                flash('期限日の形式が正しくありません。YYYY-MM-DD形式で入力してください。')
+                return render_template(
+                    'basebuilder/deliver_text.html',
+                    text_set=text_set,
+                    classes=classes
+                )
         
         # 各クラスに配信
         for class_id in class_ids:
@@ -2593,38 +2599,44 @@ def solve_problem(problem_id):
     if problem.text_set_id:
         text_set = TextSet.query.get(problem.text_set_id)
         
-        # テキスト内の次の問題を取得
+        # テキスト内の前後の問題を取得
         next_problem = BasicKnowledgeItem.query.filter(
             BasicKnowledgeItem.text_set_id == problem.text_set_id,
             BasicKnowledgeItem.order_in_text > problem.order_in_text
         ).order_by(BasicKnowledgeItem.order_in_text).first()
         
+        prev_problem = BasicKnowledgeItem.query.filter(
+            BasicKnowledgeItem.text_set_id == problem.text_set_id,
+            BasicKnowledgeItem.order_in_text < problem.order_in_text
+        ).order_by(BasicKnowledgeItem.order_in_text.desc()).first()
+        
         # テキストコンテキスト情報を構築
         text_context = {
             'text_set': text_set,
             'current_order': problem.order_in_text,
-            'next_problem_id': next_problem.id if next_problem else None
+            'next_problem_id': next_problem.id if next_problem else None,
+            'prev_problem_id': prev_problem.id if prev_problem else None
         }
     
-    # 学生の熟練度レコードを取得
-    proficiency_record = ProficiencyRecord.query.filter_by(
+    # 単語ごとの熟練度を取得（存在しない場合は作成）
+    word_proficiency = WordProficiency.query.filter_by(
         student_id=current_user.id,
-        category_id=problem.category_id
+        problem_id=problem_id
     ).first()
     
-    # 熟練度レコードがなければ作成
-    if not proficiency_record:
-        proficiency_record = ProficiencyRecord(
+    if not word_proficiency:
+        word_proficiency = WordProficiency(
             student_id=current_user.id,
-            category_id=problem.category_id,
+            problem_id=problem_id,
             level=0,
             review_date=datetime.now().date()
         )
-        db.session.add(proficiency_record)
+        db.session.add(word_proficiency)
         db.session.commit()
     
-    # 熟練度に応じて問題形式を決定（0-2: 選択式、3-5: 入力式）
-    is_choice_mode = proficiency_record.level < 3
+    # 単語の熟練度に応じて問題形式を決定（0-2: 選択式、3-5: 入力式）
+    # 修正：カテゴリの熟練度ではなく単語ごとの熟練度に基づく
+    is_choice_mode = word_proficiency.level < 3
     
     # 選択式の場合はダミー選択肢を用意
     dummy_choices = []
@@ -2672,16 +2684,20 @@ def solve_problem(problem_id):
         learning_session = session['learning_session']
         in_session = (learning_session.get('current_problem_id') == problem_id)
     
-    # 単語ごとの熟練度も取得
-    word_proficiency = WordProficiency.query.filter_by(
+    # カテゴリ熟練度も取得（表示用）
+    category_proficiency = ProficiencyRecord.query.filter_by(
         student_id=current_user.id,
-        problem_id=problem_id
+        category_id=problem.category_id
     ).first()
+    
+    if not category_proficiency:
+        # カテゴリの熟練度がなければ更新または作成する
+        category_proficiency = update_category_proficiency(current_user.id, problem.category_id)
 
     return render_template(
         'basebuilder/solve_problem.html',
         problem=problem,
-        proficiency_record=proficiency_record,
+        proficiency_record=category_proficiency,
         word_proficiency=word_proficiency,
         dummy_choices=dummy_choices,
         all_choices=all_choices if is_choice_mode else None,
@@ -2761,21 +2777,20 @@ def submit_answer(problem_id):
     )
     
     db.session.add(answer_record)
-    db.session.commit()
     
-    # カテゴリの熟練度を更新
-    proficiency = update_proficiency(current_user.id, problem.category_id, is_correct)
-
-    # 単語ごとの熟練度も更新 - 新規追加
+    # 単語ごとの熟練度を更新
     word_proficiency = update_word_proficiency(current_user.id, problem_id, is_correct)
-
-    # テキストの定着度も更新
+    
+    # カテゴリの熟練度を更新（単語の熟練度から計算）
+    category_proficiency = update_category_proficiency(current_user.id, problem.category_id)
+    
+    # テキストの定着度も更新（単語の熟練度の平均から）
+    text_proficiency = None
     if problem.text_set_id:
         text_proficiency = update_text_proficiency(current_user.id, problem.text_set_id)
-
-    # すべての更新をコミット
+    
     db.session.commit()
-
+    
     # セッション情報を更新
     next_url = None
     
@@ -2820,7 +2835,8 @@ def submit_answer(problem_id):
             'correct_answer': problem.title,  # 問題のタイトルを正解として返す
             'explanation': problem.explanation,
             'next_url': next_url,
-            'proficiency_level': proficiency.level if proficiency else 0,
+            'proficiency_level': word_proficiency.level,  # 単語の熟練度を返す
+            'category_level': category_proficiency.level if category_proficiency else 0,  # カテゴリの熟練度も
             'text_context': {
                 'text_set_id': problem.text_set_id,
                 'has_next_problem': next_problem is not None if 'next_problem' in locals() else False
@@ -2829,7 +2845,7 @@ def submit_answer(problem_id):
     else:
         # 通常のフォーム送信の場合はリダイレクト
         if is_correct:
-            flash('正解です！ 定着度が上がりました。')
+            flash('正解です！ 単語の定着度が上がりました。')
         else:
             flash(f'不正解です。正解は: {problem.title}')
         
@@ -2944,7 +2960,7 @@ def update_word_proficiency(student_id, problem_id, is_correct):
 # テキスト熟練度を更新する関数
 def update_text_proficiency(student_id, text_set_id):
     """
-    テキストセットの定着度を更新する関数
+    テキストセットの定着度を単語の熟練度から計算して更新する
     
     Args:
         student_id: 学生ID
@@ -2967,45 +2983,162 @@ def update_text_proficiency(student_id, text_set_id):
     if not problems:
         return None
     
-    # テキスト内の各問題の単語熟練度を合計
+    # 問題IDのリストを作成
+    problem_ids = [p.id for p in problems]
+    
+    # 単語の熟練度レコードを取得
+    word_proficiencies = WordProficiency.query.filter(
+        WordProficiency.student_id == student_id,
+        WordProficiency.problem_id.in_(problem_ids)
+    ).all()
+    
+    # 熟練度マップを作成（検索効率化のため）
+    proficiency_map = {wp.problem_id: wp.level for wp in word_proficiencies}
+    
+    # 各問題の熟練度を集計（存在しない場合は0）
     total_level = 0
-    potential_max = len(problems) * 5  # 各問題の最大レベルは5
+    for problem_id in problem_ids:
+        total_level += proficiency_map.get(problem_id, 0)
     
-    for problem in problems:
-        # 単語の熟練度レコードを取得
-        word_prof = WordProficiency.query.filter_by(
-            student_id=student_id,
-            problem_id=problem.id
-        ).first()
-        
-        # 熟練度があれば加算
-        if word_prof:
-            total_level += word_prof.level
+    # 最大可能レベル（各問題が熟練度5の場合）
+    max_possible_level = len(problems) * 5
     
-    # 定着度を計算（合計レベル÷最大可能レベル×100）
-    # 小数点以下を切り捨て
-    if potential_max > 0:
-        level = int((total_level / potential_max) * 100)
+    # テキスト全体の定着度を計算（0-100%）
+    if max_possible_level > 0:
+        overall_percentage = (total_level / max_possible_level) * 100
     else:
-        level = 0
+        overall_percentage = 0
     
-    # 熟練度レコードを取得または作成
-    proficiency = TextProficiencyRecord.query.filter_by(
+    # テキストの定着度レコードを取得または作成
+    text_proficiency = TextProficiencyRecord.query.filter_by(
         student_id=student_id,
         text_set_id=text_set_id
     ).first()
     
-    if proficiency:
-        proficiency.level = level
-        proficiency.last_updated = datetime.utcnow()
+    if text_proficiency:
+        text_proficiency.level = int(overall_percentage)
+        text_proficiency.last_updated = datetime.utcnow()
     else:
-        proficiency = TextProficiencyRecord(
+        text_proficiency = TextProficiencyRecord(
             student_id=student_id,
             text_set_id=text_set_id,
-            level=level
+            level=int(overall_percentage)
         )
-        db.session.add(proficiency)
+        db.session.add(text_proficiency)
     
     db.session.commit()
     
-    return proficiency
+    return text_proficiency
+
+# テキスト配信情報を取得するAPI
+@basebuilder_module.route('/api/text_set/<int:text_id>/deliveries')
+@login_required
+def api_text_deliveries(text_id):
+    if current_user.role != 'teacher':
+        return jsonify({'error': 'この機能は教師のみ利用可能です。'}), 403
+    
+    # テキストを確認（存在&作成者チェック）
+    text_set = TextSet.query.get_or_404(text_id)
+    if text_set.created_by != current_user.id:
+        return jsonify({'error': 'このテキストの配信情報を取得する権限がありません。'}), 403
+    
+    # 配信情報を取得
+    deliveries = TextDelivery.query.filter_by(text_set_id=text_id).all()
+    
+    # 配信情報をJSON形式で返す
+    delivery_data = []
+    for delivery in deliveries:
+        # ここでクラス名を取得（Classモデルはdelivered_classリレーションを通して取得可能）
+        class_obj = delivery.delivered_class
+        
+        delivery_data.append({
+            'id': delivery.id,
+            'class_id': delivery.class_id,
+            'class_name': class_obj.name if class_obj else '不明なクラス',
+            'delivered_at': delivery.delivered_at.strftime('%Y-%m-%d %H:%M'),
+            'due_date': delivery.due_date.strftime('%Y-%m-%d') if delivery.due_date else None
+        })
+    
+    return jsonify({'deliveries': delivery_data})
+
+# テキスト配信解除
+@basebuilder_module.route('/text_delivery/<int:delivery_id>/cancel', methods=['POST'])
+@login_required
+def cancel_text_delivery(delivery_id):
+    from datetime import datetime  # ローカルでインポートして確実に使用できるようにする
+    
+    if current_user.role != 'teacher':
+        flash('この機能は教師のみ利用可能です。')
+        return redirect(url_for('basebuilder_module.text_sets'))
+    
+    # 配信情報を取得
+    delivery = TextDelivery.query.get_or_404(delivery_id)
+    
+    # テキストセットを取得（存在&権限チェック）
+    text_set = TextSet.query.get_or_404(delivery.text_set_id)
+    if text_set.created_by != current_user.id:
+        flash('このテキストの配信を解除する権限がありません。')
+        return redirect(url_for('basebuilder_module.text_sets'))
+    
+    # 配信情報のみを削除（解答記録や熟練度は残す）
+    text_set_id = delivery.text_set_id
+    class_name = delivery.delivered_class.name if delivery.delivered_class else '不明なクラス'
+    
+    try:
+        db.session.delete(delivery)
+        db.session.commit()
+        flash(f'テキスト「{text_set.title}」の {class_name} への配信を解除しました。生徒の学習記録は保持されています。')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'配信解除中にエラーが発生しました: {str(e)}')
+    
+    return redirect(url_for('basebuilder_module.text_sets'))
+
+# 単体テキスト削除
+@basebuilder_module.route('/text_sets/<int:text_id>/delete', methods=['POST'])
+@login_required
+def delete_single_text(text_id):
+    if current_user.role != 'teacher':
+        flash('この機能は教師のみ利用可能です。')
+        return redirect(url_for('basebuilder_module.text_sets'))
+    
+    # テキストを取得（存在&権限チェック）
+    text_set = TextSet.query.get_or_404(text_id)
+    if text_set.created_by != current_user.id:
+        flash('このテキストを削除する権限がありません。')
+        return redirect(url_for('basebuilder_module.text_sets'))
+    
+    try:
+        # テキストに含まれる問題を取得
+        problems = BasicKnowledgeItem.query.filter_by(text_set_id=text_id).all()
+        
+        # 各問題に関連する解答記録・熟練度・関連付けを削除
+        for problem in problems:
+            # 単語の熟練度記録を削除
+            WordProficiency.query.filter_by(problem_id=problem.id).delete()
+            
+            # 解答記録を削除
+            AnswerRecord.query.filter_by(problem_id=problem.id).delete()
+            
+            # テーマとの関連付けを削除
+            KnowledgeThemeRelation.query.filter_by(problem_id=problem.id).delete()
+            
+            # 問題を削除
+            db.session.delete(problem)
+        
+        # テキストの熟練度記録を削除
+        TextProficiencyRecord.query.filter_by(text_set_id=text_id).delete()
+        
+        # テキスト配信を削除
+        TextDelivery.query.filter_by(text_set_id=text_id).delete()
+        
+        # テキストを削除
+        db.session.delete(text_set)
+        db.session.commit()
+        
+        flash(f'テキスト「{text_set.title}」を削除しました。')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'テキストの削除中にエラーが発生しました: {str(e)}')
+    
+    return redirect(url_for('basebuilder_module.text_sets'))
