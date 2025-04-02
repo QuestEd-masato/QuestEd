@@ -173,8 +173,16 @@ def index():
 @basebuilder_module.route('/categories')
 @login_required
 def categories():
-    # トップレベルのカテゴリを取得
-    top_categories = ProblemCategory.query.filter_by(parent_id=None).all()
+    # 学校に所属していない場合の対応
+    if not current_user.school_id:
+        flash('カテゴリを表示するには学校に所属している必要があります。')
+        return redirect(url_for('basebuilder_module.index'))
+        
+    # 同じ学校のトップレベルのカテゴリを取得
+    top_categories = ProblemCategory.query.filter_by(
+        parent_id=None,
+        school_id=current_user.school_id
+    ).all()
     
     return render_template(
         'basebuilder/categories.html',
@@ -189,8 +197,13 @@ def create_category():
         flash('この機能は教師のみ利用可能です。')
         return redirect(url_for('basebuilder_module.index'))
     
-    # 親カテゴリの選択肢を取得
-    parent_categories = ProblemCategory.query.all()
+    # 学校IDがなければアクセスできない
+    if not current_user.school_id:
+        flash('カテゴリを作成するには学校に所属している必要があります。')
+        return redirect(url_for('basebuilder_module.index'))
+    
+    # 親カテゴリの選択肢を取得（同じ学校のカテゴリのみ）
+    parent_categories = ProblemCategory.query.filter_by(school_id=current_user.school_id).all()
     
     if request.method == 'POST':
         name = request.form.get('name')
@@ -208,6 +221,14 @@ def create_category():
         if parent_id:
             try:
                 parent_id = int(parent_id)
+                # 親カテゴリが同じ学校のものか確認
+                parent_category = ProblemCategory.query.get(parent_id)
+                if parent_category.school_id != current_user.school_id:
+                    flash('無効な親カテゴリが選択されました。')
+                    return render_template(
+                        'basebuilder/create_category.html',
+                        parent_categories=parent_categories
+                    )
             except ValueError:
                 parent_id = None
         else:
@@ -218,6 +239,7 @@ def create_category():
             name=name,
             description=description,
             parent_id=parent_id,
+            school_id=current_user.school_id,  # 教師の学校IDを設定
             created_by=current_user.id
         )
         
@@ -362,6 +384,11 @@ def delete_category(category_id):
 @basebuilder_module.route('/problems')
 @login_required
 def problems():
+    # 学校に所属していない場合の対応
+    if not current_user.school_id:
+        flash('問題を表示するには学校に所属している必要があります。')
+        return redirect(url_for('basebuilder_module.index'))
+    
     # クエリパラメータからフィルタリング条件を取得
     category_id = request.args.get('category_id', type=int)
     text_id = request.args.get('text_id', type=int)
@@ -378,8 +405,8 @@ def problems():
         'proficiency': proficiency
     }
     
-    # 基本クエリ
-    query = BasicKnowledgeItem.query
+    # 基本クエリ - 同じ学校の問題のみ
+    query = BasicKnowledgeItem.query.filter_by(school_id=current_user.school_id)
     
     if current_user.role == 'student':
         # 学生の場合は配信されたテキスト/カテゴリのみ表示
@@ -430,10 +457,13 @@ def problems():
             }
         
     else:
-        # 教師の場合は自分が作成した問題のみ表示
-        query = query.filter_by(created_by=current_user.id)
+        # 教師の場合は自分が作成した問題 + 同じ学校の問題を表示
+        query = query.filter(
+            (BasicKnowledgeItem.created_by == current_user.id) |
+            (BasicKnowledgeItem.school_id == current_user.school_id)
+        )
         delivered_text_sets = []
-        delivered_categories = ProblemCategory.query.filter_by(created_by=current_user.id).all()
+        delivered_categories = ProblemCategory.query.filter_by(school_id=current_user.school_id).all()
         word_proficiency_records = {}
     
     # フィルタリング条件の適用
@@ -630,8 +660,13 @@ def create_problem():
         flash('この機能は教師のみ利用可能です。')
         return redirect(url_for('basebuilder_module.index'))
     
-    # カテゴリの選択肢を取得
-    categories = ProblemCategory.query.all()
+    # 学校に所属していない場合の対応
+    if not current_user.school_id:
+        flash('問題を作成するには学校に所属している必要があります。')
+        return redirect(url_for('basebuilder_module.index'))
+    
+    # 同じ学校のカテゴリのみ取得
+    categories = ProblemCategory.query.filter_by(school_id=current_user.school_id).all()
     
     if request.method == 'POST':
         category_id = request.form.get('category_id', type=int)
@@ -646,6 +681,15 @@ def create_problem():
         # 入力チェック
         if not all([category_id, title, question, answer_type, correct_answer]):
             flash('必須項目が入力されていません。')
+            return render_template(
+                'basebuilder/create_problem.html',
+                categories=categories
+            )
+        
+        # カテゴリが同じ学校のものか確認
+        category = ProblemCategory.query.get(category_id)
+        if not category or category.school_id != current_user.school_id:
+            flash('無効なカテゴリが選択されました。')
             return render_template(
                 'basebuilder/create_problem.html',
                 categories=categories
@@ -672,7 +716,8 @@ def create_problem():
             choices=choices,
             explanation=explanation,
             difficulty=difficulty,
-            created_by=current_user.id
+            created_by=current_user.id,
+            school_id=current_user.school_id  # 学校IDを設定
         )
         
         db.session.add(new_problem)
@@ -811,10 +856,12 @@ def category_texts(category_id):
 @basebuilder_module.route('/text_sets/delete', methods=['POST'])
 @login_required
 def delete_text_sets():
+    """テキストセットの一括削除処理"""
     if current_user.role != 'teacher':
         flash('この機能は教師のみ利用可能です。')
         return redirect(url_for('basebuilder_module.index'))
     
+    # フォームから選択されたテキストIDを取得
     text_ids = request.form.getlist('text_ids')
     
     if not text_ids:
@@ -822,52 +869,61 @@ def delete_text_sets():
         return redirect(url_for('basebuilder_module.text_sets'))
     
     deleted_count = 0
+    error_count = 0
     
-    for text_id in text_ids:
+    for text_id_str in text_ids:
         try:
-            text_id = int(text_id)
+            text_id = int(text_id_str)
             text_set = TextSet.query.get(text_id)
             
             # 作成者本人のみ削除可能
-            if text_set and text_set.created_by == current_user.id:
-                # テキストに含まれる問題を取得
-                problems = BasicKnowledgeItem.query.filter_by(text_set_id=text_id).all()
+            if not text_set or text_set.created_by != current_user.id:
+                error_count += 1
+                continue
+            
+            # テキストに含まれる問題を取得
+            problems = BasicKnowledgeItem.query.filter_by(text_set_id=text_id).all()
+            
+            # 各問題に関連する記録を削除
+            for problem in problems:
+                # 単語の熟練度記録を削除
+                WordProficiency.query.filter_by(problem_id=problem.id).delete()
                 
-                # 各問題に関連する解答記録・関連付けを削除
-                for problem in problems:
-                    # 解答記録の削除
-                    AnswerRecord.query.filter_by(problem_id=problem.id).delete()
-                    
-                    # 熟練度記録の削除
-                    WordProficiency.query.filter_by(problem_id=problem.id).delete()
-                    
-                    # テーマとの関連付けを削除
-                    KnowledgeThemeRelation.query.filter_by(problem_id=problem.id).delete()
-                    
-                    # 問題を削除
-                    db.session.delete(problem)
+                # 解答記録を削除
+                AnswerRecord.query.filter_by(problem_id=problem.id).delete()
                 
-                # テキストの熟練度記録を削除
-                TextProficiencyRecord.query.filter_by(text_set_id=text_id).delete()
+                # テーマとの関連付けを削除
+                KnowledgeThemeRelation.query.filter_by(problem_id=problem.id).delete()
                 
-                # テキスト配信を削除
-                TextDelivery.query.filter_by(text_set_id=text_id).delete()
-                
-                # テキストを削除
-                db.session.delete(text_set)
-                deleted_count += 1
-        
+                # 問題を削除
+                db.session.delete(problem)
+            
+            # テキストの熟練度記録を削除
+            TextProficiencyRecord.query.filter_by(text_set_id=text_id).delete()
+            
+            # テキスト配信を削除
+            TextDelivery.query.filter_by(text_set_id=text_id).delete()
+            
+            # テキストを削除
+            db.session.delete(text_set)
+            deleted_count += 1
+            
         except Exception as e:
             db.session.rollback()
-            flash(f'テキストID {text_id} の削除中にエラーが発生しました: {str(e)}')
-            return redirect(url_for('basebuilder_module.text_sets'))
+            error_count += 1
+            flash(f'テキストID {text_id_str} の削除中にエラーが発生しました: {str(e)}')
     
+    # 成功したものをコミット
     try:
         db.session.commit()
-        flash(f'選択した {deleted_count} 件のテキストが削除されました。')
+        if deleted_count > 0:
+            flash(f'{deleted_count} 件のテキストを削除しました。')
+        
+        if error_count > 0:
+            flash(f'{error_count} 件のテキストを削除できませんでした。', 'warning')
     except Exception as e:
         db.session.rollback()
-        flash(f'テキストの削除中にエラーが発生しました: {str(e)}')
+        flash(f'テキストの削除中にエラーが発生しました: {str(e)}', 'error')
     
     return redirect(url_for('basebuilder_module.text_sets'))
 
@@ -1715,6 +1771,11 @@ def delete_problem(problem_id):
 @basebuilder_module.route('/learning_paths')
 @login_required
 def learning_paths():
+    # 学校に所属していない場合の対応
+    if not current_user.school_id:
+        flash('学習パスを表示するには学校に所属している必要があります。')
+        return redirect(url_for('basebuilder_module.index'))
+    
     if current_user.role == 'student':
         # 学生向け - 割り当てられた学習パスを表示
         assigned_paths = PathAssignment.query.filter_by(
@@ -1727,9 +1788,10 @@ def learning_paths():
         )
     
     elif current_user.role == 'teacher':
-        # 教師向け - 作成した学習パスを表示
-        paths = LearningPath.query.filter_by(
-            created_by=current_user.id
+        # 教師向け - 作成した学習パス + 同じ学校の学習パスを表示
+        paths = LearningPath.query.filter(
+            (LearningPath.created_by == current_user.id) |
+            (LearningPath.school_id == current_user.school_id)
         ).all()
         
         return render_template(
@@ -1745,6 +1807,11 @@ def learning_paths():
 def create_learning_path():
     if current_user.role != 'teacher':
         flash('この機能は教師のみ利用可能です。')
+        return redirect(url_for('basebuilder_module.index'))
+    
+    # 学校に所属していない場合の対応
+    if not current_user.school_id:
+        flash('学習パスを作成するには学校に所属している必要があります。')
         return redirect(url_for('basebuilder_module.index'))
     
     if request.method == 'POST':
@@ -1768,7 +1835,8 @@ def create_learning_path():
             title=title,
             description=description,
             steps=steps,
-            created_by=current_user.id
+            created_by=current_user.id,
+            school_id=current_user.school_id  # 学校IDを設定
         )
         
         db.session.add(new_path)
@@ -1777,8 +1845,8 @@ def create_learning_path():
         flash('学習パスが作成されました。')
         return redirect(url_for('basebuilder_module.learning_paths'))
     
-    # 問題カテゴリを取得（ステップ作成用）
-    categories = ProblemCategory.query.all()
+    # 同じ学校のカテゴリを取得（ステップ作成用）
+    categories = ProblemCategory.query.filter_by(school_id=current_user.school_id).all()
     
     return render_template(
         'basebuilder/create_learning_path.html',
@@ -2111,6 +2179,11 @@ def import_problems():
         flash('この機能は教師のみ利用可能です。')
         return redirect(url_for('basebuilder_module.index'))
     
+    # 学校に所属していない場合の対応
+    if not current_user.school_id:
+        flash('問題をインポートするには学校に所属している必要があります。')
+        return redirect(url_for('basebuilder_module.index'))
+    
     if request.method == 'POST':
         # CSVファイルがアップロードされたか確認
         if 'csv_file' not in request.files:
@@ -2135,7 +2208,8 @@ def import_problems():
                 from basebuilder.models import TextSet
                 
                 success_count, error_count, errors = importers.import_problems_from_csv(
-                    csv_content, db, ProblemCategory, BasicKnowledgeItem, current_user.id,
+                    csv_content, db, ProblemCategory, BasicKnowledgeItem, 
+                    current_user.id, current_user.school_id,  # 学校IDを追加
                     TextSet=TextSet if auto_split else None
                 )
                 
@@ -2169,8 +2243,13 @@ def import_text_set():
         flash('この機能は教師のみ利用可能です。')
         return redirect(url_for('basebuilder_module.index'))
     
-    # カテゴリの選択肢を取得
-    categories = ProblemCategory.query.all()
+    # 学校に所属していない場合の対応
+    if not current_user.school_id:
+        flash('テキストをインポートするには学校に所属している必要があります。')
+        return redirect(url_for('basebuilder_module.index'))
+    
+    # 同じ学校のカテゴリのみ取得
+    categories = ProblemCategory.query.filter_by(school_id=current_user.school_id).all()
     
     if request.method == 'POST':
         title = request.form.get('title', '')  # 空でも許容
@@ -2202,7 +2281,8 @@ def import_text_set():
                 # 問題をインポート
                 from basebuilder import importers
                 success_count, error_count, errors = importers.import_text_from_csv(
-                    csv_content, title, description, category_id, db, TextSet, BasicKnowledgeItem, current_user.id
+                    csv_content, title, description, category_id, db, TextSet, BasicKnowledgeItem, 
+                    current_user.id, school_id=current_user.school_id  # 学校IDを追加
                 )
                 
                 # 結果を表示
@@ -2237,8 +2317,16 @@ def text_sets():
         return redirect(url_for('basebuilder_module.my_texts'))
     
     elif current_user.role == 'teacher':
-        # 教師が作成したテキストセットを取得
-        text_sets = TextSet.query.filter_by(created_by=current_user.id).all()
+        # 学校に所属していない場合の対応
+        if not current_user.school_id:
+            flash('テキストを表示するには学校に所属している必要があります。')
+            return redirect(url_for('basebuilder_module.index'))
+            
+        # 同じ学校のテキストセットを表示（自分が作成したもの + 学校内の共有されたもの）
+        text_sets = TextSet.query.filter(
+            (TextSet.created_by == current_user.id) | 
+            (TextSet.school_id == current_user.school_id)
+        ).all()
         
         return render_template(
             'basebuilder/text_sets.html',
@@ -2247,7 +2335,7 @@ def text_sets():
     
     # その他のロールの場合
     return redirect(url_for('basebuilder_module.index'))
-
+    
 @basebuilder_module.route('/text_sets/bulk_delete', methods=['POST'])  # URLパスを変更
 @login_required
 def bulk_delete_text_sets():  # 関数名を変更
@@ -2452,13 +2540,21 @@ def deliver_text(text_id):
     # テキストセットを取得
     text_set = TextSet.query.get_or_404(text_id)
     
-    # 作成者か確認
-    if text_set.created_by != current_user.id:
+    # 学校に所属していない場合の対応
+    if not current_user.school_id:
+        flash('テキストを配信するには学校に所属している必要があります。')
+        return redirect(url_for('basebuilder_module.index'))
+    
+    # アクセス権限チェック（作成者または同じ学校の教師）
+    if text_set.created_by != current_user.id and text_set.school_id != current_user.school_id:
         flash('このテキストを配信する権限がありません。')
         return redirect(url_for('basebuilder_module.text_sets'))
     
-    # 教師が担当するクラスを取得
-    classes = getattr(current_user, 'classes_teaching', [])
+    # 教師が担当するクラスを取得（同じ学校のクラスのみ）
+    classes = Class.query.filter_by(
+        teacher_id=current_user.id,
+        school_id=current_user.school_id
+    ).all()
     
     if request.method == 'POST':
         class_ids = request.form.getlist('class_ids')
@@ -2487,6 +2583,11 @@ def deliver_text(text_id):
         
         # 各クラスに配信
         for class_id in class_ids:
+            # クラスが同じ学校のものか確認
+            class_obj = Class.query.get(int(class_id))
+            if not class_obj or class_obj.school_id != current_user.school_id:
+                continue
+                
             # 既に配信済みか確認
             existing = TextDelivery.query.filter_by(
                 text_set_id=text_id,
@@ -3065,7 +3166,9 @@ def api_text_deliveries(text_id):
 @basebuilder_module.route('/text_delivery/<int:delivery_id>/cancel', methods=['POST'])
 @login_required
 def cancel_text_delivery(delivery_id):
-    from datetime import datetime  # ローカルでインポートして確実に使用できるようにする
+    """テキスト配信を解除する処理"""
+    from datetime import datetime  # ローカルでインポート
+    print(f"配信解除リクエストを受信: delivery_id={delivery_id}")  # デバッグ用
     
     if current_user.role != 'teacher':
         flash('この機能は教師のみ利用可能です。')
@@ -3073,6 +3176,7 @@ def cancel_text_delivery(delivery_id):
     
     # 配信情報を取得
     delivery = TextDelivery.query.get_or_404(delivery_id)
+    print(f"配信情報を取得: {delivery}")  # デバッグ用
     
     # テキストセットを取得（存在&権限チェック）
     text_set = TextSet.query.get_or_404(delivery.text_set_id)
@@ -3082,14 +3186,22 @@ def cancel_text_delivery(delivery_id):
     
     # 配信情報のみを削除（解答記録や熟練度は残す）
     text_set_id = delivery.text_set_id
-    class_name = delivery.delivered_class.name if delivery.delivered_class else '不明なクラス'
+    class_name = "不明なクラス"
+    
+    if hasattr(delivery, 'delivered_class') and delivery.delivered_class:
+        class_name = delivery.delivered_class.name
     
     try:
+        print(f"配信を削除: text_set_id={text_set_id}, class_name={class_name}")  # デバッグ用
+        
+        # 実際に削除する
         db.session.delete(delivery)
         db.session.commit()
+        
         flash(f'テキスト「{text_set.title}」の {class_name} への配信を解除しました。生徒の学習記録は保持されています。')
     except Exception as e:
         db.session.rollback()
+        print(f"エラー発生: {str(e)}")  # デバッグ用
         flash(f'配信解除中にエラーが発生しました: {str(e)}')
     
     return redirect(url_for('basebuilder_module.text_sets'))

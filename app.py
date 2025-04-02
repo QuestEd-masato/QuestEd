@@ -132,14 +132,18 @@ class School(db.Model):
     __tablename__ = 'schools'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    code = db.Column(db.String(20), unique=True, nullable=False)
+    code = db.Column(db.String(20), unique=True, nullable=False)  # 学校コード
     address = db.Column(db.Text)
     contact_email = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # リレーションシップ
+    # 修正後:
+    problem_categories = db.relationship('ProblemCategory', back_populates='school_ref', lazy=True)
     years = db.relationship('SchoolYear', backref='school', lazy=True)
     users = db.relationship('User', backref='school', lazy=True)
+    classes = db.relationship('Class', backref='school', lazy=True)
+    text_sets = db.relationship('TextSet', back_populates='school_ref', lazy=True)
+    learning_paths = db.relationship('LearningPath', back_populates='school_ref', lazy=True)
+    basic_knowledge_items = db.relationship('BasicKnowledgeItem', back_populates='school_ref', lazy=True)
 
 class SchoolYear(db.Model):
     __tablename__ = 'school_years'
@@ -192,6 +196,7 @@ class Class(db.Model):
     __tablename__ = 'classes'
     id = db.Column(db.Integer, primary_key=True)
     teacher_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=False)  # 追加
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     schedule = db.Column(db.String(200))
@@ -454,27 +459,6 @@ def admin_dashboard():
     return render_template('admin/dashboard.html', 
                           user_count=user_count, 
                           class_count=class_count)
-
-@app.route('/admin/users')
-@login_required
-def admin_users():
-    if current_user.role != 'teacher':
-        flash('この機能は管理者のみ利用可能です。')
-        return redirect(url_for('index'))
-    
-    users = User.query.all()
-    return render_template('admin/users.html', users=users)
-
-# 学校一覧表示
-@app.route('/admin/schools')
-@login_required
-def admin_schools():
-    if current_user.role != 'teacher':
-        flash('この機能は管理者のみ利用可能です。')
-        return redirect(url_for('index'))
-    
-    schools = School.query.all()
-    return render_template('admin/schools.html', schools=schools)
 
 # 学校詳細表示
 @app.route('/admin/school/<int:school_id>')
@@ -2084,27 +2068,40 @@ def regenerate_themes():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    # 学校一覧を取得
-    schools = School.query.all()
-    
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
         email = request.form.get('email')
         role = request.form.get('role', 'student')
-        school_id = request.form.get('school_id', type=int)
+        school_code = request.form.get('school_code')  # 学校コードを取得
+        
+        # パスワード確認のチェック
+        if password != confirm_password:
+            flash('パスワードが一致しません。')
+            return render_template('register.html')
         
         # 既存のユーザー名チェック
         existing_user = User.query.filter_by(username=username).first()
         if existing_user:
             flash('そのユーザー名は既に使用されています。')
-            return render_template('register.html', schools=schools)
+            return render_template('register.html')
         
         # 既存のメールアドレスチェック
         existing_email = User.query.filter_by(email=email).first()
         if existing_email:
             flash('そのメールアドレスは既に使用されています。')
-            return render_template('register.html', schools=schools)
+            return render_template('register.html')
+        
+        # 学校コードのチェック
+        if school_code:
+            school = School.query.filter_by(code=school_code).first()
+            if not school:
+                flash('入力された学校コードが見つかりません。')
+                return render_template('register.html')
+            school_id = school.id
+        else:
+            school_id = None
         
         # 新しいユーザーの作成
         new_user = User(
@@ -2120,7 +2117,8 @@ def register():
         flash('登録が完了しました。ログインしてください。')
         return redirect(url_for('login'))
     
-    return render_template('register.html', schools=schools)
+    return render_template('register.html')
+
 # クラス関連のルート
 @app.route('/create_class', methods=['GET', 'POST'])
 @login_required
@@ -2129,22 +2127,23 @@ def create_class():
         flash('この機能は教師のみ利用可能です。')
         return redirect(url_for('index'))
     
+    # 学校IDがなければアクセスできない
+    if not current_user.school_id:
+        flash('クラスを作成するには学校に所属している必要があります。')
+        return redirect(url_for('index'))
+    
     if request.method == 'POST':
         class_name = request.form.get('class_name')
         
-        # 修正点1: クラス名が空かどうかの判定を強化
         if not class_name or class_name.strip() == '':
             flash('クラス名を入力してください。')
             return render_template('create_class.html')
         
-        # 修正点2: デバッグ用にクラス名をログに出力
-        print(f"Creating class with name: {class_name}")
-        
-        # 修正点3: クラス名の前後の空白を削除
         class_name = class_name.strip()
         
         new_class = Class(
             teacher_id=current_user.id,
+            school_id=current_user.school_id,  # 教師の学校IDを設定
             name=class_name
         )
         
@@ -2154,7 +2153,6 @@ def create_class():
             flash('クラスが作成されました。')
             return redirect(url_for('classes'))
         except Exception as e:
-            # 修正点4: エラーをキャッチして表示
             db.session.rollback()
             print(f"Error creating class: {str(e)}")
             flash('クラス作成中にエラーが発生しました。')
@@ -3965,3 +3963,126 @@ if __name__ == '__main__':
         print(f"BaseBuilder初期化エラー: {str(e)}")
     
     app.run(debug=True)
+
+@app.route('/admin/schools')
+@login_required
+def admin_schools():
+    # 管理者権限チェック
+    if not current_user.is_admin and current_user.role != 'admin':
+        flash('この機能は管理者のみ利用可能です。')
+        return redirect(url_for('index'))
+    
+    schools = School.query.all()
+    return render_template('admin/schools.html', schools=schools)
+
+@app.route('/admin/schools/create', methods=['GET', 'POST'])
+@login_required
+def create_school():
+    # 管理者権限チェック
+    if not current_user.is_admin and current_user.role != 'admin':
+        flash('この機能は管理者のみ利用可能です。')
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        name = request.form.get('name')
+        address = request.form.get('address', '')
+        contact_email = request.form.get('contact_email', '')
+        
+        if not name:
+            flash('学校名は必須です。')
+            return render_template('admin/create_school.html')
+        
+        # ランダムなコードを生成
+        import random
+        import string
+        code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+        
+        # 新しい学校を作成
+        new_school = School(
+            name=name,
+            code=code,
+            address=address,
+            contact_email=contact_email
+        )
+        db.session.add(new_school)
+        db.session.commit()
+        
+        flash(f'学校が作成されました。学校コード: {code}')
+        return redirect(url_for('admin_schools'))
+    
+    return render_template('admin/create_school.html')
+
+@app.route('/admin/schools/<int:school_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_school(school_id):
+    # 管理者権限チェック
+    if not current_user.is_admin and current_user.role != 'admin':
+        flash('この機能は管理者のみ利用可能です。')
+        return redirect(url_for('index'))
+    
+    school = School.query.get_or_404(school_id)
+    
+    if request.method == 'POST':
+        name = request.form.get('name')
+        address = request.form.get('address', '')
+        contact_email = request.form.get('contact_email', '')
+        code = request.form.get('code')
+        
+        if not name or not code:
+            flash('学校名と学校コードは必須です。')
+            return render_template('admin/edit_school.html', school=school)
+        
+        # 既存のコードとの重複チェック
+        existing_school = School.query.filter(School.code == code, School.id != school_id).first()
+        if existing_school:
+            flash('この学校コードは既に使用されています。')
+            return render_template('admin/edit_school.html', school=school)
+        
+        # 学校情報を更新
+        school.name = name
+        school.code = code
+        school.address = address
+        school.contact_email = contact_email
+        
+        db.session.commit()
+        
+        flash('学校情報が更新されました。')
+        return redirect(url_for('admin_schools'))
+    
+    return render_template('admin/edit_school.html', school=school)
+
+@app.route('/admin/schools/<int:school_id>/delete', methods=['POST'])
+@login_required
+def delete_school(school_id):
+    # 管理者権限チェック
+    if not current_user.is_admin and current_user.role != 'admin':
+        flash('この機能は管理者のみ利用可能です。')
+        return redirect(url_for('index'))
+    
+    school = School.query.get_or_404(school_id)
+    
+    # ユーザーが所属している場合は削除不可
+    if User.query.filter_by(school_id=school_id).first():
+        flash('この学校にはユーザーが所属しているため削除できません。')
+        return redirect(url_for('admin_schools'))
+    
+    # 関連するデータを確認
+    resources = []
+    resources.append(f'クラス: {Class.query.filter_by(school_id=school_id).count()}件')
+    resources.append(f'カテゴリ: {ProblemCategory.query.filter_by(school_id=school_id).count()}件')
+    resources.append(f'テキスト: {TextSet.query.filter_by(school_id=school_id).count()}件')
+    
+    # 削除確認画面を表示
+    if 'confirm' not in request.form:
+        return render_template(
+            'admin/confirm_delete_school.html',
+            school=school,
+            resources=resources
+        )
+    
+    # 学校を削除
+    db.session.delete(school)
+    db.session.commit()
+    
+    flash(f'学校「{school.name}」を削除しました。')
+    return redirect(url_for('admin_schools'))

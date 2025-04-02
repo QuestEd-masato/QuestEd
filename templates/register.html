@@ -39,6 +39,12 @@
                 </select>
             </div>
             
+            <div class="form-group">
+                <label for="school_code">学校コード</label>
+                <input type="text" id="school_code" name="school_code" required placeholder="学校から通知されたコードを入力してください">
+                <small class="form-text text-muted">学校から提供された学校コードを入力してください。</small>
+            </div>
+            
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">登録</button>
             </div>
@@ -132,4 +138,53 @@
         border-color: #dc3545;
     }
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form[data-validate="true"]');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const password = document.getElementById('password');
+                const confirmPassword = document.getElementById('confirm_password');
+                
+                // パスワード確認のバリデーション
+                if (password.value !== confirmPassword.value) {
+                    e.preventDefault();
+                    confirmPassword.classList.add('is-invalid');
+                    
+                    let errorMessage = document.getElementById('password-error');
+                    if (!errorMessage) {
+                        errorMessage = document.createElement('div');
+                        errorMessage.id = 'password-error';
+                        errorMessage.className = 'error-message';
+                        errorMessage.innerText = 'パスワードが一致しません。';
+                        confirmPassword.parentNode.appendChild(errorMessage);
+                    }
+                    
+                    return false;
+                }
+                
+                // 学校コードのバリデーション
+                const schoolCode = document.getElementById('school_code');
+                if (!schoolCode.value.trim()) {
+                    e.preventDefault();
+                    schoolCode.classList.add('is-invalid');
+                    
+                    let errorMessage = document.getElementById('school-code-error');
+                    if (!errorMessage) {
+                        errorMessage = document.createElement('div');
+                        errorMessage.id = 'school-code-error';
+                        errorMessage.className = 'error-message';
+                        errorMessage.innerText = '学校コードは必須です。';
+                        schoolCode.parentNode.appendChild(errorMessage);
+                    }
+                    
+                    return false;
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}

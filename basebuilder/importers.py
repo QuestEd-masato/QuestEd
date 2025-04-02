@@ -176,7 +176,7 @@ def update_category_proficiency(student_id, category_id):
     
     return proficiency
 
-def import_text_from_csv(csv_content, title, description, category_id, db, TextSet, BasicKnowledgeItem, current_user_id):
+def import_text_from_csv(csv_content, title, description, category_id, db, TextSet, BasicKnowledgeItem, current_user_id, school_id=None):
     """
     CSVファイルから問題をインポートし、テキストセットとして保存する
     
@@ -189,6 +189,7 @@ def import_text_from_csv(csv_content, title, description, category_id, db, TextS
         TextSet: TextSetモデルクラス
         BasicKnowledgeItem: BasicKnowledgeItemモデルクラス
         current_user_id: インポート実行ユーザーのID
+        school_id: 学校ID（オプション）
         
     Returns:
         tuple: (success_count, error_count, errors)
@@ -206,20 +207,33 @@ def import_text_from_csv(csv_content, title, description, category_id, db, TextS
     try:
         # カテゴリ情報を取得
         category = ProblemCategory.query.get(category_id)
-        category_name = category.name if category else "カテゴリ"
+        if not category:
+            errors.append("指定されたカテゴリが見つかりません。")
+            return 0, 1, errors
+            
+        # カテゴリが同じ学校のものか確認
+        if school_id and category.school_id != school_id:
+            errors.append("指定されたカテゴリはこの学校に属していません。")
+            return 0, 1, errors
+            
+        category_name = category.name
         
         # タイトルが空の場合は自動生成
         if not title.strip():
             # 同じカテゴリの既存テキスト数を取得
-            existing_count = TextSet.query.filter_by(category_id=category_id).count()
+            text_set_query = TextSet.query.filter_by(category_id=category_id)
+            if school_id:
+                text_set_query = text_set_query.filter_by(school_id=school_id)
+            existing_count = text_set_query.count()
             title = f"【{category_name}】No.{existing_count + 1}"
         
-        # 新しいテキストセットを作成
+        # 新しいテキストセットを作成（学校IDも設定）
         new_text_set = TextSet(
             title=title,
             description=description,
             category_id=category_id,
-            created_by=current_user_id
+            created_by=current_user_id,
+            school_id=school_id
         )
         db.session.add(new_text_set)
         db.session.flush()  # IDを取得するためにフラッシュ
@@ -227,7 +241,7 @@ def import_text_from_csv(csv_content, title, description, category_id, db, TextS
         # 各問題をテキストセットに追加
         for i, problem_data in enumerate(valid_problems):
             try:
-                # 問題の作成
+                # 問題の作成（学校IDも設定）
                 new_problem = BasicKnowledgeItem(
                     category_id=category_id,
                     title=problem_data['title'],
@@ -239,7 +253,8 @@ def import_text_from_csv(csv_content, title, description, category_id, db, TextS
                     choices=problem_data.get('choices'),
                     created_by=current_user_id,
                     text_set_id=new_text_set.id,
-                    order_in_text=i+1
+                    order_in_text=i+1,
+                    school_id=school_id
                 )
                 
                 db.session.add(new_problem)
@@ -259,7 +274,7 @@ def import_text_from_csv(csv_content, title, description, category_id, db, TextS
     
     return success_count, error_count, errors
 
-def import_problems_from_csv(csv_content, db, ProblemCategory, BasicKnowledgeItem, current_user_id, TextSet=None):
+def import_problems_from_csv(csv_content, db, ProblemCategory, BasicKnowledgeItem, current_user_id, school_id=None, TextSet=None):
     """
     CSVファイルから問題をインポートする
     
@@ -269,6 +284,7 @@ def import_problems_from_csv(csv_content, db, ProblemCategory, BasicKnowledgeIte
         ProblemCategory: ProblemCategoryモデルクラス
         BasicKnowledgeItem: BasicKnowledgeItemモデルクラス
         current_user_id: インポート実行ユーザーのID
+        school_id: 学校ID（オプション）
         TextSet: テキストセットモデル（Noneでなければ自動分割モード）
         
     Returns:
@@ -286,7 +302,12 @@ def import_problems_from_csv(csv_content, db, ProblemCategory, BasicKnowledgeIte
     
     # カテゴリのキャッシュを作成
     categories = {}
-    for category_obj in ProblemCategory.query.all():
+    # 同じ学校のカテゴリのみを対象に
+    category_query = ProblemCategory.query
+    if school_id:
+        category_query = category_query.filter_by(school_id=school_id)
+    
+    for category_obj in category_query.all():
         categories[category_obj.name.lower()] = category_obj
     
     # 自動分割モードかどうか確認
@@ -305,10 +326,11 @@ def import_problems_from_csv(csv_content, db, ProblemCategory, BasicKnowledgeIte
             if category_key in categories:
                 category = categories[category_key]
             else:
-                # 新しいカテゴリを作成
+                # 新しいカテゴリを作成（学校IDも設定）
                 category = ProblemCategory(
                     name=category_name,
-                    created_by=current_user_id
+                    created_by=current_user_id,
+                    school_id=school_id
                 )
                 db.session.add(category)
                 db.session.flush()  # IDを取得するためにフラッシュ
@@ -318,20 +340,25 @@ def import_problems_from_csv(csv_content, db, ProblemCategory, BasicKnowledgeIte
             if auto_split_mode:
                 if i % 10 == 0 or current_text_set is None:
                     # 同じカテゴリの既存テキスト数を取得
-                    existing_count = TextSet.query.filter_by(category_id=category.id).count()
-                    # 新しいテキストセットを作成
+                    text_set_query = TextSet.query.filter_by(category_id=category.id)
+                    if school_id:
+                        text_set_query = text_set_query.filter_by(school_id=school_id)
+                    existing_count = text_set_query.count()
+                    
+                    # 新しいテキストセットを作成（学校IDも設定）
                     current_text_set = TextSet(
                         title=f"【{category_name}】No.{existing_count + 1}",
                         description=f"{category_name}の単語集",
                         category_id=category.id,
-                        created_by=current_user_id
+                        created_by=current_user_id,
+                        school_id=school_id
                     )
                     db.session.add(current_text_set)
                     db.session.flush()  # IDを取得するためにフラッシュ
                     text_sets.append(current_text_set)
                     problems_in_current_text = 0
             
-            # 問題の作成
+            # 問題の作成（学校IDも設定）
             new_problem = BasicKnowledgeItem(
                 category_id=category.id,
                 title=problem['title'],
@@ -341,7 +368,8 @@ def import_problems_from_csv(csv_content, db, ProblemCategory, BasicKnowledgeIte
                 explanation=problem.get('explanation', ''),
                 difficulty=problem.get('difficulty', 2),
                 choices=problem.get('choices'),
-                created_by=current_user_id
+                created_by=current_user_id,
+                school_id=school_id
             )
             
             # 自動分割モードの場合はテキストセットに関連付け

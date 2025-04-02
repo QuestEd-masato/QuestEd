@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}学校編集{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>学校情報編集</h1>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title">学校「{{ school.name }}」の編集</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="mb-3">
+                    <label for="name" class="form-label">学校名 *</label>
+                    <input type="text" class="form-control" id="name" name="name" value="{{ school.name }}" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="code" class="form-label">学校コード *</label>
+                    <input type="text" class="form-control" id="code" name="code" value="{{ school.code }}" required>
+                    <small class="text-muted">学校コードはユーザー登録時に使用されます。変更すると既存ユーザーに影響はありません。</small>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="address" class="form-label">住所</label>
+                    <input type="text" class="form-control" id="address" name="address" value="{{ school.address }}">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="contact_email" class="form-label">連絡先メールアドレス</label>
+                    <input type="email" class="form-control" id="contact_email" name="contact_email" value="{{ school.contact_email }}">
+                </div>
+                
+                <button type="submit" class="btn btn-primary">更新</button>
+                <a href="{{ url_for('admin_schools') }}" class="btn btn-secondary">キャンセル</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
