@@ -442,13 +442,16 @@ init_basebuilder(app)
 @app.route('/')
 def index():
     if current_user.is_authenticated:
+        if current_user.role == 'admin':
+            # 管理者は管理画面へリダイレクト
+            return redirect(url_for('admin_dashboard'))
         return redirect(url_for('view_themes'))
     return redirect(url_for('login'))
 
 @app.route('/admin/dashboard')
 @login_required
 def admin_dashboard():
-    if current_user.role != 'teacher':  # または専用の admin ロールを作成
+    if current_user.role != 'admin':  # または専用の admin ロールを作成
         flash('この機能は管理者のみ利用可能です。')
         return redirect(url_for('index'))
     
@@ -464,7 +467,7 @@ def admin_dashboard():
 @app.route('/admin/school/<int:school_id>')
 @login_required
 def admin_school_detail(school_id):
-    if current_user.role != 'teacher':
+    if current_user.role != 'admin':
         flash('この機能は管理者のみ利用可能です。')
         return redirect(url_for('index'))
     
@@ -479,7 +482,7 @@ def admin_school_detail(school_id):
 @app.route('/admin/school/create', methods=['GET', 'POST'])
 @login_required
 def admin_create_school():
-    if current_user.role != 'teacher':
+    if current_user.role != 'admin':
         flash('この機能は管理者のみ利用可能です。')
         return redirect(url_for('index'))
     
@@ -519,7 +522,7 @@ def admin_create_school():
 @app.route('/admin/school/<int:school_id>/year/create', methods=['GET', 'POST'])
 @login_required
 def admin_create_school_year(school_id):
-    if current_user.role != 'teacher':
+    if current_user.role != 'admin':
         flash('この機能は管理者のみ利用可能です。')
         return redirect(url_for('index'))
     
@@ -570,7 +573,7 @@ def admin_create_school_year(school_id):
 @app.route('/admin/school_year/<int:school_year_id>/class_group/create', methods=['GET', 'POST'])
 @login_required
 def admin_create_class_group(school_year_id):
-    if current_user.role != 'teacher':
+    if current_user.role != 'admin':
         flash('この機能は管理者のみ利用可能です。')
         return redirect(url_for('index'))
     
@@ -614,7 +617,7 @@ def admin_create_class_group(school_year_id):
 @app.route('/admin/class_group/<int:class_group_id>')
 @login_required
 def admin_class_group_detail(class_group_id):
-    if current_user.role != 'teacher':
+    if current_user.role != 'admin':
         flash('この機能は管理者のみ利用可能です。')
         return redirect(url_for('index'))
     
@@ -643,7 +646,7 @@ def admin_class_group_detail(class_group_id):
 @app.route('/admin/class_group/<int:class_group_id>/add_students', methods=['GET', 'POST'])
 @login_required
 def admin_class_group_add_students(class_group_id):
-    if current_user.role != 'teacher':
+    if current_user.role != 'admin':
         flash('この機能は管理者のみ利用可能です。')
         return redirect(url_for('index'))
     
@@ -696,7 +699,7 @@ def admin_class_group_add_students(class_group_id):
 @app.route('/admin/enrollment/<int:enrollment_id>/delete', methods=['POST'])
 @login_required
 def admin_delete_enrollment(enrollment_id):
-    if current_user.role != 'teacher':
+    if current_user.role != 'admin':
         flash('この機能は管理者のみ利用可能です。')
         return redirect(url_for('index'))
     
@@ -1980,6 +1983,10 @@ def view_themes():
             })
         
         return render_template('teacher_themes.html', classes_with_themes=classes_with_themes)
+    
+    elif current_user.role == 'admin':
+        # 管理者の場合は管理画面にリダイレクト
+        return redirect(url_for('admin_schools'))
     
     # その他のロールの場合
     return redirect(url_for('index'))
@@ -3968,7 +3975,7 @@ if __name__ == '__main__':
 @login_required
 def admin_schools():
     # 管理者権限チェック
-    if not current_user.is_admin and current_user.role != 'admin':
+    if current_user.role != 'admin':
         flash('この機能は管理者のみ利用可能です。')
         return redirect(url_for('index'))
     
@@ -3979,7 +3986,7 @@ def admin_schools():
 @login_required
 def create_school():
     # 管理者権限チェック
-    if not current_user.is_admin and current_user.role != 'admin':
+    if current_user.role != 'admin':
         flash('この機能は管理者のみ利用可能です。')
         return redirect(url_for('index'))
     
@@ -4086,3 +4093,11 @@ def delete_school(school_id):
     
     flash(f'学校「{school.name}」を削除しました。')
     return redirect(url_for('admin_schools'))
+
+@app.route('/admin_access')
+@login_required
+def admin_access():
+    if current_user.role == 'admin':
+        return redirect(url_for('admin_dashboard'))
+    else:
+        return f"あなたは管理者ではありません。現在のロール: {current_user.role}, ID: {current_user.id}"

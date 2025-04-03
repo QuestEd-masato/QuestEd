@@ -1,5 +1,5 @@
 # core/models.py
-from app import db
+from app.app import db
 from datetime import datetime
 
 class School(db.Model):
