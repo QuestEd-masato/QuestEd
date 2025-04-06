@@ -75,21 +75,30 @@
         }
 
         .main-nav a:hover {
-            background-color: rgba(255,255,255,0.2);
+            background-color: rgba(255,255,255,0.1); /* より控えめに */
         }
 
-        /* ドロップダウンメニュー - 確実に初期状態で非表示 */
+        /* ======= デスクトップ用ドロップダウンメニュー ======= */
         .dropdown-menu {
             background-color: white;
             border-radius: 4px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            min-width: 200px;
+            min-width: 160px;
             padding: 0.5rem 0;
             position: absolute;
             top: 100%;
             left: 0;
             z-index: 1000;
-            display: none !important; /* 確実に非表示 */
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: opacity 0.3s, visibility 0.3s, transform 0.3s;
+        }
+
+        .nav-item.dropdown.open .dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
         }
 
         .dropdown-menu a {
@@ -99,12 +108,7 @@
         }
 
         .dropdown-menu a:hover {
-            background-color: #f8f9fa;
-        }
-
-        /* ドロップダウンメニューの表示制御 - openクラスで上書き */
-        .nav-item.dropdown.open .dropdown-menu {
-            display: block !important; /* !importantで確実に表示 */
+            background-color: rgba(93, 168, 232, 0.05); /* より控えめな水色 */
         }
 
         .nav-link.dropdown-toggle::after {
@@ -113,6 +117,85 @@
             font-weight: 900;
             margin-left: 0.5rem;
             vertical-align: middle;
+        }
+
+        /* ======= モバイル用メニュー専用要素 ======= */
+        .mobile-menu-list {
+            display: none; /* デスクトップでは非表示 */
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .mobile-menu-item {
+            padding: 0.75rem 0.5rem;
+            border-radius: 4px;
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.35rem;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .mobile-menu-item:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+
+        .mobile-menu-item i {
+            margin-right: 0.75rem;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        /* モバイルドロップダウンの矢印 */
+        .mobile-dropdown::after {
+            content: "\f107";
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            position: absolute;
+            right: 1rem;
+            transition: transform 0.3s;
+        }
+
+        .mobile-dropdown.open::after {
+            transform: rotate(180deg);
+        }
+
+        .mobile-submenu {
+            padding-left: 1.5rem;
+            border-left: 2px solid rgba(255,255,255,0.2);
+            margin-left: 1rem;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .mobile-submenu.open {
+            max-height: 500px; /* 大きな値を設定して展開を許可 */
+        }
+
+        .mobile-submenu-item {
+            display: block;
+            padding: 0.6rem 0.75rem;
+            color: rgba(255,255,255,0.9);
+            text-decoration: none;
+            font-size: 0.9rem;
+            border-radius: 4px;
+            margin-bottom: 0.25rem;
+            transition: background-color 0.3s;
+        }
+
+        .mobile-submenu-item:hover {
+            background-color: rgba(255,255,255,0.1);
+            text-decoration: none;
+        }
+
+        .mobile-menu-divider {
+            border-top: 1px solid rgba(255,255,255,0.2);
+            margin: 1rem 0;
+            display: none; /* デスクトップでは非表示 */
         }
 
         /* モバイルメニュートグル */
@@ -164,7 +247,7 @@
         }
 
         .btn-primary:hover {
-            background-color: #4393d7; /* 少し暗く */
+            background-color: #4a9ae0; /* より控えめな暗さに */
         }
 
         .btn-outline {
@@ -174,10 +257,10 @@
         }
 
         .btn-outline:hover {
-            background-color: #f0f7ff;
+            background-color: rgba(93, 168, 232, 0.05); /* より控えめな背景色 */
         }
 
-        /* レスポンシブ対応 */
+        /* ======= レスポンシブ対応 ======= */
         @media (max-width: 992px) {
             /* ナビゲーションの調整 */
             nav {
@@ -188,6 +271,7 @@
                 display: flex;
             }
 
+            /* モバイル用ナビゲーションパネル */
             .main-nav ul {
                 position: fixed;
                 top: 60px;
@@ -207,58 +291,16 @@
             .main-nav ul.active {
                 left: 0;
             }
-
-            .main-nav li {
-                margin: 0.5rem 0;
-                width: 100%;
+            
+            /* モバイル用メニュー要素を表示 */
+            .mobile-menu-list,
+            .mobile-menu-divider {
+                display: block;
             }
 
-            .main-nav a {
-                padding: 0.75rem;
-                width: 100%;
-            }
-
-            /* モバイル用ドロップダウンメニュー - important表示制御を修正 */
-            .dropdown-menu {
-                display: none !important; /* 初期状態は非表示 */
-                position: static;
-                box-shadow: none;
-                width: 100%;
-                padding-left: 1rem;
-                background-color: rgba(255,255,255,0.05);
-                margin-top: 0.5rem;
-                margin-bottom: 0.5rem;
-            }
-
-            /* openクラスがついた場合のみ表示 - 優先度を高くする */
-            .nav-item.dropdown.open .dropdown-menu {
-                display: block !important; /* 最高優先度で表示 */
-            }
-
-            .dropdown-menu a {
-                color: white;
-                border-left: 2px solid rgba(255,255,255,0.2);
-            }
-
-            .dropdown-menu a:hover {
-                background-color: rgba(255,255,255,0.1);
-            }
-    
-            /* モバイルでのドロップダウンの開閉ボタンを強調 */
-            .nav-link.dropdown-toggle {
-                position: relative;
-            }
-    
-            .nav-link.dropdown-toggle::after {
-                position: absolute;
-                right: 1rem;
-                top: 50%;
-                transform: translateY(-50%);
-            }
-    
-            /* ドロップダウンが開いている時の表示を強調 */
-            .nav-item.dropdown.open > .nav-link {
-                background-color: rgba(255,255,255,0.1);
+            /* デスクトップ用メニュー要素を非表示 */
+            .main-nav > ul > li {
+                display: none;
             }
         }
 
@@ -266,7 +308,9 @@
         @media (min-width: 768px) and (max-width: 992px) {
             .main-nav ul {
                 width: 60%;
+                max-width: 350px;
             }
+            
             /* 中間サイズでのロゴサイズ調整 */
             .logo-img {
                 height: 50px;
@@ -312,6 +356,25 @@
                 margin-left: 10px; /* ハンバーガーメニューとロゴの間隔を確保 */
             }
         }
+
+        /* メニューが開いているときのスクロール防止 */
+        body.menu-open {
+            overflow: hidden;
+        }
+
+        /* スクロールバーのスタイル改善 */
+        .main-nav ul::-webkit-scrollbar {
+            width: 5px;
+        }
+        
+        .main-nav ul::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .main-nav ul::-webkit-scrollbar-thumb {
+            background-color: rgba(255,255,255,0.3);
+            border-radius: 3px;
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -322,7 +385,7 @@
                 <img src="{{ url_for('static', filename='logo.png') }}" alt="QuestEd Logo" class="logo-img" />
             </a>
             
-            <div class="menu-toggle" id="menu-toggle">
+            <div class="menu-toggle" id="menu-toggle" aria-expanded="false" aria-label="メニュー">
                 <span></span>
                 <span></span>
                 <span></span>
@@ -332,6 +395,7 @@
                 <ul id="main-menu">
                     {% if current_user.is_authenticated %}
                         {% if current_user.role == 'student' %}
+                            <!-- デスクトップ用メニュー（学生） -->
                             <li><a href="{{ url_for('student_dashboard') }}"><i class="fas fa-tachometer-alt"></i> ダッシュボード</a></li>
                             
                             <li class="nav-item dropdown">
@@ -371,7 +435,55 @@
                             
                             <li><a href="{{ url_for('classes') }}"><i class="fas fa-users"></i> クラス</a></li>
                             
+                            <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> ログアウト</a></li>
+                            
+                            <!-- モバイル用メニュー（学生） -->
+                            <div class="mobile-menu-list">
+                                <a href="{{ url_for('student_dashboard') }}" class="mobile-menu-item">
+                                    <i class="fas fa-tachometer-alt"></i> ダッシュボード
+                                </a>
+                                
+                                <div class="mobile-menu-item mobile-dropdown" data-target="mobile-menu-inquiry">
+                                    <i class="fas fa-search"></i> 探究活動
+                                </div>
+                                <div id="mobile-menu-inquiry" class="mobile-submenu">
+                                    <a href="{{ url_for('view_themes') }}" class="mobile-submenu-item">探究テーマ</a>
+                                    <a href="{{ url_for('student_view_main_themes') }}" class="mobile-submenu-item">大テーマ一覧</a>
+                                    <a href="{{ url_for('activities') }}" class="mobile-submenu-item">活動記録</a>
+                                </div>
+                                
+                                <div class="mobile-menu-item mobile-dropdown" data-target="mobile-menu-basic">
+                                    <i class="fas fa-graduation-cap"></i> 基礎学力
+                                </div>
+                                <div id="mobile-menu-basic" class="mobile-submenu">
+                                    <a href="{{ url_for('basebuilder_module.index') }}" class="mobile-submenu-item">基礎学力ホーム</a>
+                                    <a href="{{ url_for('basebuilder_module.problems') }}" class="mobile-submenu-item">問題に挑戦</a>
+                                    <a href="{{ url_for('basebuilder_module.view_proficiency') }}" class="mobile-submenu-item">熟練度確認</a>
+                                    <a href="{{ url_for('basebuilder_module.learning_paths') }}" class="mobile-submenu-item">学習パス</a>
+                                </div>
+                                
+                                <div class="mobile-menu-item mobile-dropdown" data-target="mobile-menu-tools">
+                                    <i class="fas fa-tools"></i> ツール
+                                </div>
+                                <div id="mobile-menu-tools" class="mobile-submenu">
+                                    <a href="{{ url_for('chat_page') }}" class="mobile-submenu-item">AIチャット</a>
+                                    <a href="{{ url_for('surveys') }}" class="mobile-submenu-item">アンケート</a>
+                                    <a href="{{ url_for('todos') }}" class="mobile-submenu-item">To Doリスト</a>
+                                    <a href="{{ url_for('goals') }}" class="mobile-submenu-item">目標管理</a>
+                                </div>
+                                
+                                <a href="{{ url_for('classes') }}" class="mobile-menu-item">
+                                    <i class="fas fa-users"></i> クラス
+                                </a>
+                                
+                                <div class="mobile-menu-divider"></div>
+                                
+                                <a href="{{ url_for('logout') }}" class="mobile-menu-item">
+                                    <i class="fas fa-sign-out-alt"></i> ログアウト
+                                </a>
+                            </div>
                         {% elif current_user.role == 'teacher' %}
+                            <!-- デスクトップ用メニュー（教師） -->
                             <li><a href="{{ url_for('teacher_dashboard') }}"><i class="fas fa-tachometer-alt"></i> ダッシュボード</a></li>
                             
                             <li class="nav-item dropdown">
@@ -381,8 +493,6 @@
                                 <ul class="dropdown-menu">
                                     <li><a href="{{ url_for('view_themes') }}">テーマ管理</a></li>
                                     <li><a href="{{ url_for('classes') }}">クラス管理</a></li>
-                                     <li><a href="{{ url_for('view_curriculums', class_id=current_class.id) if current_class else '#' }}">カリキュラム</a></li>
-                                     <li><a href="{{ url_for('generate_evaluations', class_id=current_class.id) if current_class else '#' }}">評価</a></li>
                                 </ul>
                             </li>
                             
@@ -407,18 +517,68 @@
                                     <li><a href="{{ url_for('import_users') }}">ユーザー一括登録</a></li>
                                 </ul>
                             </li>
-                      {% endif %}
-                      
-                      <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> ログアウト</a></li>
-                  {% else %}
-                      <li><a href="{{ url_for('login') }}"><i class="fas fa-sign-in-alt"></i> ログイン</a></li>
-                      <li><a href="{{ url_for('register') }}"><i class="fas fa-user-plus"></i> 登録</a></li>
-                  {% endif %}
-              </ul>
-          </div>
-      </nav>
-      <div class="mobile-nav-overlay" id="mobile-overlay"></div>
-  </header>
+                            
+                            <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> ログアウト</a></li>
+                            
+                            <!-- モバイル用メニュー（教師） -->
+                            <div class="mobile-menu-list">
+                                <a href="{{ url_for('teacher_dashboard') }}" class="mobile-menu-item">
+                                    <i class="fas fa-tachometer-alt"></i> ダッシュボード
+                                </a>
+                                
+                                <div class="mobile-menu-item mobile-dropdown" data-target="mobile-menu-teacher-inquiry">
+                                    <i class="fas fa-search"></i> 探究活動
+                                </div>
+                                <div id="mobile-menu-teacher-inquiry" class="mobile-submenu">
+                                    <a href="{{ url_for('view_themes') }}" class="mobile-submenu-item">テーマ管理</a>
+                                    <a href="{{ url_for('classes') }}" class="mobile-submenu-item">クラス管理</a>
+                                </div>
+                                
+                                <div class="mobile-menu-item mobile-dropdown" data-target="mobile-menu-teacher-basic">
+                                    <i class="fas fa-graduation-cap"></i> 基礎学力
+                                </div>
+                                <div id="mobile-menu-teacher-basic" class="mobile-submenu">
+                                    <a href="{{ url_for('basebuilder_module.index') }}" class="mobile-submenu-item">基礎学力ホーム</a>
+                                    <a href="{{ url_for('basebuilder_module.problems') }}" class="mobile-submenu-item">問題管理</a>
+                                    <a href="{{ url_for('basebuilder_module.categories') }}" class="mobile-submenu-item">カテゴリ管理</a>
+                                    <a href="{{ url_for('basebuilder_module.analysis') }}" class="mobile-submenu-item">理解度分析</a>
+                                </div>
+                                
+                                <div class="mobile-menu-item mobile-dropdown" data-target="mobile-menu-teacher-tools">
+                                    <i class="fas fa-tools"></i> ツール
+                                </div>
+                                <div id="mobile-menu-teacher-tools" class="mobile-submenu">
+                                    <a href="{{ url_for('chat_page') }}" class="mobile-submenu-item">AIチャット</a>
+                                    <a href="{{ url_for('import_users') }}" class="mobile-submenu-item">ユーザー一括登録</a>
+                                </div>
+                                
+                                <div class="mobile-menu-divider"></div>
+                                
+                                <a href="{{ url_for('logout') }}" class="mobile-menu-item">
+                                    <i class="fas fa-sign-out-alt"></i> ログアウト
+                                </a>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <!-- 未ログイン時のメニュー（デスクトップ） -->
+                        <li><a href="{{ url_for('login') }}"><i class="fas fa-sign-in-alt"></i> ログイン</a></li>
+                        <li><a href="{{ url_for('register') }}"><i class="fas fa-user-plus"></i> 登録</a></li>
+                        
+                        <!-- 未ログイン時のメニュー（モバイル） -->
+                        <div class="mobile-menu-list">
+                            <a href="{{ url_for('login') }}" class="mobile-menu-item">
+                                <i class="fas fa-sign-in-alt"></i> ログイン
+                            </a>
+                            <a href="{{ url_for('register') }}" class="mobile-menu-item">
+                                <i class="fas fa-user-plus"></i> 登録
+                            </a>
+                        </div>
+                    {% endif %}
+                </ul>
+            </div>
+        </nav>
+        <div class="mobile-nav-overlay" id="mobile-overlay"></div>
+    </header>
     
     <main>
         <div class="container my-4">
@@ -452,76 +612,131 @@
         const menuToggle = document.getElementById('menu-toggle');
         const mainMenu = document.getElementById('main-menu');
         const overlay = document.getElementById('mobile-overlay');
+        
+        // 画面サイズがモバイルかどうかを判定する関数
+        function isMobileView() {
+            return window.innerWidth <= 992;
+        }
     
         // メニュートグルのクリックイベント
         menuToggle.addEventListener('click', function(e) {
             e.stopPropagation(); // イベントの伝播を停止
-            menuToggle.classList.toggle('active');
-            mainMenu.classList.toggle('active');
-            overlay.classList.toggle('active');
-            document.body.classList.toggle('menu-open');
+            toggleMenu();
         });
     
         // オーバーレイのクリックイベント
         overlay.addEventListener('click', function() {
+            closeMenu();
+        });
+        
+        // Escキーでメニューを閉じる
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && mainMenu.classList.contains('active')) {
+                closeMenu();
+            }
+        });
+    
+        // メニューを開閉する関数
+        function toggleMenu() {
+            menuToggle.classList.toggle('active');
+            mainMenu.classList.toggle('active');
+            overlay.classList.toggle('active');
+            document.body.classList.toggle('menu-open');
+            
+            menuToggle.setAttribute('aria-expanded', 
+                mainMenu.classList.contains('active') ? 'true' : 'false');
+        }
+    
+        // メニューを閉じる関数
+        function closeMenu() {
             menuToggle.classList.remove('active');
             mainMenu.classList.remove('active');
             overlay.classList.remove('active');
             document.body.classList.remove('menu-open');
+            
+            // すべてのモバイルサブメニューを閉じる
+            document.querySelectorAll('.mobile-submenu').forEach(submenu => {
+                submenu.classList.remove('open');
+            });
+            
+            // すべてのモバイルドロップダウンを閉じる
+            document.querySelectorAll('.mobile-dropdown').forEach(dropdown => {
+                dropdown.classList.remove('open');
+            });
+            
+            menuToggle.setAttribute('aria-expanded', 'false');
+        }
         
-            // ドロップダウンもすべて閉じる
-            document.querySelectorAll('.nav-item.dropdown.open').forEach(item => {
-                item.classList.remove('open');
+        // モバイルドロップダウンのクリックイベント
+        const mobileDropdowns = document.querySelectorAll('.mobile-dropdown');
+        mobileDropdowns.forEach(dropdown => {
+            dropdown.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-target');
+                const submenu = document.getElementById(targetId);
+                
+                // 現在のドロップダウンの状態を確認
+                const isOpen = submenu.classList.contains('open');
+                
+                // まず他のすべてのサブメニューとドロップダウンを閉じる
+                document.querySelectorAll('.mobile-submenu').forEach(el => {
+                    if (el.id !== targetId) {
+                        el.classList.remove('open');
+                    }
+                });
+                
+                document.querySelectorAll('.mobile-dropdown').forEach(el => {
+                    if (el !== this) {
+                        el.classList.remove('open');
+                    }
+                });
+                
+                // 現在のドロップダウンとサブメニューの状態を切り替え
+                this.classList.toggle('open');
+                submenu.classList.toggle('open');
             });
         });
     
-        // ドロップダウントグルのクリックイベント - 修正版
+        // ドロップダウントグルのクリックイベント - デスクトップ用
         const dropdownToggles = document.querySelectorAll('.js-dropdown-toggle');
         dropdownToggles.forEach(toggle => {
             toggle.addEventListener('click', function(e) {
+                // モバイル表示の場合は何もしない
+                if (isMobileView()) {
+                    e.preventDefault();
+                    return;
+                }
+                
                 e.preventDefault(); // デフォルトのナビゲーションを防止
                 e.stopPropagation(); // イベントの伝播を停止
-            
+                
                 const parentLi = this.closest('.nav-item.dropdown');
-            
+                
                 // 現在の状態を確認
                 const isCurrentlyOpen = parentLi.classList.contains('open');
-            
-                // モバイルサイズでの対応
-                if (window.innerWidth <= 992) {
-                    // 他のドロップダウンを閉じる
-                    document.querySelectorAll('.nav-item.dropdown.open').forEach(item => {
-                        if (item !== parentLi) {
-                            item.classList.remove('open');
-                        }
-                    });
                 
-                    // 現在のドロップダウンの状態を切り替え
-                    parentLi.classList.toggle('open');
-                
-                    // デバッグ用 - 状態の確認
-                    console.log('ドロップダウン状態:', parentLi.classList.contains('open'));
-                } else {
-                    // デスクトップでの挙動は既存のままでOK
-                    if (!isCurrentlyOpen) {
-                        document.querySelectorAll('.nav-item.dropdown.open').forEach(item => {
-                            item.classList.remove('open');
-                        });
-                        parentLi.classList.add('open');
-                    } else {
-                        parentLi.classList.remove('open');
+                // 他のドロップダウンを閉じる
+                document.querySelectorAll('.nav-item.dropdown.open').forEach(item => {
+                    if (item !== parentLi) {
+                        item.classList.remove('open');
                     }
+                });
+                
+                // 現在のドロップダウンの状態を切り替え
+                if (isCurrentlyOpen) {
+                    parentLi.classList.remove('open');
+                } else {
+                    parentLi.classList.add('open');
                 }
             });
         });
     
-        // ドロップダウン内のリンクを直接クリックできるように
-        const dropdownLinks = document.querySelectorAll('.dropdown-menu a');
-        dropdownLinks.forEach(link => {
-            link.addEventListener('click', function(e) {
-                // デフォルトのリンク動作を許可（阻止しない）
-                // ただしイベントの親への伝播は停止する
-                e.stopPropagation();
+        // モバイルメニュー内のリンクをクリックした時にメニューを閉じる
+        const mobileMenuLinks = document.querySelectorAll('.mobile-menu-list a.mobile-menu-item, .mobile-submenu-item');
+        mobileMenuLinks.forEach(link => {
+            link.addEventListener('click', function() {
+                setTimeout(() => {
+                    closeMenu();
+                }, 100);
             });
         });
     
@@ -530,7 +745,7 @@
         dropdownItems.forEach(item => {
             // ホバー開始時
             item.addEventListener('mouseenter', function() {
-                if (window.innerWidth > 992) {
+                if (!isMobileView()) {
                     // 他のすべての開いているドロップダウンを閉じる
                     document.querySelectorAll('.nav-item.dropdown.open').forEach(openItem => {
                         if (openItem !== this) {
@@ -545,7 +760,7 @@
         
             // ホバー終了時
             item.addEventListener('mouseleave', function() {
-                if (window.innerWidth > 992) {
+                if (!isMobileView()) {
                     // ドロップダウンを閉じる
                     this.classList.remove('open');
                 }
@@ -554,29 +769,41 @@
     
         // ドロップダウン以外の場所をクリックしたときの処理
         document.addEventListener('click', function(e) {
-            // ドロップダウンの外側をクリックしたとき
-            if (!e.target.closest('.nav-item.dropdown')) {
-                document.querySelectorAll('.nav-item.dropdown.open').forEach(item => {
-                    item.classList.remove('open');
-                });
+            // デスクトップ表示時のみ
+            if (!isMobileView()) {
+                // ドロップダウンの外側をクリックしたとき
+                if (!e.target.closest('.nav-item.dropdown')) {
+                    document.querySelectorAll('.nav-item.dropdown.open').forEach(item => {
+                        item.classList.remove('open');
+                    });
+                }
             }
         });
     
         // リサイズ時の処理
         window.addEventListener('resize', function() {
-            if (window.innerWidth > 992) {
+            if (!isMobileView()) {
                 // モバイルメニューをリセット
-                menuToggle.classList.remove('active');
-                mainMenu.classList.remove('active');
-                overlay.classList.remove('active');
-                document.body.classList.remove('menu-open');
-            
-                // ドロップダウンはホバーで動作するようにリセット
-                document.querySelectorAll('.nav-item.dropdown.open').forEach(item => {
-                    item.classList.remove('open');
-                });
+                closeMenu();
             }
         });
+        
+        // スワイプでメニューを閉じる（モバイル向け）
+        let touchStartX = 0;
+        
+        mainMenu.addEventListener('touchstart', function(e) {
+            touchStartX = e.changedTouches[0].screenX;
+        }, false);
+        
+        mainMenu.addEventListener('touchend', function(e) {
+            const touchEndX = e.changedTouches[0].screenX;
+            if (touchEndX < touchStartX && touchStartX - touchEndX > 50) {
+                // 左スワイプでメニューを閉じる
+                if (isMobileView()) {
+                    closeMenu();
+                }
+            }
+        }, false);
     });
     </script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>

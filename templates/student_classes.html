@@ -3,24 +3,40 @@
 {% block title %}QuestEd | クラス一覧{% endblock %}
 
 {% block content %}
-<div class="classes-container">
-    <h1>クラス一覧</h1>
-    
-    {% if classes %}
-        <div class="classes-grid">
-            {% for class in classes %}
-            <div class="class-card">
-                <h2>{{ class.name }}</h2>
-                <p><strong>担当教師:</strong> {{ class.teacher.username }}</p>
-                <div class="class-actions">
-                    <a href="{{ url_for('class_details', class_id=class.id) }}" class="btn">詳細を見る</a>
-                </div>
-            </div>
-            {% endfor %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>クラス一覧</h1>
+        <div class="text-muted">
+            所属学校: {{ current_user.school.name if current_user.school else "未所属" }}
         </div>
+    </div>
+    
+    {% if current_user.school %}
+        {% if classes %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for class in classes %}
+                <div class="col">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ class.name }}</h5>
+                            <p class="card-text"><strong>担当教師:</strong> {{ class.teacher.username }}</p>
+                        </div>
+                        <div class="card-footer">
+                            <a href="{{ url_for('class_details', class_id=class.id) }}" class="btn btn-primary">詳細を見る</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <p>現在、あなたの学校に登録されているクラスはありません。</p>
+            </div>
+        {% endif %}
     {% else %}
-        <div class="no-classes">
-            <p>まだクラスがありません。</p>
+        <div class="alert alert-warning">
+            <p>学校に所属していないため、クラスを表示できません。学校コードを使って学校に所属してください。</p>
+            <p>学校コードがわからない場合は、教師または管理者に問い合わせてください。</p>
         </div>
     {% endif %}
 </div>

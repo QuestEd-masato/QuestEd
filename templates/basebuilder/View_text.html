@@ -48,10 +48,13 @@
         <div class="progress mb-3" style="height: 15px;">
           <div class="progress-bar 
             {% if text_proficiency.level >= 80 %}bg-success
-            {% elif text_proficiency.level >= 50 %}bg-primary
+            {% elif text_proficiency.level >= 40 %}bg-info
             {% else %}bg-warning{% endif %}" 
             role="progressbar" 
-            style="width: {{ text_proficiency.level }}%;">
+            style="width: {{ text_proficiency.level }}%;"
+            aria-valuenow="{{ text_proficiency.level }}" 
+            aria-valuemin="0" 
+            aria-valuemax="100">
             {{ text_proficiency.level }}%
           </div>
         </div>
@@ -103,16 +106,19 @@
                 </td>
                 {% if current_user.role == 'student' %}
                   <td>
-                    {% if word_proficiencies and word_proficiencies.get(problem.id) %}
-                      {% set wp = word_proficiencies.get(problem.id) %}
+                    {% set word_proficiency = word_proficiencies.get(problem.id, None) %}
+                    {% if word_proficiency %}
                       <div class="progress" style="height: 15px;">
                         <div class="progress-bar 
-                          {% if wp.level >= 4 %}bg-success
-                          {% elif wp.level >= 2 %}bg-primary
+                          {% if word_proficiency.level >= 4 %}bg-success
+                          {% elif word_proficiency.level >= 2 %}bg-info
                           {% else %}bg-warning{% endif %}" 
                           role="progressbar" 
-                          style="width: {{ wp.level * 20 }}%;">
-                          {{ wp.level }}/5
+                          style="width: {{ word_proficiency.level * 20 }}%;" 
+                          aria-valuenow="{{ word_proficiency.level }}" 
+                          aria-valuemin="0" 
+                          aria-valuemax="5">
+                          {{ word_proficiency.level }}/5
                         </div>
                       </div>
                     {% else %}

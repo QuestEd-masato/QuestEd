@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, date
 from app import db, User, InquiryTheme
 from basebuilder import exporters
 from sqlalchemy import func
+from app import Class  # アプリケーションのメインモデルからClassをインポート
 
 from basebuilder.models import (
     ProblemCategory, BasicKnowledgeItem, KnowledgeThemeRelation,
@@ -2385,16 +2386,16 @@ def bulk_delete_text_sets():  # 関数名を変更
     
     return redirect(url_for('basebuilder_module.text_sets'))
 
-# テキスト詳細表示
+# 修正が必要と思われるルーティング関数
 @basebuilder_module.route('/text_set/<int:text_id>')
 @login_required
 def view_text_set(text_id):
     # テキストセットを取得
     text_set = TextSet.query.get_or_404(text_id)
     
-    # 教師の場合は作成者か確認
+    # 教師がクラスの所有者でない場合はアクセス制限（教師ユーザーの場合のみ）
     if current_user.role == 'teacher' and text_set.created_by != current_user.id:
-        flash('このテキストを閲覧する権限がありません。')
+        flash('このテキストの詳細を閲覧する権限がありません。')
         return redirect(url_for('basebuilder_module.text_sets'))
     
     # 学生の場合は配信されたテキストか確認
@@ -2422,30 +2423,26 @@ def view_text_set(text_id):
     word_proficiencies = {}
     
     if current_user.role == 'student':
-        # テキストの定着度を更新または作成
-        text_proficiency = calculate_text_proficiency(current_user.id, text_id, problems)
+        # テキストの定着度を取得
+        text_proficiency = TextProficiencyRecord.query.filter_by(
+            student_id=current_user.id,
+            text_set_id=text_id
+        ).first()
         
-        # 各単語の定着度を計算
+        # 問題の修正: 各単語の定着度を WordProficiency モデルから正しく取得
         for problem in problems:
-            # 解答履歴を取得（最新5件）
-            answers = AnswerRecord.query.filter_by(
+            # 正しい方法: WordProficiency モデルから各単語の定着度を取得
+            wp = WordProficiency.query.filter_by(
                 student_id=current_user.id,
                 problem_id=problem.id
-            ).order_by(AnswerRecord.timestamp.desc()).limit(5).all()
+            ).first()
             
-            if answers:
-                # 解答があれば定着度を計算
-                correct_count = sum(1 for a in answers if a.is_correct)
-                level = min(5, int((correct_count / len(answers)) * 5))
-            else:
-                # 解答がなければ0
-                level = 0
-            
-            word_proficiencies[problem.id] = {
-                'level': level,
-                'last_updated': answers[0].timestamp if answers else None
-            }
-    
+            if wp:
+                word_proficiencies[problem.id] = {
+                    'level': wp.level,  # 0-5のスケール
+                    'last_updated': wp.last_updated
+                }
+        
     # 学生の解答状況を取得（学生の場合のみ）
     answers = {}
     if current_user.role == 'student':

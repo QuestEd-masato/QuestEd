@@ -729,7 +729,15 @@ def login():
         user = User.query.filter_by(username=username).first()
         if user and check_password_hash(user.password, password):
             login_user(user)
-            return redirect(url_for('view_themes'))
+            
+            # ユーザーのロールに応じて適切なダッシュボードにリダイレクト
+            if user.role == 'student':
+                return redirect(url_for('student_dashboard'))
+            elif user.role == 'teacher':
+                return redirect(url_for('teacher_dashboard'))
+            else:
+                # その他のロール（管理者など）の場合
+                return redirect(url_for('index'))
         else:
             flash('ユーザー名またはパスワードが正しくありません。')
     return render_template('login.html')
@@ -1877,14 +1885,25 @@ def chat_api():
 @login_required
 def classes():
     if current_user.role == 'teacher':
-        # 教師向けのクラス管理ページ
-        classes = Class.query.filter_by(teacher_id=current_user.id).all()
+        # 教師向けのクラス管理ページ - 自分の学校のクラスのみ表示
+        if current_user.school_id:
+            classes = Class.query.filter_by(
+                teacher_id=current_user.id,
+                school_id=current_user.school_id  # 同じ学校のクラスのみ
+            ).all()
+        else:
+            classes = []  # 学校に所属していない場合は空リスト
+            
         return render_template('teacher_classes.html', classes=classes)
     else:
-        # 学生向けのクラス閲覧ページ
-        # ここでは簡単な実装として学生がどのクラスに所属しているかの関連付けは省略
-        # 実際のアプリでは学生とクラスの関連付けを行うモデルが必要
-        classes = Class.query.all()
+        # 学生向けのクラス閲覧ページ - 自分の学校のクラスのみ表示
+        if current_user.school_id:
+            classes = Class.query.filter_by(
+                school_id=current_user.school_id  # 同じ学校のクラスのみ
+            ).all()
+        else:
+            classes = []  # 学校に所属していない場合は空リスト
+            
         return render_template('student_classes.html', classes=classes)
 
 @app.route('/class/<int:class_id>/add_students', methods=['GET', 'POST'])
@@ -1906,10 +1925,12 @@ def add_students(class_id):
     # このクラスに既に所属している学生のIDを取得
     enrolled_student_ids = [student.id for student in class_obj.students]
     
-    # 追加可能な学生（まだクラスに所属していない学生）を取得
+    # 追加可能な学生（まだクラスに所属していない学生かつ同じ学校に所属している学生）を取得
+    # 修正: 同じschool_idの学生のみを対象にする
     available_students = User.query.filter(
         User.role == 'student',
-        ~User.id.in_(enrolled_student_ids) if enrolled_student_ids else True
+        ~User.id.in_(enrolled_student_ids) if enrolled_student_ids else True,
+        User.school_id == class_obj.school_id  # 同じ学校IDの学生のみに限定
     ).all()
     
     if request.method == 'POST':
@@ -1921,13 +1942,20 @@ def add_students(class_id):
         
         # 選択された学生をクラスに追加
         for student_id in student_ids:
-            # 既に登録されていないことを確認
-            if int(student_id) not in enrolled_student_ids:
-                enrollment = ClassEnrollment(
-                    class_id=class_id,
-                    student_id=int(student_id)
-                )
-                db.session.add(enrollment)
+            # 学校IDの再確認（セキュリティのため）
+            student = User.query.get(int(student_id))
+            
+            # 学生が存在し、同じ学校に所属していることを確認
+            if student and student.school_id == class_obj.school_id:
+                # 既に登録されていないことを確認
+                if int(student_id) not in enrolled_student_ids:
+                    enrollment = ClassEnrollment(
+                        class_id=class_id,
+                        student_id=int(student_id)
+                    )
+                    db.session.add(enrollment)
+            else:
+                flash(f'学生 ID:{student_id} は同じ学校に所属していないため追加できません。', 'error')
         
         db.session.commit()
         flash(f'{len(student_ids)}人の学生をクラスに追加しました。')
@@ -4023,7 +4051,7 @@ def create_school():
 @login_required
 def edit_school(school_id):
     # 管理者権限チェック
-    if not current_user.is_admin and current_user.role != 'admin':
+    if current_user.role != 'admin':
         flash('この機能は管理者のみ利用可能です。')
         return redirect(url_for('index'))
     
@@ -4101,3 +4129,17 @@ def admin_access():
         return redirect(url_for('admin_dashboard'))
     else:
         return f"あなたは管理者ではありません。現在のロール: {current_user.role}, ID: {current_user.id}"
+
+@app.route('/api/teacher/first_class')
+@login_required
+def api_teacher_first_class():
+    """教師の最初のクラスIDを返すAPI"""
+    if current_user.role != 'teacher':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    # 教師の最初のクラスを取得
+    first_class = Class.query.filter_by(teacher_id=current_user.id).first()
+    if first_class:
+        return jsonify({'class_id': first_class.id})
+    else:
+        return jsonify({'class_id': None})
