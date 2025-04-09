@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}QuestEd | 探究学習支援システム{% endblock %}</title>
+    <title>{% block title %}QuestEd 管理画面{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
@@ -12,7 +12,7 @@
     <style>
         /* ヘッダーとナビゲーション基本スタイル */
         header {
-            background-color: #5da8e8; /* 薄い青色に設定 */
+            background-color: #343a40; /* 管理画面用の暗めの色に変更 */
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             position: sticky;
             top: 0;
@@ -44,6 +44,13 @@
             margin-right: 10px;
             filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.3)); /* 影を強調 */
             transition: all 0.3s ease;
+        }
+
+        /* 管理画面のタイトル */
+        .admin-title {
+            color: #ffc107;
+            font-weight: bold;
+            margin-left: 10px;
         }
 
         /* メインナビゲーション */
@@ -108,7 +115,7 @@
         }
 
         .dropdown-menu a:hover {
-            background-color: rgba(93, 168, 232, 0.05); /* より控えめな水色 */
+            background-color: rgba(52, 58, 64, 0.05); /* 管理画面用のカラーテーマに合わせる */
         }
 
         .nav-link.dropdown-toggle::after {
@@ -241,23 +248,23 @@
         }
 
         .btn-primary {
-            background-color: #5da8e8; /* ヘッダーと同色 */
-            color: white;
+            background-color: #ffc107; /* 管理画面用の色に変更 */
+            color: #343a40;
             border: none;
         }
 
         .btn-primary:hover {
-            background-color: #4a9ae0; /* より控えめな暗さに */
+            background-color: #e0a800; /* より暗い色 */
         }
 
         .btn-outline {
             background-color: transparent;
-            border: 1px solid #5da8e8; /* ヘッダーと同色 */
-            color: #5da8e8; /* ヘッダーと同色 */
+            border: 1px solid #ffc107; /* 管理画面の色に合わせる */
+            color: #ffc107; /* 管理画面の色に合わせる */
         }
 
         .btn-outline:hover {
-            background-color: rgba(93, 168, 232, 0.05); /* より控えめな背景色 */
+            background-color: rgba(255, 193, 7, 0.1); /* より控えめな背景色 */
         }
 
         /* ======= レスポンシブ対応 ======= */
@@ -279,7 +286,7 @@
                 width: 80%;
                 max-width: 300px;
                 height: calc(100vh - 60px);
-                background-color: #5da8e8; /* ヘッダーと同色 */
+                background-color: #343a40; /* 管理画面用の色に変更 */
                 flex-direction: column;
                 padding: 1rem;
                 transition: left 0.3s ease;
@@ -301,6 +308,16 @@
             /* デスクトップ用メニュー要素を非表示 */
             .main-nav > ul > li {
                 display: none;
+            }
+
+            /* サイドバーを非表示 */
+            .admin-sidebar {
+                display: none !important;
+            }
+
+            /* サイドバーなしの時のコンテンツ幅を調整 */
+            .admin-content {
+                width: 100%;
             }
         }
 
@@ -375,14 +392,100 @@
             background-color: rgba(255,255,255,0.3);
             border-radius: 3px;
         }
+
+        /* 管理画面のためのサイドバースタイル */
+        .admin-container {
+            display: flex;
+            min-height: calc(100vh - 76px - 81px); /* ヘッダーとフッターの高さを引いた高さ */
+        }
+
+        .admin-sidebar {
+            width: 250px;
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-right: 1px solid #dee2e6;
+        }
+
+        .admin-sidebar .nav-link {
+            color: #343a40;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+        }
+
+        .admin-sidebar .nav-link:hover,
+        .admin-sidebar .nav-link.active {
+            background-color: #e9ecef;
+        }
+
+        .admin-sidebar .nav-link i {
+            margin-right: 0.5rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        .admin-content {
+            flex: 1;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+
+        /* フッターのスタイル変更 */
+        footer.admin-footer {
+            background-color: #343a40;
+            color: white;
+        }
+
+        /* データテーブルスタイル改善 */
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .admin-table th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            padding: 0.75rem;
+            text-align: left;
+        }
+
+        .admin-table td {
+            border-bottom: 1px solid #dee2e6;
+            padding: 0.75rem;
+        }
+
+        .admin-table tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        /* ページヘッダー */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 0.5rem;
+        }
+
+        .page-title {
+            font-size: 1.75rem;
+            margin: 0;
+        }
+
+        .page-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     <header>
         <nav>
-            <a href="{{ url_for('index') }}" class="logo">
+            <a href="{{ url_for('admin_dashboard') }}" class="logo">
                 <img src="{{ url_for('static', filename='logo.png') }}" alt="QuestEd Logo" class="logo-img" />
+                <span class="admin-title">管理画面</span>
             </a>
             
             <div class="menu-toggle" id="menu-toggle" aria-expanded="false" aria-label="メニュー">
@@ -393,420 +496,366 @@
             
             <div class="main-nav">
                 <ul id="main-menu">
-                    {% if current_user.is_authenticated %}
-                        {% if current_user.role == 'student' %}
-                            <!-- デスクトップ用メニュー（学生） -->
-                            <li><a href="{{ url_for('student_dashboard') }}"><i class="fas fa-tachometer-alt"></i> ダッシュボード</a></li>
-                            
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle js-dropdown-toggle" href="#" role="button">
-                                    <i class="fas fa-search"></i> 探究活動
-                                </a>
-                                <ul class="dropdown-menu">
-                                    <li><a href="{{ url_for('view_themes') }}">探究テーマ</a></li>
-                                    <li><a href="{{ url_for('student_view_main_themes') }}">大テーマ一覧</a></li>
-                                    <li><a href="{{ url_for('activities') }}">活動記録</a></li>
-                                </ul>
-                            </li>
-                            
-                            <li class="nav-item dropdown">
-                               <a class="nav-link dropdown-toggle js-dropdown-toggle" href="#" role="button">
-                                   <i class="fas fa-graduation-cap"></i> 基礎学力
-                               </a>
-                               <ul class="dropdown-menu">
-                                   <li><a href="{{ url_for('basebuilder_module.index') }}">基礎学力ホーム</a></li>
-                                   <li><a href="{{ url_for('basebuilder_module.problems') }}">問題に挑戦</a></li>
-                                   <li><a href="{{ url_for('basebuilder_module.view_proficiency') }}">熟練度確認</a></li>
-                                   <li><a href="{{ url_for('basebuilder_module.learning_paths') }}">学習パス</a></li>
-                               </ul>
-                            </li>
-                            
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle js-dropdown-toggle" href="#" role="button">
-                                    <i class="fas fa-tools"></i> ツール
-                                </a>
-                                <ul class="dropdown-menu">
-                                    <li><a href="{{ url_for('chat_page') }}">AIチャット</a></li>
-                                    <li><a href="{{ url_for('surveys') }}">アンケート</a></li>
-                                    <li><a href="{{ url_for('todos') }}">To Doリスト</a></li>
-                                    <li><a href="{{ url_for('goals') }}">目標管理</a></li>
-                                </ul>
-                            </li>
-                            
-                            <li><a href="{{ url_for('classes') }}"><i class="fas fa-users"></i> クラス</a></li>
-                            
-                            <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> ログアウト</a></li>
-                            
-                            <!-- モバイル用メニュー（学生） -->
-                            <div class="mobile-menu-list">
-                                <a href="{{ url_for('student_dashboard') }}" class="mobile-menu-item">
-                                    <i class="fas fa-tachometer-alt"></i> ダッシュボード
-                                </a>
-                                
-                                <div class="mobile-menu-item mobile-dropdown" data-target="mobile-menu-inquiry">
-                                    <i class="fas fa-search"></i> 探究活動
-                                </div>
-                                <div id="mobile-menu-inquiry" class="mobile-submenu">
-                                    <a href="{{ url_for('view_themes') }}" class="mobile-submenu-item">探究テーマ</a>
-                                    <a href="{{ url_for('student_view_main_themes') }}" class="mobile-submenu-item">大テーマ一覧</a>
-                                    <a href="{{ url_for('activities') }}" class="mobile-submenu-item">活動記録</a>
-                                </div>
-                                
-                                <div class="mobile-menu-item mobile-dropdown" data-target="mobile-menu-basic">
-                                    <i class="fas fa-graduation-cap"></i> 基礎学力
-                                </div>
-                                <div id="mobile-menu-basic" class="mobile-submenu">
-                                    <a href="{{ url_for('basebuilder_module.index') }}" class="mobile-submenu-item">基礎学力ホーム</a>
-                                    <a href="{{ url_for('basebuilder_module.problems') }}" class="mobile-submenu-item">問題に挑戦</a>
-                                    <a href="{{ url_for('basebuilder_module.view_proficiency') }}" class="mobile-submenu-item">熟練度確認</a>
-                                    <a href="{{ url_for('basebuilder_module.learning_paths') }}" class="mobile-submenu-item">学習パス</a>
-                                </div>
-                                
-                                <div class="mobile-menu-item mobile-dropdown" data-target="mobile-menu-tools">
-                                    <i class="fas fa-tools"></i> ツール
-                                </div>
-                                <div id="mobile-menu-tools" class="mobile-submenu">
-                                    <a href="{{ url_for('chat_page') }}" class="mobile-submenu-item">AIチャット</a>
-                                    <a href="{{ url_for('surveys') }}" class="mobile-submenu-item">アンケート</a>
-                                    <a href="{{ url_for('todos') }}" class="mobile-submenu-item">To Doリスト</a>
-                                    <a href="{{ url_for('goals') }}" class="mobile-submenu-item">目標管理</a>
-                                </div>
-                                
-                                <a href="{{ url_for('classes') }}" class="mobile-menu-item">
-                                    <i class="fas fa-users"></i> クラス
-                                </a>
-                                
-                                <div class="mobile-menu-divider"></div>
-                                
-                                <a href="{{ url_for('logout') }}" class="mobile-menu-item">
-                                    <i class="fas fa-sign-out-alt"></i> ログアウト
-                                </a>
-                            </div>
-                        {% elif current_user.role == 'teacher' %}
-                            <!-- デスクトップ用メニュー（教師） -->
-                            <li><a href="{{ url_for('teacher_dashboard') }}"><i class="fas fa-tachometer-alt"></i> ダッシュボード</a></li>
-                            
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle js-dropdown-toggle" href="#" role="button">
-                                    <i class="fas fa-search"></i> 探究活動
-                                </a>
-                                <ul class="dropdown-menu">
-                                    <li><a href="{{ url_for('view_themes') }}">テーマ管理</a></li>
-                                    <li><a href="{{ url_for('classes') }}">クラス管理</a></li>
-                                </ul>
-                            </li>
-                            
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle js-dropdown-toggle" href="#" role="button">
-                                    <i class="fas fa-graduation-cap"></i> 基礎学力
-                                </a>
-                                <ul class="dropdown-menu">
-                                    <li><a href="{{ url_for('basebuilder_module.index') }}">基礎学力ホーム</a></li>
-                                    <li><a href="{{ url_for('basebuilder_module.problems') }}">問題管理</a></li>
-                                    <li><a href="{{ url_for('basebuilder_module.categories') }}">カテゴリ管理</a></li>
-                                    <li><a href="{{ url_for('basebuilder_module.analysis') }}">理解度分析</a></li>
-                                </ul>
-                            </li>
-                            
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle js-dropdown-toggle" href="#" role="button">
-                                    <i class="fas fa-tools"></i> ツール
-                                </a>
-                                <ul class="dropdown-menu">
-                                    <li><a href="{{ url_for('chat_page') }}">AIチャット</a></li>
-                                    <li><a href="{{ url_for('import_users') }}">ユーザー一括登録</a></li>
-                                </ul>
-                            </li>
-                            
-                            <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> ログアウト</a></li>
-                            
-                            <!-- モバイル用メニュー（教師） -->
-                            <div class="mobile-menu-list">
-                                <a href="{{ url_for('teacher_dashboard') }}" class="mobile-menu-item">
-                                    <i class="fas fa-tachometer-alt"></i> ダッシュボード
-                                </a>
-                                
-                                <div class="mobile-menu-item mobile-dropdown" data-target="mobile-menu-teacher-inquiry">
-                                    <i class="fas fa-search"></i> 探究活動
-                                </div>
-                                <div id="mobile-menu-teacher-inquiry" class="mobile-submenu">
-                                    <a href="{{ url_for('view_themes') }}" class="mobile-submenu-item">テーマ管理</a>
-                                    <a href="{{ url_for('classes') }}" class="mobile-submenu-item">クラス管理</a>
-                                </div>
-                                
-                                <div class="mobile-menu-item mobile-dropdown" data-target="mobile-menu-teacher-basic">
-                                    <i class="fas fa-graduation-cap"></i> 基礎学力
-                                </div>
-                                <div id="mobile-menu-teacher-basic" class="mobile-submenu">
-                                    <a href="{{ url_for('basebuilder_module.index') }}" class="mobile-submenu-item">基礎学力ホーム</a>
-                                    <a href="{{ url_for('basebuilder_module.problems') }}" class="mobile-submenu-item">問題管理</a>
-                                    <a href="{{ url_for('basebuilder_module.categories') }}" class="mobile-submenu-item">カテゴリ管理</a>
-                                    <a href="{{ url_for('basebuilder_module.analysis') }}" class="mobile-submenu-item">理解度分析</a>
-                                </div>
-                                
-                                <div class="mobile-menu-item mobile-dropdown" data-target="mobile-menu-teacher-tools">
-                                    <i class="fas fa-tools"></i> ツール
-                                </div>
-                                <div id="mobile-menu-teacher-tools" class="mobile-submenu">
-                                    <a href="{{ url_for('chat_page') }}" class="mobile-submenu-item">AIチャット</a>
-                                    <a href="{{ url_for('import_users') }}" class="mobile-submenu-item">ユーザー一括登録</a>
-                                </div>
-                                
-                                <div class="mobile-menu-divider"></div>
-                                
-                                <a href="{{ url_for('logout') }}" class="mobile-menu-item">
-                                    <i class="fas fa-sign-out-alt"></i> ログアウト
-                                </a>
-                            </div>
-                        {% endif %}
-                    {% else %}
-                        <!-- 未ログイン時のメニュー（デスクトップ） -->
-                        <li><a href="{{ url_for('login') }}"><i class="fas fa-sign-in-alt"></i> ログイン</a></li>
-                        <li><a href="{{ url_for('register') }}"><i class="fas fa-user-plus"></i> 登録</a></li>
+                    <!-- デスクトップ用メニュー（管理者） -->
+                    <li><a href="{{ url_for('admin_dashboard') }}"><i class="fas fa-tachometer-alt"></i> ダッシュボード</a></li>
+                    
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle js-dropdown-toggle" href="#" role="button">
+                            <i class="fas fa-school"></i> 学校管理
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a href="{{ url_for('admin_schools') }}">学校一覧</a></li>
+                            <li><a href="{{ url_for('create_school') }}">学校登録</a></li>
+                        </ul>
+                    </li>
+                    
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle js-dropdown-toggle" href="#" role="button">
+                            <i class="fas fa-users"></i> ユーザー管理
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a href="{{ url_for('admin_users') }}">ユーザー一覧</a></li>
+                            <li><a href="{{ url_for('import_users') }}">一括インポート</a></li>
+                        </ul>
+                    </li>
+                    
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle js-dropdown-toggle" href="#" role="button">
+                            <i class="fas fa-cogs"></i> システム設定
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a href="#">基本設定</a></li>
+                            <li><a href="#">バックアップ</a></li>
+                            <li><a href="#">メンテナンス</a></li>
+                        </ul>
+                    </li>
+                    
+                    <li><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> フロントに戻る</a></li>
+                    
+                    <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> ログアウト</a></li>
+                    
+                    <!-- モバイル用メニュー（管理者） -->
+                    <div class="mobile-menu-list">
+                        <a href="{{ url_for('admin_dashboard') }}" class="mobile-menu-item">
+                            <i class="fas fa-tachometer-alt"></i> ダッシュボード
+                        </a>
                         
-                        <!-- 未ログイン時のメニュー（モバイル） -->
-                        <div class="mobile-menu-list">
-                            <a href="{{ url_for('login') }}" class="mobile-menu-item">
-                                <i class="fas fa-sign-in-alt"></i> ログイン
-                            </a>
-                            <a href="{{ url_for('register') }}" class="mobile-menu-item">
-                                <i class="fas fa-user-plus"></i> 登録
-                            </a>
+                        <div class="mobile-menu-item mobile-dropdown" data-target="mobile-menu-schools">
+                            <i class="fas fa-school"></i> 学校管理
                         </div>
-                    {% endif %}
+                        <div id="mobile-menu-schools" class="mobile-submenu">
+                            <a href="{{ url_for('admin_schools') }}" class="mobile-submenu-item">学校一覧</a>
+                            <a href="{{ url_for('create_school') }}" class="mobile-submenu-item">学校登録</a>
+                        </div>
+                        
+                        <div class="mobile-menu-item mobile-dropdown" data-target="mobile-menu-users">
+                            <i class="fas fa-users"></i> ユーザー管理
+                        </div>
+                        <div id="mobile-menu-users" class="mobile-submenu">
+                            <a href="{{ url_for('admin_users') }}" class="mobile-submenu-item">ユーザー一覧</a>
+                            <a href="{{ url_for('import_users') }}" class="mobile-submenu-item">一括インポート</a>
+                        </div>
+                        
+                        <div class="mobile-menu-item mobile-dropdown" data-target="mobile-menu-settings">
+                            <i class="fas fa-cogs"></i> システム設定
+                        </div>
+                        <div id="mobile-menu-settings" class="mobile-submenu">
+                            <a href="#" class="mobile-submenu-item">基本設定</a>
+                            <a href="#" class="mobile-submenu-item">バックアップ</a>
+                            <a href="#" class="mobile-submenu-item">メンテナンス</a>
+                        </div>
+                        
+                        <div class="mobile-menu-divider"></div>
+                        
+                        <a href="{{ url_for('index') }}" class="mobile-menu-item">
+                            <i class="fas fa-home"></i> フロントに戻る
+                        </a>
+                        
+                        <a href="{{ url_for('logout') }}" class="mobile-menu-item">
+                            <i class="fas fa-sign-out-alt"></i> ログアウト
+                        </a>
+                    </div>
                 </ul>
             </div>
         </nav>
         <div class="mobile-nav-overlay" id="mobile-overlay"></div>
     </header>
-    
-    <main>
-        <div class="container my-4">
-            <div class="flash-messages">
-                {% with messages = get_flashed_messages() %}
-                    {% if messages %}
-                        {% for message in messages %}
-                            <div class="alert alert-info alert-dismissible fade show" role="alert">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-                {% endwith %}
+    <div class="admin-container">
+        <aside class="admin-sidebar d-none d-lg-block">
+            <div class="sidebar-header mb-4">
+                <h5>管理メニュー</h5>
             </div>
-            
-            {% block content %}{% endblock %}
-        </div>
-    </main>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == url_for('admin_dashboard') %}active{% endif %}" 
+                       href="{{ url_for('admin_dashboard') }}">
+                        <i class="fas fa-tachometer-alt"></i> ダッシュボード
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if 'school' in request.path %}active{% endif %}" 
+                       href="{{ url_for('admin_schools') }}">
+                        <i class="fas fa-school"></i> 学校管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == url_for('admin_users') %}active{% endif %}" 
+                       href="{{ url_for('admin_users') }}">
+                        <i class="fas fa-users"></i> ユーザー管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">
+                        <i class="fas fa-graduation-cap"></i> クラス管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">
+                        <i class="fas fa-chart-bar"></i> 統計・レポート
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">
+                        <i class="fas fa-cogs"></i> システム設定
+                    </a>
+                </li>
+            </ul>
+        </aside>
+        
+        <main class="admin-content">
+            <div class="container-fluid py-4">
+                <div class="flash-messages">
+                    {% with messages = get_flashed_messages() %}
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                </div>
+                
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
     
-    <footer class="bg-light py-4 mt-5">
+    <footer class="admin-footer py-4 mt-3">
         <div class="container text-center">
-            <p class="mb-0">&copy; 2025 QuestEd - 探究学習支援システム</p>
+            <p class="mb-0">&copy; 2025 QuestEd 管理システム - 探究学習支援システム</p>
         </div>
     </footer>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-        // メニュートグル
-        const menuToggle = document.getElementById('menu-toggle');
-        const mainMenu = document.getElementById('main-menu');
-        const overlay = document.getElementById('mobile-overlay');
-        
-        // 画面サイズがモバイルかどうかを判定する関数
-        function isMobileView() {
-            return window.innerWidth <= 992;
-        }
-    
-        // メニュートグルのクリックイベント
-        menuToggle.addEventListener('click', function(e) {
-            e.stopPropagation(); // イベントの伝播を停止
-            toggleMenu();
-        });
-    
-        // オーバーレイのクリックイベント
-        overlay.addEventListener('click', function() {
-            closeMenu();
-        });
-        
-        // Escキーでメニューを閉じる
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && mainMenu.classList.contains('active')) {
-                closeMenu();
+            // メニュートグル
+            const menuToggle = document.getElementById('menu-toggle');
+            const mainMenu = document.getElementById('main-menu');
+            const overlay = document.getElementById('mobile-overlay');
+            
+            // 画面サイズがモバイルかどうかを判定する関数
+            function isMobileView() {
+                return window.innerWidth <= 992;
             }
-        });
-    
-        // メニューを開閉する関数
-        function toggleMenu() {
-            menuToggle.classList.toggle('active');
-            mainMenu.classList.toggle('active');
-            overlay.classList.toggle('active');
-            document.body.classList.toggle('menu-open');
-            
-            menuToggle.setAttribute('aria-expanded', 
-                mainMenu.classList.contains('active') ? 'true' : 'false');
-        }
-    
-        // メニューを閉じる関数
-        function closeMenu() {
-            menuToggle.classList.remove('active');
-            mainMenu.classList.remove('active');
-            overlay.classList.remove('active');
-            document.body.classList.remove('menu-open');
-            
-            // すべてのモバイルサブメニューを閉じる
-            document.querySelectorAll('.mobile-submenu').forEach(submenu => {
-                submenu.classList.remove('open');
-            });
-            
-            // すべてのモバイルドロップダウンを閉じる
-            document.querySelectorAll('.mobile-dropdown').forEach(dropdown => {
-                dropdown.classList.remove('open');
-            });
-            
-            menuToggle.setAttribute('aria-expanded', 'false');
-        }
         
-        // モバイルドロップダウンのクリックイベント
-        const mobileDropdowns = document.querySelectorAll('.mobile-dropdown');
-        mobileDropdowns.forEach(dropdown => {
-            dropdown.addEventListener('click', function() {
-                const targetId = this.getAttribute('data-target');
-                const submenu = document.getElementById(targetId);
-                
-                // 現在のドロップダウンの状態を確認
-                const isOpen = submenu.classList.contains('open');
-                
-                // まず他のすべてのサブメニューとドロップダウンを閉じる
-                document.querySelectorAll('.mobile-submenu').forEach(el => {
-                    if (el.id !== targetId) {
-                        el.classList.remove('open');
-                    }
-                });
-                
-                document.querySelectorAll('.mobile-dropdown').forEach(el => {
-                    if (el !== this) {
-                        el.classList.remove('open');
-                    }
-                });
-                
-                // 現在のドロップダウンとサブメニューの状態を切り替え
-                this.classList.toggle('open');
-                submenu.classList.toggle('open');
-            });
-        });
-    
-        // ドロップダウントグルのクリックイベント - デスクトップ用
-        const dropdownToggles = document.querySelectorAll('.js-dropdown-toggle');
-        dropdownToggles.forEach(toggle => {
-            toggle.addEventListener('click', function(e) {
-                // モバイル表示の場合は何もしない
-                if (isMobileView()) {
-                    e.preventDefault();
-                    return;
-                }
-                
-                e.preventDefault(); // デフォルトのナビゲーションを防止
+            // メニュートグルのクリックイベント
+            menuToggle.addEventListener('click', function(e) {
                 e.stopPropagation(); // イベントの伝播を停止
-                
-                const parentLi = this.closest('.nav-item.dropdown');
-                
-                // 現在の状態を確認
-                const isCurrentlyOpen = parentLi.classList.contains('open');
-                
-                // 他のドロップダウンを閉じる
-                document.querySelectorAll('.nav-item.dropdown.open').forEach(item => {
-                    if (item !== parentLi) {
-                        item.classList.remove('open');
-                    }
-                });
-                
-                // 現在のドロップダウンの状態を切り替え
-                if (isCurrentlyOpen) {
-                    parentLi.classList.remove('open');
-                } else {
-                    parentLi.classList.add('open');
+                toggleMenu();
+            });
+        
+            // オーバーレイのクリックイベント
+            overlay.addEventListener('click', function() {
+                closeMenu();
+            });
+            
+            // Escキーでメニューを閉じる
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && mainMenu.classList.contains('active')) {
+                    closeMenu();
                 }
             });
-        });
-    
-        // モバイルメニュー内のリンクをクリックした時にメニューを閉じる
-        const mobileMenuLinks = document.querySelectorAll('.mobile-menu-list a.mobile-menu-item, .mobile-submenu-item');
-        mobileMenuLinks.forEach(link => {
-            link.addEventListener('click', function() {
-                setTimeout(() => {
-                    closeMenu();
-                }, 100);
-            });
-        });
-    
-        // デスクトップでのホバー動作
-        const dropdownItems = document.querySelectorAll('.nav-item.dropdown');
-        dropdownItems.forEach(item => {
-            // ホバー開始時
-            item.addEventListener('mouseenter', function() {
-                if (!isMobileView()) {
-                    // 他のすべての開いているドロップダウンを閉じる
-                    document.querySelectorAll('.nav-item.dropdown.open').forEach(openItem => {
-                        if (openItem !== this) {
-                            openItem.classList.remove('open');
+        
+            // メニューを開閉する関数
+            function toggleMenu() {
+                menuToggle.classList.toggle('active');
+                mainMenu.classList.toggle('active');
+                overlay.classList.toggle('active');
+                document.body.classList.toggle('menu-open');
+                
+                menuToggle.setAttribute('aria-expanded', 
+                    mainMenu.classList.contains('active') ? 'true' : 'false');
+            }
+        
+            // メニューを閉じる関数
+            function closeMenu() {
+                menuToggle.classList.remove('active');
+                mainMenu.classList.remove('active');
+                overlay.classList.remove('active');
+                document.body.classList.remove('menu-open');
+                
+                // すべてのモバイルサブメニューを閉じる
+                document.querySelectorAll('.mobile-submenu').forEach(submenu => {
+                    submenu.classList.remove('open');
+                });
+                
+                // すべてのモバイルドロップダウンを閉じる
+                document.querySelectorAll('.mobile-dropdown').forEach(dropdown => {
+                    dropdown.classList.remove('open');
+                });
+                
+                menuToggle.setAttribute('aria-expanded', 'false');
+            }
+            
+            // モバイルドロップダウンのクリックイベント
+            const mobileDropdowns = document.querySelectorAll('.mobile-dropdown');
+            mobileDropdowns.forEach(dropdown => {
+                dropdown.addEventListener('click', function() {
+                    const targetId = this.getAttribute('data-target');
+                    const submenu = document.getElementById(targetId);
+                    
+                    // 現在のドロップダウンの状態を確認
+                    const isOpen = submenu.classList.contains('open');
+                    
+                    // まず他のすべてのサブメニューとドロップダウンを閉じる
+                    document.querySelectorAll('.mobile-submenu').forEach(el => {
+                        if (el.id !== targetId) {
+                            el.classList.remove('open');
                         }
                     });
-                
-                    // このドロップダウンを開く
-                    this.classList.add('open');
-                }
-            });
-        
-            // ホバー終了時
-            item.addEventListener('mouseleave', function() {
-                if (!isMobileView()) {
-                    // ドロップダウンを閉じる
-                    this.classList.remove('open');
-                }
-            });
-        });
-    
-        // ドロップダウン以外の場所をクリックしたときの処理
-        document.addEventListener('click', function(e) {
-            // デスクトップ表示時のみ
-            if (!isMobileView()) {
-                // ドロップダウンの外側をクリックしたとき
-                if (!e.target.closest('.nav-item.dropdown')) {
-                    document.querySelectorAll('.nav-item.dropdown.open').forEach(item => {
-                        item.classList.remove('open');
+                    
+                    document.querySelectorAll('.mobile-dropdown').forEach(el => {
+                        if (el !== this) {
+                            el.classList.remove('open');
+                        }
                     });
+                    
+                    // 現在のドロップダウンとサブメニューの状態を切り替え
+                    this.classList.toggle('open');
+                    submenu.classList.toggle('open');
+                });
+            });
+        
+            // ドロップダウントグルのクリックイベント - デスクトップ用
+            const dropdownToggles = document.querySelectorAll('.js-dropdown-toggle');
+            dropdownToggles.forEach(toggle => {
+                toggle.addEventListener('click', function(e) {
+                    // モバイル表示の場合は何もしない
+                    if (isMobileView()) {
+                        e.preventDefault();
+                        return;
+                    }
+                    
+                    e.preventDefault(); // デフォルトのナビゲーションを防止
+                    e.stopPropagation(); // イベントの伝播を停止
+                    
+                    const parentLi = this.closest('.nav-item.dropdown');
+                    
+                    // 現在の状態を確認
+                    const isCurrentlyOpen = parentLi.classList.contains('open');
+                    
+                    // 他のドロップダウンを閉じる
+                    document.querySelectorAll('.nav-item.dropdown.open').forEach(item => {
+                        if (item !== parentLi) {
+                            item.classList.remove('open');
+                        }
+                    });
+                    
+                    // 現在のドロップダウンの状態を切り替え
+                    if (isCurrentlyOpen) {
+                        parentLi.classList.remove('open');
+                    } else {
+                        parentLi.classList.add('open');
+                    }
+                });
+            });
+        
+            // モバイルメニュー内のリンクをクリックした時にメニューを閉じる
+            const mobileMenuLinks = document.querySelectorAll('.mobile-menu-list a.mobile-menu-item, .mobile-submenu-item');
+            mobileMenuLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    setTimeout(() => {
+                        closeMenu();
+                    }, 100);
+                });
+            });
+        
+            // デスクトップでのホバー動作
+            const dropdownItems = document.querySelectorAll('.nav-item.dropdown');
+            dropdownItems.forEach(item => {
+                // ホバー開始時
+                item.addEventListener('mouseenter', function() {
+                    if (!isMobileView()) {
+                        // 他のすべての開いているドロップダウンを閉じる
+                        document.querySelectorAll('.nav-item.dropdown.open').forEach(openItem => {
+                            if (openItem !== this) {
+                                openItem.classList.remove('open');
+                            }
+                        });
+                    
+                        // このドロップダウンを開く
+                        this.classList.add('open');
+                    }
+                });
+            
+                // ホバー終了時
+                item.addEventListener('mouseleave', function() {
+                    if (!isMobileView()) {
+                        // ドロップダウンを閉じる
+                        this.classList.remove('open');
+                    }
+                });
+            });
+        
+            // ドロップダウン以外の場所をクリックしたときの処理
+            document.addEventListener('click', function(e) {
+                // デスクトップ表示時のみ
+                if (!isMobileView()) {
+                    // ドロップダウンの外側をクリックしたとき
+                    if (!e.target.closest('.nav-item.dropdown')) {
+                        document.querySelectorAll('.nav-item.dropdown.open').forEach(item => {
+                            item.classList.remove('open');
+                        });
+                    }
                 }
-            }
-        });
-    
-        // リサイズ時の処理
-        window.addEventListener('resize', function() {
-            if (!isMobileView()) {
-                // モバイルメニューをリセット
-                closeMenu();
-            }
-        });
+            });
         
-        // スワイプでメニューを閉じる（モバイル向け）
-        let touchStartX = 0;
-        
-        mainMenu.addEventListener('touchstart', function(e) {
-            touchStartX = e.changedTouches[0].screenX;
-        }, false);
-        
-        mainMenu.addEventListener('touchend', function(e) {
-            const touchEndX = e.changedTouches[0].screenX;
-            if (touchEndX < touchStartX && touchStartX - touchEndX > 50) {
-                // 左スワイプでメニューを閉じる
-                if (isMobileView()) {
+            // リサイズ時の処理
+            window.addEventListener('resize', function() {
+                if (!isMobileView()) {
+                    // モバイルメニューを閉じる
                     closeMenu();
                 }
-            }
-        }, false);
-    });
+            });
+            
+            // アラート自動非表示（5秒後）
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }, 5000);
+            });
+            
+            // CSRFトークンをAjaxリクエストに含める
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            
+            // Ajaxリクエスト前にCSRFトークンをヘッダーに追加
+            document.addEventListener('DOMContentLoaded', function() {
+                // Ajaxリクエストの事前処理
+                const xhr = new XMLHttpRequest();
+                const originalOpen = xhr.open;
+                
+                xhr.open = function() {
+                    originalOpen.apply(this, arguments);
+                    this.setRequestHeader('X-CSRFToken', csrfToken);
+                };
+            });
+        });
     </script>
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block extra_js %}{% endblock %}
 </body>
-</html>
+</html>// 現在のドロップダウンの状態を切り

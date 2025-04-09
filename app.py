@@ -448,6 +448,17 @@ def index():
         return redirect(url_for('view_themes'))
     return redirect(url_for('login'))
 
+# app.py に追加または既存のルートを修正
+@app.route('/admin/users')
+@login_required
+def admin_users():
+    if current_user.role != 'admin':
+        flash('この機能は管理者のみ利用可能です。')
+        return redirect(url_for('index'))
+    
+    users = User.query.all()
+    return render_template('admin/users.html', users=users)
+
 @app.route('/admin/dashboard')
 @login_required
 def admin_dashboard():
