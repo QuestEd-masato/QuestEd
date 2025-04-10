@@ -1,44 +1,135 @@
 {% extends 'base.html' %}
 
-{% block title %}学校編集{% endblock %}
+{% block title %}{% if school %}学校編集{% else %}学校登録{% endif %} | QuestEd 管理画面{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <h1>学校情報編集</h1>
-    
-    <div class="card">
-        <div class="card-header">
-            <h5 class="card-title">学校「{{ school.name }}」の編集</h5>
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">ダッシュボード</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('admin_schools') }}">学校管理</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{% if school %}学校編集{% else %}学校登録{% endif %}</li>
+    </ol>
+</nav>
+
+<div class="page-header mb-4">
+    <h1 class="page-title h3">{% if school %}学校「{{ school.name }}」の編集{% else %}新規学校登録{% endif %}</h1>
+</div>
+
+<div class="row">
+    <div class="col-12 col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0 py-2">{% if school %}学校情報編集{% else %}学校情報入力{% endif %}</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="schoolForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="mb-3">
+                        <label for="name" class="form-label">学校名 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="name" name="name" value="{{ school.name if school else '' }}" required>
+                        <div class="form-text">学校の正式名称を入力してください。</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="code" class="form-label">学校コード <span class="text-danger">*</span></label>
+                        {% if school %}
+                            <input type="text" class="form-control" id="code" name="code" value="{{ school.code }}" required>
+                            <div class="form-text">学校コードはユーザー登録時に使用されます。変更しても既存ユーザーに影響はありません。</div>
+                        {% else %}
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="code" name="code" required>
+                                <button type="button" class="btn btn-outline-secondary" id="generateCodeBtn">
+                                    <i class="fas fa-random"></i> 生成
+                                </button>
+                            </div>
+                            <div class="form-text">学校の一意の識別コードです。英数字を推奨します。</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="address" class="form-label">住所</label>
+                        <textarea class="form-control" id="address" name="address" rows="2">{{ school.address if school else '' }}</textarea>
+                        <div class="form-text">学校の所在地住所を入力してください。</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="contact_email" class="form-label">連絡先メールアドレス</label>
+                        <input type="email" class="form-control" id="contact_email" name="contact_email" value="{{ school.contact_email if school else '' }}">
+                        <div class="form-text">学校の連絡先メールアドレスを入力してください。</div>
+                    </div>
+                    
+                    <div class="d-flex flex-wrap gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> {% if school %}更新{% else %}登録{% endif %}
+                        </button>
+                        <a href="{{ url_for('admin_schools') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times"></i> キャンセル
+                        </a>
+                    </div>
+                </form>
+            </div>
         </div>
-        <div class="card-body">
-            <form method="POST">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    </div>
+    
+    <div class="col-12 col-lg-4 mt-4 mt-lg-0">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0 py-2">
+                    <i class="fas fa-info-circle me-2"></i>ヘルプ
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6>学校登録について</h6>
+                <p>学校情報を登録すると、以下のことができるようになります：</p>
+                <ul>
+                    <li>学校別の年度管理</li>
+                    <li>学校コードを使ったユーザー登録</li>
+                    <li>学校ごとのクラス管理</li>
+                </ul>
                 
-                <div class="mb-3">
-                    <label for="name" class="form-label">学校名 *</label>
-                    <input type="text" class="form-control" id="name" name="name" value="{{ school.name }}" required>
-                </div>
+                <hr>
                 
-                <div class="mb-3">
-                    <label for="code" class="form-label">学校コード *</label>
-                    <input type="text" class="form-control" id="code" name="code" value="{{ school.code }}" required>
-                    <small class="text-muted">学校コードはユーザー登録時に使用されます。変更すると既存ユーザーに影響はありません。</small>
-                </div>
-                
-                <div class="mb-3">
-                    <label for="address" class="form-label">住所</label>
-                    <input type="text" class="form-control" id="address" name="address" value="{{ school.address }}">
-                </div>
-                
-                <div class="mb-3">
-                    <label for="contact_email" class="form-label">連絡先メールアドレス</label>
-                    <input type="email" class="form-control" id="contact_email" name="contact_email" value="{{ school.contact_email }}">
-                </div>
-                
-                <button type="submit" class="btn btn-primary">更新</button>
-                <a href="{{ url_for('admin_schools') }}" class="btn btn-secondary">キャンセル</a>
-            </form>
+                <h6>学校コードについて</h6>
+                <p>学校コードは以下の用途で使用されます：</p>
+                <ul>
+                    <li>教師・生徒の登録時に所属学校を指定するため</li>
+                    <li>システム内での一意の識別子として</li>
+                </ul>
+                <p class="mb-0">
+                    <i class="fas fa-exclamation-triangle text-warning"></i>
+                    学校コードは一般公開される情報ではありませんが、簡単に推測できないコードを設定することをお勧めします。
+                </p>
+            </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{% if not school %}
+<script>
+    // ランダムな学校コード生成機能
+    document.getElementById('generateCodeBtn').addEventListener('click', function() {
+        // 大文字英数字のランダムな8文字を生成
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let code = '';
+        for (let i = 0; i < 8; i++) {
+            code += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+        document.getElementById('code').value = code;
+    });
+    
+    // フォーム送信前の確認
+    document.getElementById('schoolForm').addEventListener('submit', function(e) {
+        const name = document.getElementById('name').value.trim();
+        const code = document.getElementById('code').value.trim();
+        
+        if (!name || !code) {
+            e.preventDefault();
+            alert('学校名と学校コードは必須項目です。');
+        }
+    });
+</script>
+{% endif %}
 {% endblock %}
