@@ -26,38 +26,38 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   }
   
-  /* 選択肢デザイン */
+  /* 選択肢デザイン - 強制適用するために!importantを追加 */
   .choices-container {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-    margin-top: 20px;
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 20px !important;
+    margin-top: 20px !important;
   }
   
   @media (max-width: 768px) {
     .choices-container {
-      grid-template-columns: 1fr;
+      grid-template-columns: 1fr !important;
     }
   }
   
   .choice-item {
-    background-color: #ffffff;
-    border: 2px solid #e9ecef;
-    border-radius: 12px;
-    padding: 18px 15px;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    position: relative;
-    display: flex;
-    align-items: center;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    background-color: #ffffff !important;
+    border: 2px solid #e9ecef !important;
+    border-radius: 12px !important;
+    padding: 18px 15px !important;
+    transition: all 0.3s ease !important;
+    cursor: pointer !important;
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
   }
   
   .choice-item:hover {
-    background-color: #f0f7ff;
-    transform: translateY(-3px);
-    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.1);
-    border-color: #c5deff;
+    background-color: #f0f7ff !important;
+    transform: translateY(-3px) !important;
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.1) !important;
+    border-color: #c5deff !important;
   }
   
   /* 選択状態のスタイル */
@@ -65,61 +65,61 @@
     background-color: #e7f5ff !important;
     border-color: #4dabf7 !important;
     box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25) !important;
-    transform: scale(1.02);
+    transform: scale(1.02) !important;
   }
 
   /* 選択状態のチェックマーク */
   .choice-item.selected::after {
-    content: "✓";
-    position: absolute;
-    right: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #0d6efd;
-    font-weight: bold;
-    font-size: 1.2rem;
+    content: "✓" !important;
+    position: absolute !important;
+    right: 15px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    color: #0d6efd !important;
+    font-weight: bold !important;
+    font-size: 1.2rem !important;
   }
 
   /* 選択肢のラベル */
   .choice-item label {
-    cursor: pointer;
-    display: block;
-    width: 100%;
-    margin: 0;
-    padding-right: 30px;
-    font-weight: 500;
-    color: #495057;
+    cursor: pointer !important;
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding-right: 30px !important;
+    font-weight: 500 !important;
+    color: #495057 !important;
   }
 
   /* 選択時のラベル */
   .choice-item.selected label {
-    color: #0d6efd;
-    font-weight: 600;
+    color: #0d6efd !important;
+    font-weight: 600 !important;
   }
 
   /* 選択肢の番号 */
   .choice-item::before {
-    content: attr(data-index);
-    position: absolute;
-    left: -5px;
-    top: -5px;
-    width: 25px;
-    height: 25px;
-    background-color: #e9ecef;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.8rem;
-    font-weight: bold;
-    color: #495057;
-    transition: all 0.3s ease;
+    content: attr(data-index) !important;
+    position: absolute !important;
+    left: -5px !important;
+    top: -5px !important;
+    width: 25px !important;
+    height: 25px !important;
+    background-color: #e9ecef !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0.8rem !important;
+    font-weight: bold !important;
+    color: #495057 !important;
+    transition: all 0.3s ease !important;
   }
 
   /* 選択された選択肢の番号 */
   .choice-item.selected::before {
-    background-color: #4dabf7;
-    color: #ffffff;
+    background-color: #4dabf7 !important;
+    color: #ffffff !important;
   }
 
   /* 選択した答えの表示 */
@@ -214,6 +214,19 @@
     border-radius: 20px;
     font-weight: bold;
     color: #495057;
+  }
+  
+  /* タイマーがアクティブなときのスタイル */
+  .timer.active {
+    background-color: #cfe2ff;
+    color: #0d6efd;
+    animation: pulse 2s infinite;
+  }
+  
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.2); }
+    70% { box-shadow: 0 0 0 10px rgba(13, 110, 253, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(13, 110, 253, 0); }
   }
   
   /* テキストナビゲーション */
@@ -334,7 +347,7 @@
         難易度: {{ problem.difficulty }}
       </span>
     </div>
-    <div class="timer" id="timer">00:00</div>
+    <div class="timer active" id="timer">00:00</div>
   </div>
     
   <!-- 単語熟練度表示 -->
@@ -525,7 +538,13 @@
     const timerElement = document.getElementById('timer');
     const answerTimeInput = document.getElementById('answer-time');
     
-    if (!timerElement || !answerTimeInput) return;
+    if (!timerElement || !answerTimeInput) {
+      console.error("タイマー要素が見つかりません");
+      return;
+    }
+    
+    // タイマーにアクティブクラスを追加
+    timerElement.classList.add('active');
     
     const startTime = Date.now();
     window.timerInterval = setInterval(function() {
@@ -535,6 +554,8 @@
       timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
       answerTimeInput.value = elapsedSeconds;
     }, 1000);
+    
+    console.log("タイマーが初期化されました");
   }
 
   // 選択肢関連の機能
@@ -542,12 +563,18 @@
     const choiceItems = document.querySelectorAll('.choice-item');
     const selectedAnswerDisplay = document.getElementById('selected-answer');
     
-    if (choiceItems.length === 0) return;
+    if (choiceItems.length === 0) {
+      console.warn("選択肢要素が見つかりません");
+      return;
+    }
+    
+    console.log(`${choiceItems.length}個の選択肢が見つかりました`);
     
     // 各選択肢にイベントリスナーを設定
     choiceItems.forEach(item => {
       // クリックイベント
       item.addEventListener('click', function() {
+        console.log("選択肢がクリックされました:", this.dataset.value);
         selectChoice(this);
       });
       
@@ -556,6 +583,7 @@
       if (label) {
         label.addEventListener('click', function(e) {
           e.stopPropagation(); // バブリングを防止
+          console.log("選択肢のラベルがクリックされました");
           selectChoice(item);
         });
       }
@@ -566,10 +594,12 @@
       // すべての選択肢から選択状態を解除
       choiceItems.forEach(choice => {
         choice.classList.remove('selected');
+        choice.classList.remove('pulse-animation');
       });
       
       // この選択肢を選択状態にする
       selectedItem.classList.add('selected');
+      selectedItem.classList.add('pulse-animation');
       
       // ラジオボタンを選択
       const radio = selectedItem.querySelector('input[type="radio"]');
@@ -591,6 +621,7 @@
       const choiceIndex = parseInt(key) - 1;
       
       if (!isNaN(choiceIndex) && choiceIndex >= 0 && choiceIndex < choiceItems.length) {
+        console.log(`キーボード入力: ${key} (選択肢 ${choiceIndex + 1})`);
         selectChoice(choiceItems[choiceIndex]);
         e.preventDefault();
       }
@@ -601,14 +632,25 @@
   function initFormSubmission() {
     const answerForm = document.getElementById('answer-form');
     
-    if (!answerForm) return;
+    if (!answerForm) {
+      console.error("フォーム要素が見つかりません");
+      return;
+    }
     
     answerForm.addEventListener('submit', function(e) {
       e.preventDefault();
+      console.log("フォームが送信されました");
       
       // タイマーを停止
       if (window.timerInterval) {
         clearInterval(window.timerInterval);
+        console.log("タイマーを停止しました");
+      }
+      
+      // タイマーのアクティブクラスを削除
+      const timerElement = document.getElementById('timer');
+      if (timerElement) {
+        timerElement.classList.remove('active');
       }
       
       // フォームデータを収集
@@ -620,6 +662,8 @@
         alert('解答を入力または選択してください。');
         return;
       }
+      
+      console.log(`選択された解答: ${answer}`);
       
       // 送信ボタンを無効化
       const submitBtn = document.getElementById('submit-btn');
@@ -637,8 +681,15 @@
           'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
         }
       })
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
       .then(data => {
+        console.log("サーバーからの応答:", data);
+        
         // フィードバックエリアを表示
         const feedbackArea = document.getElementById('feedback-area');
         if (feedbackArea) {
@@ -696,5 +747,27 @@
       });
     }
   }
+
+  // ページロード時に選択肢の状態をチェック (デバッグ用)
+  setTimeout(function() {
+    const choiceContainerStyle = window.getComputedStyle(document.querySelector('.choices-container'));
+    console.log("選択肢コンテナのスタイル:", {
+      display: choiceContainerStyle.display,
+      gridTemplateColumns: choiceContainerStyle.gridTemplateColumns,
+      gap: choiceContainerStyle.gap
+    });
+    
+    const choiceItems = document.querySelectorAll('.choice-item');
+    if (choiceItems.length > 0) {
+      const firstItemStyle = window.getComputedStyle(choiceItems[0]);
+      console.log("最初の選択肢のスタイル:", {
+        backgroundColor: firstItemStyle.backgroundColor,
+        border: firstItemStyle.border,
+        borderRadius: firstItemStyle.borderRadius,
+        display: firstItemStyle.display,
+        padding: firstItemStyle.padding
+      });
+    }
+  }, 1000);
 </script>
 {% endblock %}

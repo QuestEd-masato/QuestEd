@@ -340,6 +340,15 @@
         color: #856404;
     }
     
+    /* Bootstrap 5用のドロップダウン修正 */
+    .dropdown-menu {
+        display: none;
+    }
+    
+    .dropdown-menu.show {
+        display: block;
+    }
+    
     /* BaseBuilder関連のCSS */
     .related-knowledge-section {
         background-color: #e3f2fd;
@@ -418,4 +427,46 @@
         }
     }
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Bootstrap 5のドロップダウンを手動で初期化
+        var dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'));
+        var dropdownList = dropdownElementList.map(function(dropdownToggleEl) {
+            return new bootstrap.Dropdown(dropdownToggleEl);
+        });
+        
+        // ドロップダウンが機能しているかコンソールで確認
+        console.log('ドロップダウン初期化完了:', dropdownList);
+        
+        // 念のため、クリックイベントも追加（Bootstrap JSが動作しない場合のフォールバック）
+        document.querySelectorAll('.dropdown-toggle').forEach(function(dropdown) {
+            dropdown.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var dropdownMenu = this.nextElementSibling;
+                if (dropdownMenu && dropdownMenu.classList.contains('dropdown-menu')) {
+                    // すべてのドロップダウンメニューを閉じる
+                    document.querySelectorAll('.dropdown-menu.show').forEach(function(menu) {
+                        if (menu !== dropdownMenu) {
+                            menu.classList.remove('show');
+                        }
+                    });
+                    // このドロップダウンメニューの表示を切り替え
+                    dropdownMenu.classList.toggle('show');
+                }
+            });
+        });
+        
+        // ドキュメント全体のクリックでドロップダウンを閉じる
+        document.addEventListener('click', function(e) {
+            if (!e.target.matches('.dropdown-toggle') && !e.target.closest('.dropdown-menu')) {
+                document.querySelectorAll('.dropdown-menu.show').forEach(function(menu) {
+                    menu.classList.remove('show');
+                });
+            }
+        });
+    });
+</script>
 {% endblock %}

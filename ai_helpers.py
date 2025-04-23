@@ -160,22 +160,61 @@ def generate_system_prompt(user, step_id=None, function_id=None, context=None):
     
     return base_prompt + safety_guidelines
 
-def call_openai_api(messages, api_key=None):
-    """OpenAI APIを呼び出し、応答を取得"""
+def call_openai_api(messages, api_key=None, model="gpt-4", temperature=0.7, max_tokens=None, timeout=30):
+    """
+    OpenAI APIを呼び出し、応答を取得する関数
+    
+    Args:
+        messages (list): 会話メッセージのリスト
+        api_key (str, optional): OpenAI APIキー。Noneの場合は環境変数から取得
+        model (str, optional): 使用するモデル名。デフォルトは"gpt-4"
+        temperature (float, optional): 応答の多様性。0.0〜1.0の範囲。デフォルトは0.7
+        max_tokens (int, optional): 最大トークン数。Noneの場合は制限なし
+        timeout (int, optional): リクエストのタイムアウト時間（秒）
+        
+    Returns:
+        str: AIからの応答テキスト
+        
+    Raises:
+        Exception: API呼び出し中にエラーが発生した場合
+    """
     try:
+        # APIキーの取得
         api_key = api_key or os.getenv('OPENAI_API_KEY')
         if not api_key:
             return "APIキーが設定されていません。管理者に連絡してください。"
         
-        client = OpenAI(api_key=api_key)
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=messages,
-            temperature=0.7
-        )
+        # クライアントの初期化
+        client = OpenAI(api_key=api_key, timeout=timeout)
         
+        # パラメータの準備
+        params = {
+            "model": model,
+            "messages": messages,
+            "temperature": temperature
+        }
+        
+        # max_tokensが指定されている場合のみ追加
+        if max_tokens is not None:
+            params["max_tokens"] = max_tokens
+        
+        # APIリクエスト送信
+        response = client.chat.completions.create(**params)
+        
+        # 応答の取得
         return response.choices[0].message.content
     
     except Exception as e:
-        print(f"OpenAI API エラー: {str(e)}")
-        return f"エラーが発生しました: {str(e)}"
+        # エラーをログに記録
+        error_msg = f"OpenAI API エラー: {str(e)}"
+        print(error_msg)
+        
+        # エラーの種類に応じたユーザーフレンドリーなメッセージを返す
+        if "timeout" in str(e).lower():
+            return "リクエストがタイムアウトしました。後でもう一度お試しください。"
+        elif "rate limit" in str(e).lower():
+            return "APIの呼び出し制限に達しました。しばらくしてからもう一度お試しください。"
+        elif "invalid api key" in str(e).lower():
+            return "APIキーが無効です。管理者に連絡してください。"
+        else:
+            return f"エラーが発生しました: {str(e)}"

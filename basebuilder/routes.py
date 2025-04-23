@@ -1564,7 +1564,6 @@ def analysis(class_id=None):
         student_last_activity=student_last_activity
     )
 
-# 生徒別の詳細分析
 @basebuilder_module.route('/analysis/student/<int:student_id>')
 @login_required
 def student_analysis(student_id):
@@ -1586,21 +1585,142 @@ def student_analysis(student_id):
         flash('この学生の情報を閲覧する権限がありません。')
         return redirect(url_for('basebuilder_module.analysis'))
     
-    # 学生の熟練度記録を取得
-    proficiency_records = ProficiencyRecord.query.filter_by(
-        student_id=student_id
+    # 学生が所属するクラスを取得
+    enrolled_class_ids = [c.id for c in student.enrolled_classes]
+    
+    # 配信されたテキストを取得
+    delivered_text_ids = db.session.query(TextDelivery.text_set_id).filter(
+        TextDelivery.class_id.in_(enrolled_class_ids)
+    ).distinct().all()
+    delivered_text_ids = [t[0] for t in delivered_text_ids]
+    
+    # 配信されたテキストを取得
+    text_sets = TextSet.query.filter(
+        TextSet.id.in_(delivered_text_ids)
     ).all()
+    
+    # テキストごとの定着度データを収集
+    category_proficiency = {}
+    text_proficiency_data = {}
+    total_words = 0
+    mastered_words = 0
+    
+    for text in text_sets:
+        # テキスト内の単語（問題）を取得
+        problems = BasicKnowledgeItem.query.filter_by(
+            text_set_id=text.id,
+            is_active=True
+        ).all()
+        
+        if not problems:
+            continue
+            
+        # このテキストの単語数をカウント
+        text_words_count = len(problems)
+        total_words += text_words_count
+        
+        # 単語IDのリストを作成
+        problem_ids = [p.id for p in problems]
+        
+        # カテゴリ情報
+        category_id = text.category_id
+        
+        # 単語ごとの熟練度を取得
+        word_proficiencies = WordProficiency.query.filter(
+            WordProficiency.student_id == student_id,
+            WordProficiency.problem_id.in_(problem_ids)
+        ).all()
+        
+        # レベルごとの単語数をカウント
+        level_counts = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+        
+        # 単語マップを作成（存在する単語の熟練度）
+        proficiency_map = {}
+        
+        for wp in word_proficiencies:
+            proficiency_map[wp.problem_id] = wp.level
+            level_counts[wp.level] += 1
+        
+        # 未学習の単語をカウント
+        for pid in problem_ids:
+            if pid not in proficiency_map:
+                level_counts[0] += 1
+        
+        # このカテゴリのマスター単語数
+        text_mastered = level_counts[5]
+        mastered_words += text_mastered
+        
+        # テキストの定着度を計算
+        max_points = text_words_count * 5  # 最大ポイント
+        actual_points = sum(level * count for level, count in level_counts.items() if level > 0)
+        
+        # 最終更新日を取得
+        last_updated = None
+        if word_proficiencies:
+            last_updated = max(wp.last_updated for wp in word_proficiencies)
+        
+        # テキストの定着度をパーセントで計算
+        text_percentage = (actual_points / max_points * 100) if max_points > 0 else 0
+        
+        # テキスト定着度データを保存
+        text_proficiency_data[text.id] = {
+            'level': round(text_percentage),
+            'last_updated': last_updated
+        }
+        
+        # カテゴリ定着度データを更新/作成
+        if category_id in category_proficiency:
+            # 既存のカテゴリデータを更新
+            category_proficiency[category_id]['total'] += text_words_count
+            category_proficiency[category_id]['mastered'] += text_mastered
+            
+            # レベルカウントを更新
+            for level, count in level_counts.items():
+                if level in category_proficiency[category_id]['levels']:
+                    category_proficiency[category_id]['levels'][level] += count
+                else:
+                    category_proficiency[category_id]['levels'][level] = count
+            
+            # 最終更新日を更新
+            if last_updated and (not category_proficiency[category_id]['last_updated'] or 
+                                last_updated > category_proficiency[category_id]['last_updated']):
+                category_proficiency[category_id]['last_updated'] = last_updated
+                
+        else:
+            # 新しいカテゴリデータを作成
+            category_proficiency[category_id] = {
+                'category': text.category,
+                'text_set_id': text.id,  # 最初のテキストIDを保存
+                'total': text_words_count,
+                'mastered': text_mastered,
+                'levels': level_counts,
+                'last_updated': last_updated
+            }
+    
+    # 各カテゴリの定着度パーセントを計算
+    for category_data in category_proficiency.values():
+        max_points = category_data['total'] * 5
+        actual_points = sum(level * count for level, count in category_data['levels'].items() if level > 0)
+        category_data['percentage'] = (actual_points / max_points * 100) if max_points > 0 else 0
+    
+    # 総合定着度を計算
+    overall_proficiency = 0
+    if total_words > 0:
+        # 総合ポイント
+        total_possible_points = total_words * 5
+        total_actual_points = sum(
+            sum(level * count for level, count in cat_data['levels'].items() if level > 0)
+            for cat_data in category_proficiency.values()
+        )
+        overall_proficiency = (total_actual_points / total_possible_points * 100) if total_possible_points > 0 else 0
+    
+    # 習得率
+    mastery_rate = (mastered_words / total_words * 100) if total_words > 0 else 0
     
     # 学生の解答履歴を取得（最新20件）
     answer_records = AnswerRecord.query.filter_by(
         student_id=student_id
     ).order_by(AnswerRecord.timestamp.desc()).limit(20).all()
-    
-    # 総合熟練度を計算
-    avg_proficiency = 0
-    if proficiency_records:
-        total_level = sum(record.level for record in proficiency_records)
-        avg_proficiency = (total_level / len(proficiency_records) / 5) * 100
     
     # 解答数と正解率を計算
     all_answers = AnswerRecord.query.filter_by(student_id=student_id).all()
@@ -1611,36 +1731,41 @@ def student_analysis(student_id):
     # 最後の活動日時
     last_activity = answer_records[0].timestamp if answer_records else None
     
-    # カテゴリ別の正解率を計算
-    category_stats = {}
-    for record in answer_records:
-        category_id = record.problem.category_id
-        
-        if category_id not in category_stats:
-            category_stats[category_id] = {
-                'category': record.problem.category,
-                'total': 0,
-                'correct': 0
-            }
-        
-        category_stats[category_id]['total'] += 1
-        if record.is_correct:
-            category_stats[category_id]['correct'] += 1
+    # 単語ごとの熟練度を取得（解答履歴表示用）
+    word_proficiency = {}
     
-    # 正解率を計算
-    for stats in category_stats.values():
-        stats['accuracy'] = (stats['correct'] / stats['total'] * 100) if stats['total'] > 0 else 0
+    # 解答履歴に含まれる問題IDを収集
+    problem_ids = [record.problem_id for record in answer_records]
+    
+    # 熟練度レコードを取得
+    word_prof_records = WordProficiency.query.filter(
+        WordProficiency.student_id == student_id,
+        WordProficiency.problem_id.in_(problem_ids)
+    ).all()
+    
+    # 辞書にマッピング
+    for wp in word_prof_records:
+        word_proficiency[wp.problem_id] = {
+            'level': wp.level,
+            'last_updated': wp.last_updated,
+            'review_date': wp.review_date
+        }
     
     return render_template(
         'basebuilder/student_analysis.html',
         student=student,
-        proficiency_records=proficiency_records,
+        proficiency_records=None,  # 古い熟練度記録は不要
         answer_records=answer_records,
-        avg_proficiency=avg_proficiency,
+        overall_proficiency=overall_proficiency,
+        category_proficiency=category_proficiency,
+        text_proficiency=text_proficiency_data,
+        total_words=total_words,
+        mastered_words=mastered_words,
+        mastery_rate=mastery_rate,
         correct_rate=correct_rate,
         answer_count=answer_count,
         last_activity=last_activity,
-        category_stats=category_stats
+        word_proficiency=word_proficiency
     )
 
 # テーマと問題の関連付けを管理
@@ -2390,79 +2515,88 @@ def bulk_delete_text_sets():  # 関数名を変更
 @basebuilder_module.route('/text_set/<int:text_id>')
 @login_required
 def view_text_set(text_id):
-    # テキストセットを取得
-    text_set = TextSet.query.get_or_404(text_id)
-    
-    # 教師がクラスの所有者でない場合はアクセス制限（教師ユーザーの場合のみ）
-    if current_user.role == 'teacher' and text_set.created_by != current_user.id:
-        flash('このテキストの詳細を閲覧する権限がありません。')
-        return redirect(url_for('basebuilder_module.text_sets'))
-    
-    # 学生の場合は配信されたテキストか確認
-    if current_user.role == 'student':
-        # 学生が所属するクラスを取得
-        enrolled_class_ids = [c.id for c in current_user.enrolled_classes]
+    try:
+        # テキストセットを取得（存在しない場合は404エラー）
+        text_set = TextSet.query.get_or_404(text_id)
         
-        # そのクラスに配信されているか確認
-        delivery = TextDelivery.query.filter(
-            TextDelivery.text_set_id == text_id,
-            TextDelivery.class_id.in_(enrolled_class_ids)
-        ).first()
+        # 教師の権限チェック
+        if current_user.role == 'teacher' and text_set.created_by != current_user.id:
+            flash('このテキストの詳細を閲覧する権限がありません。')
+            return redirect(url_for('basebuilder_module.text_sets'))
         
-        if not delivery:
-            flash('このテキストを閲覧する権限がありません。')
-            return redirect(url_for('basebuilder_module.my_texts'))
-    
-    # テキストに含まれる問題を取得
-    problems = BasicKnowledgeItem.query.filter_by(
-        text_set_id=text_id
-    ).order_by(BasicKnowledgeItem.order_in_text).all()
-    
-    # テキスト全体の定着度を取得（学生の場合のみ）
-    text_proficiency = None
-    word_proficiencies = {}
-    
-    if current_user.role == 'student':
-        # テキストの定着度を取得
-        text_proficiency = TextProficiencyRecord.query.filter_by(
-            student_id=current_user.id,
-            text_set_id=text_id
-        ).first()
-        
-        # 問題の修正: 各単語の定着度を WordProficiency モデルから正しく取得
-        for problem in problems:
-            # 正しい方法: WordProficiency モデルから各単語の定着度を取得
-            wp = WordProficiency.query.filter_by(
-                student_id=current_user.id,
-                problem_id=problem.id
+        # 学生の権限チェック
+        if current_user.role == 'student':
+            # 学生が所属するクラスを取得
+            enrolled_class_ids = [c.id for c in current_user.enrolled_classes]
+            
+            # そのクラスに配信されているか確認
+            delivery = TextDelivery.query.filter(
+                TextDelivery.text_set_id == text_id,
+                TextDelivery.class_id.in_(enrolled_class_ids)
             ).first()
             
-            if wp:
-                word_proficiencies[problem.id] = {
-                    'level': wp.level,  # 0-5のスケール
-                    'last_updated': wp.last_updated
-                }
+            if not delivery:
+                flash('このテキストを閲覧する権限がありません。')
+                return redirect(url_for('basebuilder_module.my_texts'))
         
-    # 学生の解答状況を取得（学生の場合のみ）
-    answers = {}
-    if current_user.role == 'student':
-        for problem in problems:
-            answer = AnswerRecord.query.filter_by(
+        # テキストに含まれる問題を安全に取得
+        problems = BasicKnowledgeItem.query.filter_by(
+            text_set_id=text_id
+        ).order_by(BasicKnowledgeItem.order_in_text).all() or []
+        
+        # テキスト全体の定着度と単語熟練度の初期化
+        text_proficiency = None
+        word_proficiencies = {}
+        answers = {}
+        
+        if current_user.role == 'student':
+            # テキストの定着度を取得（存在しなければNoneのまま）
+            text_proficiency = TextProficiencyRecord.query.filter_by(
                 student_id=current_user.id,
-                problem_id=problem.id
-            ).order_by(AnswerRecord.timestamp.desc()).first()
+                text_set_id=text_id
+            ).first()
             
-            answers[problem.id] = answer
+            # 問題がある場合のみループ処理
+            if problems:
+                for problem in problems:
+                    # 単語の熟練度を取得
+                    wp = WordProficiency.query.filter_by(
+                        student_id=current_user.id,
+                        problem_id=problem.id
+                    ).first()
+                    
+                    if wp:
+                        word_proficiencies[problem.id] = {
+                            'level': wp.level,
+                            'last_updated': wp.last_updated
+                        }
+                    
+                    # 解答状況を取得
+                    answer = AnswerRecord.query.filter_by(
+                        student_id=current_user.id,
+                        problem_id=problem.id
+                    ).order_by(AnswerRecord.timestamp.desc()).first()
+                    
+                    answers[problem.id] = answer
+        
+        return render_template(
+            'basebuilder/view_text.html',
+            text_set=text_set,
+            problems=problems,
+            answers=answers,
+            text_proficiency=text_proficiency,
+            word_proficiencies=word_proficiencies
+        )
     
-    return render_template(
-        'basebuilder/view_text.html',
-        text_set=text_set,
-        problems=problems,
-        answers=answers,
-        text_proficiency=text_proficiency,
-        word_proficiencies=word_proficiencies
-    )
-
+    except Exception as e:
+        # デバッグ用にエラーをログに出力
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"view_text_set エラー (text_id={text_id}): {str(e)}\n{error_details}")
+        
+        flash('テキストの表示中にエラーが発生しました。管理者に連絡してください。')
+        return redirect(url_for('basebuilder_module.index'))
+    
 def calculate_text_proficiency(student_id, text_id, problems=None):
     """
     テキスト全体の定着度を単語の熟練度から計算する関数

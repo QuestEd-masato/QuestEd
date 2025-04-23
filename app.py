@@ -19,6 +19,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from dotenv import load_dotenv
 from openai import OpenAI
+import openai
 import pymysql
 pymysql.install_as_MySQLdb()
 from flask_admin import Admin
@@ -2844,9 +2845,6 @@ def edit_activity(log_id):
     flash('新しいテーマを生成しました。')
     return redirect(url_for('view_themes'))
 
-if __name__ == '__main__':
-    app.run(debug=True)
-
 # 画像アップロード用のヘルパー関数
 def allowed_file(filename):
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
@@ -2927,7 +2925,7 @@ def generate_personal_themes_with_ai(main_theme, interest_responses, personality
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            temperature=0.7,
+            temperature=0.9,
             max_tokens=1500
         )
         
@@ -3996,20 +3994,6 @@ def download_curriculum_template():
     
     return response
 
-# アプリケーション起動時のみ実行される部分
-if __name__ == '__main__':
-    # BaseBuilder機能の初期化
-    try:
-        from basebuilder import init_app
-        init_app(app)
-        print("BaseBuilder機能が正常に初期化されました。")
-    except ImportError:
-        print("BaseBuilderモジュールを読み込めませんでした。機能は無効化されています。")
-    except Exception as e:
-        print(f"BaseBuilder初期化エラー: {str(e)}")
-    
-    app.run(debug=True)
-
 @app.route('/admin/schools')
 @login_required
 def admin_schools():
@@ -4154,3 +4138,8 @@ def api_teacher_first_class():
         return jsonify({'class_id': first_class.id})
     else:
         return jsonify({'class_id': None})
+    
+# アプリケーション起動時のみ実行される部分
+if __name__ == '__main__':
+    
+    app.run(debug=True)
