@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}承認待ちユーザー | QuestEd{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+        <h2>承認待ちユーザー</h2>
+        <a href="{{ url_for('teacher_dashboard') }}" class="btn btn-primary">ダッシュボードに戻る</a>
+    </div>
+    
+    {% if pending_students %}
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>ユーザー名</th>
+                            <th>メールアドレス</th>
+                            <th>登録日</th>
+                            <th>アクション</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in pending_students %}
+                        <tr>
+                            <td>{{ student.username }}</td>
+                            <td>{{ student.email }}</td>
+                            <td>{{ student.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <form action="{{ url_for('approve_user', user_id=student.id) }}" method="post" style="display: inline;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-success btn-sm">承認</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        承認待ちのユーザーはいません。
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

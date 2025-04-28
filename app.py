@@ -1,6 +1,8 @@
 import os
 import re
 import json
+import secrets
+from datetime import datetime, timedelta
 from flask import Response
 import io
 import csv
@@ -99,7 +101,16 @@ class User(UserMixin, db.Model):
     role = db.Column(db.String(10), nullable=False)
     school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=True)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
+    # メール認証・承認関連フィールド
+    email_confirmed = db.Column(db.Boolean, default=False)
+    email_token = db.Column(db.String(100), nullable=True)
+    token_created_at = db.Column(db.DateTime, nullable=True)
+    is_approved = db.Column(db.Boolean, default=False)
     
+    # パスワードリセット関連フィールド
+    reset_token = db.Column(db.String(100), nullable=True)
+    reset_token_created_at = db.Column(db.DateTime, nullable=True)
+
     classes_teaching = db.relationship('Class', backref='teacher', lazy=True)
     interest_surveys = db.relationship('InterestSurvey', backref='student', lazy=True)
     personality_surveys = db.relationship('PersonalitySurvey', backref='student', lazy=True)
@@ -732,6 +743,7 @@ def make_shell_context():
     return {'db': db, 'User': User, 'Class': Class, 'InterestSurvey': InterestSurvey}
 # 他のモデル用に同様のルートを追加
 
+# 既存の login ルートを以下の内容で置き換える
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     # ログイン処理の実装
@@ -739,7 +751,19 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
         user = User.query.filter_by(username=username).first()
+        
         if user and check_password_hash(user.password, password):
+            # メール確認状態をチェック
+            if not user.email_confirmed:
+                flash('アカウントが確認されていません。メールに送信された確認リンクをクリックしてください。')
+                return redirect(url_for('verify_email', user_id=user.id))
+                
+            # 承認状態をチェック（学生のみ）
+            if user.role == 'student' and not user.is_approved:
+                flash('アカウントはまだ承認されていません。教師の承認をお待ちください。')
+                return redirect(url_for('awaiting_approval'))
+            
+            # ログイン処理
             login_user(user)
             
             # ユーザーのロールに応じて適切なダッシュボードにリダイレクト
@@ -752,7 +776,259 @@ def login():
                 return redirect(url_for('index'))
         else:
             flash('ユーザー名またはパスワードが正しくありません。')
+    
     return render_template('login.html')
+
+# 以下のルートをログインルートの後、ログアウトルートの前に追加
+
+# メール確認表示ページ
+@app.route('/verify_email/<int:user_id>')
+def verify_email(user_id):
+    user = User.query.get_or_404(user_id)
+    
+    # 既に確認済みの場合
+    if user.email_confirmed:
+        flash('このアカウントは既に確認されています。')
+        return redirect(url_for('login'))
+    
+    return render_template('verify_email.html', user=user)
+
+# メール確認処理
+@app.route('/confirm_email/<int:user_id>/<token>')
+def confirm_email(user_id, token):
+    # ユーザーを取得
+    user = User.query.get_or_404(user_id)
+    
+    # トークンの有効期限チェック
+    if not user.token_created_at:
+        flash('無効な確認リンクです。')
+        return redirect(url_for('login'))
+    
+    token_expiry = user.token_created_at + timedelta(hours=24)
+    
+    if datetime.utcnow() > token_expiry:
+        flash('確認リンクの有効期限が切れています。新しいリンクを送信してください。')
+        return redirect(url_for('verify_email', user_id=user_id))
+    
+    # トークンの検証
+    if user.email_token != token:
+        flash('無効な確認リンクです。')
+        return redirect(url_for('login'))
+    
+    # メール確認済みにする
+    user.email_confirmed = True
+    user.email_token = None  # トークンを削除
+    
+    # 教師/管理者の場合は自動承認
+    if user.role in ['teacher', 'admin']:
+        user.is_approved = True
+        
+    db.session.commit()
+    
+    if user.is_approved:
+        flash('メールアドレスが確認され、アカウントが有効化されました。ログインしてください。')
+        return redirect(url_for('login'))
+    else:
+        flash('メールアドレスが確認されました。教師の承認をお待ちください。')
+        return redirect(url_for('awaiting_approval'))
+
+# 確認メール再送信
+@app.route('/resend_verification/<int:user_id>')
+def resend_verification(user_id):
+    user = User.query.get_or_404(user_id)
+    
+    # 既に確認済みの場合
+    if user.email_confirmed:
+        flash('このアカウントは既に確認されています。')
+        return redirect(url_for('login'))
+    
+    # 新しいトークンを生成
+    token = secrets.token_urlsafe(32)
+    user.email_token = token
+    user.token_created_at = datetime.utcnow()
+    db.session.commit()
+    
+    # 確認メールを再送信
+    from utils.email_sender import send_confirmation_email
+    email_sent = send_confirmation_email(user.email, user.id, token, user.username)
+    
+    if email_sent:
+        flash('確認メールを再送信しました。メールをご確認ください。')
+    else:
+        flash('メールの送信に失敗しました。管理者にお問い合わせください。')
+    
+    return redirect(url_for('verify_email', user_id=user_id))
+
+# 承認待ちページ
+@app.route('/awaiting_approval')
+def awaiting_approval():
+    return render_template('awaiting_approval.html')
+
+# パスワード忘れ
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        
+        if not email:
+            flash('メールアドレスを入力してください。')
+            return render_template('forgot_password.html')
+        
+        # 入力されたメールアドレスのユーザーを検索
+        user = User.query.filter_by(email=email).first()
+        
+        if user:
+            # パスワードリセットトークンを生成
+            token = secrets.token_urlsafe(32)
+            user.reset_token = token
+            user.reset_token_created_at = datetime.utcnow()
+            db.session.commit()
+            
+            # パスワードリセットメールを送信
+            from utils.email_sender import send_reset_password_email
+            email_sent = send_reset_password_email(email, user.id, token, user.username)
+            
+            if email_sent:
+                flash('パスワードリセット手順をメールで送信しました。')
+            else:
+                flash('メールの送信に失敗しました。管理者にお問い合わせください。')
+        else:
+            # セキュリティのため、メールが見つからない場合も同じメッセージを表示
+            flash('パスワードリセット手順をメールで送信しました。')
+        
+        return redirect(url_for('login'))
+    
+    return render_template('forgot_password.html')
+
+# パスワードリセット
+@app.route('/reset_password/<int:user_id>/<token>', methods=['GET', 'POST'])
+def reset_password(user_id, token):
+    # ユーザーを取得
+    user = User.query.get_or_404(user_id)
+    
+    # トークンの有効期限チェック (1時間)
+    if not user.reset_token_created_at or datetime.utcnow() > user.reset_token_created_at + timedelta(hours=1):
+        flash('リセットリンクの有効期限が切れています。パスワードリセットを再度リクエストしてください。')
+        return redirect(url_for('forgot_password'))
+    
+    # トークンの検証
+    if user.reset_token != token:
+        flash('無効なリセットリンクです。')
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        
+        # パスワードの検証
+        if not new_password:
+            flash('新しいパスワードを入力してください。')
+            return render_template('reset_password.html', user_id=user_id, token=token)
+        
+        if new_password != confirm_password:
+            flash('パスワードが一致しません。')
+            return render_template('reset_password.html', user_id=user_id, token=token)
+        
+        if len(new_password) < 8:
+            flash('パスワードは8文字以上である必要があります。')
+            return render_template('reset_password.html', user_id=user_id, token=token)
+        
+        # パスワードを更新
+        user.password = generate_password_hash(new_password)
+        user.reset_token = None
+        user.reset_token_created_at = None
+        db.session.commit()
+        
+        flash('パスワードが正常にリセットされました。新しいパスワードでログインしてください。')
+        return redirect(url_for('login'))
+    
+    return render_template('reset_password.html', user_id=user_id, token=token)
+
+# パスワード変更（ログイン後）
+@app.route('/change_password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    if request.method == 'POST':
+        current_password = request.form.get('current_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        
+        # 現在のパスワードを確認
+        if not check_password_hash(current_user.password, current_password):
+            flash('現在のパスワードが正しくありません。')
+            return render_template('change_password.html')
+        
+        # 新しいパスワードの検証
+        if not new_password:
+            flash('新しいパスワードを入力してください。')
+            return render_template('change_password.html')
+        
+        if new_password != confirm_password:
+            flash('パスワードが一致しません。')
+            return render_template('change_password.html')
+        
+        if len(new_password) < 8:
+            flash('パスワードは8文字以上である必要があります。')
+            return render_template('change_password.html')
+        
+        # パスワードを更新
+        current_user.password = generate_password_hash(new_password)
+        db.session.commit()
+        
+        flash('パスワードが正常に変更されました。')
+        
+        # ユーザータイプに応じたダッシュボードにリダイレクト
+        if current_user.role == 'student':
+            return redirect(url_for('student_dashboard'))
+        elif current_user.role == 'teacher':
+            return redirect(url_for('teacher_dashboard'))
+        else:
+            return redirect(url_for('index'))
+    
+    return render_template('change_password.html')
+
+# 教師向け承認待ちユーザー一覧
+@app.route('/teacher/pending_users')
+@login_required
+def pending_users():
+    # 教師のみアクセス可能
+    if current_user.role != 'teacher':
+        flash('この機能は教師のみ利用可能です。')
+        return redirect(url_for('index'))
+    
+    # 同じ学校の承認待ち学生を取得
+    pending_students = User.query.filter_by(
+        email_confirmed=True,
+        is_approved=False,
+        role='student',
+        school_id=current_user.school_id
+    ).all()
+    
+    return render_template('teacher/pending_users.html', pending_students=pending_students)
+
+# ユーザー承認エンドポイント
+@app.route('/teacher/approve_user/<int:user_id>', methods=['POST'])
+@login_required
+def approve_user(user_id):
+    # 教師のみアクセス可能
+    if current_user.role != 'teacher':
+        flash('この機能は教師のみ利用可能です。')
+        return redirect(url_for('index'))
+    
+    # ユーザーを取得
+    user = User.query.get_or_404(user_id)
+    
+    # 同じ学校の学生のみ承認可能
+    if user.school_id != current_user.school_id or user.role != 'student':
+        flash('このユーザーを承認する権限がありません。')
+        return redirect(url_for('pending_users'))
+    
+    # ユーザーを承認
+    user.is_approved = True
+    db.session.commit()
+    
+    flash(f'ユーザー「{user.username}」を承認しました。')
+    return redirect(url_for('pending_users'))
 
 @app.route('/teacher_dashboard')
 @login_required
@@ -1802,11 +2078,22 @@ def chat_page():
     # ai_helpers から学習ステップと教師機能を取得
     from ai_helpers import LEARNING_STEPS, TEACHER_FUNCTIONS
     
-    return render_template('chat.html', 
-                          chat_history=chat_history, 
-                          theme=theme,
-                          learning_steps=LEARNING_STEPS,
-                          teacher_functions=TEACHER_FUNCTIONS)
+    # 教師ロールの場合は学習ステップのみ渡し、教師機能は渡さない
+    template_vars = {
+        'chat_history': chat_history, 
+        'theme': theme
+    }
+    
+    # 学生の場合のみ学習ステップを渡す
+    if current_user.role == 'student':
+        template_vars['learning_steps'] = LEARNING_STEPS
+        template_vars['teacher_functions'] = []  # 空リストを渡す
+    else:
+        # 教師の場合は両方とも空リストを渡す
+        template_vars['learning_steps'] = []
+        template_vars['teacher_functions'] = []
+    
+    return render_template('chat.html', **template_vars)
 
 @app.route('/api/chat', methods=['POST'])
 @login_required
@@ -1831,6 +2118,11 @@ def chat_api():
             message = request.form.get('message', '')
             step_id = request.form.get('step', '')
             function_id = request.form.get('function', '')
+        
+        # 教師ロールの場合は常に teacher_free ステップを使用
+        if current_user.role == 'teacher':
+            step_id = 'teacher_free'
+            function_id = ''  # 機能IDは使用しない
         
         print(f"Processed data: message='{message}', step='{step_id}', function='{function_id}'")
         
@@ -2113,6 +2405,7 @@ def regenerate_themes():
     flash('新しい探究テーマが生成されました。')
     return redirect(url_for('view_themes'))
 
+# 既存の register ルートを以下の内容で置き換える
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -2121,34 +2414,43 @@ def register():
         confirm_password = request.form.get('confirm_password')
         email = request.form.get('email')
         role = request.form.get('role', 'student')
-        school_code = request.form.get('school_code')  # 学校コードを取得
+        school_code = request.form.get('school_code')
         
-        # パスワード確認のチェック
+        # 入力検証
         if password != confirm_password:
             flash('パスワードが一致しません。')
             return render_template('register.html')
         
-        # 既存のユーザー名チェック
+        # 既存ユーザー/メールチェック
         existing_user = User.query.filter_by(username=username).first()
         if existing_user:
             flash('そのユーザー名は既に使用されています。')
             return render_template('register.html')
         
-        # 既存のメールアドレスチェック
         existing_email = User.query.filter_by(email=email).first()
         if existing_email:
             flash('そのメールアドレスは既に使用されています。')
             return render_template('register.html')
         
         # 学校コードのチェック
-        if school_code:
-            school = School.query.filter_by(code=school_code).first()
-            if not school:
-                flash('入力された学校コードが見つかりません。')
-                return render_template('register.html')
-            school_id = school.id
-        else:
-            school_id = None
+        if not school_code:
+            flash('学校コードは必須です。')
+            return render_template('register.html')
+            
+        school = School.query.filter_by(code=school_code).first()
+        if not school:
+            flash('入力された学校コードが見つかりません。')
+            return render_template('register.html')
+        school_id = school.id
+        
+        # パスワード強度チェック
+        if len(password) < 8:
+            flash('パスワードは8文字以上である必要があります。')
+            return render_template('register.html')
+        
+        # 確認用トークンを生成
+        token = secrets.token_urlsafe(32)
+        token_created_at = datetime.utcnow()
         
         # 新しいユーザーの作成
         new_user = User(
@@ -2156,13 +2458,26 @@ def register():
             password=generate_password_hash(password),
             email=email,
             role=role,
-            school_id=school_id
+            school_id=school_id,
+            email_confirmed=False,
+            email_token=token,
+            token_created_at=token_created_at,
+            is_approved=(role != 'student')  # 教師/管理者は自動承認
         )
+        
         db.session.add(new_user)
         db.session.commit()
         
-        flash('登録が完了しました。ログインしてください。')
-        return redirect(url_for('login'))
+        # メール確認メールを送信
+        from utils.email_sender import send_confirmation_email
+        email_sent = send_confirmation_email(email, new_user.id, token, username)
+        
+        if email_sent:
+            flash('登録が完了しました。メールに送信された確認リンクをクリックしてください。')
+        else:
+            flash('メールの送信に失敗しました。管理者にお問い合わせください。')
+        
+        return redirect(url_for('verify_email', user_id=new_user.id))
     
     return render_template('register.html')
 
@@ -3302,14 +3617,19 @@ def remove_student(class_id, student_id):
     flash('学生がクラスから削除されました。')
     return redirect(url_for('view_class', class_id=class_id))
 
-# CSVからユーザーを一括インポートするルート
+# ユーザーを一括インポートするルート
 @app.route('/admin/import_users', methods=['GET', 'POST'])
 @login_required
 def import_users():
-    # 教師のみアクセス可能
-    if current_user.role != 'teacher':
-        flash('この機能は教師のみ利用可能です。')
+    # 管理者のみアクセス可能に変更
+    if current_user.role != 'admin':
+        flash('この機能は管理者のみ利用可能です。')
         return redirect(url_for('index'))
+    
+    # 管理者用テンプレート変数とリダイレクト先を設定
+    template_path = 'admin/import_users.html'
+    redirect_url = url_for('admin_users')
+    template_vars = {}  # 必要に応じて変数追加
     
     if request.method == 'POST':
         if 'csv_file' not in request.files:
@@ -3352,6 +3672,14 @@ def import_users():
                             error_messages.append(f"行: {csv_reader.line_num} - ユーザー名またはメールアドレスが既に使用されています: {row['username']}, {row['email']}")
                             continue
                         
+                        # 管理者は任意の学校IDを指定可能
+                        school_id = row.get('school_id')
+                        if school_id:
+                            try:
+                                school_id = int(school_id)
+                            except ValueError:
+                                school_id = None
+                        
                         # パスワードの生成または取得
                         password = row.get('password')
                         if not password:
@@ -3363,7 +3691,8 @@ def import_users():
                             username=row['username'],
                             email=row['email'],
                             password=generate_password_hash(password),
-                            role=row['role']
+                            role=row['role'],
+                            school_id=school_id
                         )
                         
                         db.session.add(new_user)
@@ -3385,7 +3714,7 @@ def import_users():
                     for msg in error_messages:
                         flash(msg, 'error')
                 
-                return redirect(url_for('admin_users'))
+                return redirect(redirect_url)
                 
             except Exception as e:
                 flash(f'CSVファイルの処理中にエラーが発生しました: {str(e)}')
@@ -3394,7 +3723,8 @@ def import_users():
             flash('CSVファイルの形式が正しくありません。')
             return redirect(request.url)
     
-    return render_template('admin/import_users.html')
+    # GETリクエスト処理（フォーム表示）
+    return render_template(template_path, **template_vars)
 
 # CSVファイルの拡張子チェック用関数
 def allowed_csv_file(filename):
@@ -4143,3 +4473,178 @@ def api_teacher_first_class():
 if __name__ == '__main__':
     
     app.run(debug=True)
+
+# 生徒一括インポート用ルートハンドラ
+@app.route('/class/<int:class_id>/students/import', methods=['GET', 'POST'])
+@login_required
+def import_students(class_id):
+    """生徒一括インポート画面と処理"""
+    
+    # ユーザーロールとアクセス権限をチェック
+    if current_user.role == 'admin':
+        # 管理者の場合
+        class_data = ClassGroup.query.get_or_404(class_id)
+        template_vars = {'class_data': class_data}
+        template_path = 'admin/import_students.html'
+        redirect_url = url_for('enrollment.list_students', class_id=class_id)
+    elif current_user.role == 'teacher':
+        # 教師の場合
+        class_data = Class.query.get_or_404(class_id)
+        
+        # 権限チェック
+        if class_data.teacher_id != current_user.id:
+            flash('このクラスの生徒をインポートする権限がありません。')
+            return redirect(url_for('classes'))
+        
+        template_vars = {'class_data': class_data}
+        template_path = 'add_students.html'  # 既存のパスを維持
+        redirect_url = url_for('view_class', class_id=class_id)
+    else:
+        # その他のロール（アクセス不可）
+        flash('この機能は教師または管理者のみ利用可能です。')
+        return redirect(url_for('index'))
+    
+    # POSTリクエスト処理（CSVアップロード）
+    if request.method == 'POST':
+        # CSVファイルが選択されていることを確認
+        if 'csv_file' not in request.files:
+            flash('CSVファイルが選択されていません。')
+            return redirect(request.url)
+        
+        file = request.files['csv_file']
+        if file.filename == '':
+            flash('CSVファイルが選択されていません。')
+            return redirect(request.url)
+        
+        # ファイル形式チェック
+        if file and allowed_file(file.filename, ['csv']):  # 関数名を統一
+            try:
+                # CSVファイルを処理
+                import_result = process_student_csv(file, class_id, current_user)
+                
+                # 処理結果を表示
+                if import_result['success_count'] > 0:
+                    flash(f"{import_result['success_count']}人の生徒を正常にインポートしました。")
+                
+                if import_result['error_count'] > 0:
+                    flash(f"{import_result['error_count']}件のエラーが発生しました。", 'warning')
+                    for error in import_result['errors']:
+                        flash(error, 'error')
+                
+                # 処理完了後リダイレクト
+                return redirect(redirect_url)
+                
+            except Exception as e:
+                flash(f'CSVファイルの処理中にエラーが発生しました: {str(e)}')
+                return redirect(request.url)
+        else:
+            flash('CSVファイルの形式が正しくありません。')
+            return redirect(request.url)
+    
+    # GETリクエスト処理（フォーム表示）
+    return render_template(template_path, **template_vars)
+
+
+def process_student_csv(file, class_id, current_user):
+    """CSVファイルを処理し、生徒をインポートする共通関数"""
+    # ここに実際のCSV処理ロジックを実装
+    # この関数は管理者と教師の両方から利用される
+    
+    # 以下はサンプル実装
+    try:
+        stream = io.StringIO(file.stream.read().decode('utf-8-sig'))  # BOM対応
+        csv_reader = csv.DictReader(stream)
+        
+        success_count = 0
+        error_count = 0
+        errors = []
+        
+        # CSVの行を処理
+        for row in csv_reader:
+            try:
+                # 必須フィールドのチェック
+                if not row.get('name') or not row.get('email'):
+                    error_count += 1
+                    errors.append(f"行 {csv_reader.line_num}: 名前とメールアドレスは必須です。")
+                    continue
+                
+                # 既存ユーザーの確認
+                existing_user = User.query.filter_by(email=row['email']).first()
+                
+                if existing_user:
+                    # 既に登録済みかチェック
+                    if current_user.role == 'admin':
+                        # 管理者向け処理: ClassGroupメンバーシップをチェック
+                        existing_enrollment = ClassGroupMembership.query.filter_by(
+                            student_id=existing_user.id,
+                            class_group_id=class_id
+                        ).first()
+                        
+                        if existing_enrollment:
+                            error_count += 1
+                            errors.append(f"行 {csv_reader.line_num}: 学生はすでにこのクラスに登録されています: {row['name']}")
+                            continue
+                            
+                        # クラスに追加
+                        new_membership = ClassGroupMembership(
+                            student_id=existing_user.id,
+                            class_group_id=class_id,
+                            student_number=row.get('student_number')
+                        )
+                        db.session.add(new_membership)
+                        
+                    else:
+                        # 教師向け処理: Classメンバーシップをチェック
+                        existing_enrollment = ClassMembership.query.filter_by(
+                            student_id=existing_user.id,
+                            class_id=class_id
+                        ).first()
+                        
+                        if existing_enrollment:
+                            error_count += 1
+                            errors.append(f"行 {csv_reader.line_num}: 学生はすでにこのクラスに登録されています: {row['name']}")
+                            continue
+                            
+                        # 教師が所属する学校の学生かチェック
+                        if existing_user.school_id != current_user.school_id:
+                            error_count += 1
+                            errors.append(f"行 {csv_reader.line_num}: 学生が別の学校に所属しています: {row['name']}")
+                            continue
+                            
+                        # クラスに追加
+                        new_membership = ClassMembership(
+                            student_id=existing_user.id,
+                            class_id=class_id,
+                            student_number=row.get('student_number')
+                        )
+                        db.session.add(new_membership)
+                    
+                    success_count += 1
+                else:
+                    # 新規ユーザーの場合
+                    error_count += 1
+                    errors.append(f"行 {csv_reader.line_num}: メールアドレス {row['email']} のユーザーが見つかりません。")
+                
+            except Exception as e:
+                error_count += 1
+                errors.append(f"行 {csv_reader.line_num}: 処理エラー: {str(e)}")
+        
+        # 変更をコミット
+        db.session.commit()
+        
+        return {
+            'success_count': success_count,
+            'error_count': error_count,
+            'errors': errors
+        }
+        
+    except Exception as e:
+        # ロールバック
+        db.session.rollback()
+        raise Exception(f"CSVファイルの読み込みに失敗しました: {str(e)}")
+
+
+# 統一されたファイル拡張子チェック関数
+def allowed_file(filename, allowed_extensions):
+    """ファイル拡張子が許可されているか確認する関数"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions

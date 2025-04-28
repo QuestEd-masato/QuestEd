@@ -146,6 +146,17 @@
                 </div>
             {% endif %}
         </div>
+
+        <!-- 新しく追加するアカウント設定セクション -->
+        <div class="dashboard-section account-settings">
+            <h3>アカウント設定</h3>
+            <div class="settings-actions">
+                <a href="{{ url_for('change_password') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-key"></i> パスワード変更
+                </a>
+            </div>
+        </div>
+
         <div class="dashboard-section my-todos">
             <div class="d-flex justify-content-between align-items-center">
                 <h3>To Doリスト</h3>
@@ -428,6 +439,7 @@
     .recent-activities {
         grid-column: span 2;
     }
+    
     .todo-list {
         display: flex;
         flex-direction: column;
@@ -480,6 +492,18 @@
         border-radius: 8px;
     }
     
+    /* 新しく追加するアカウント設定セクションのスタイル */
+    .account-settings {
+        grid-column: span 2;
+    }
+
+    .settings-actions {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        padding: 1rem;
+    }
+    
     @media (max-width: 768px) {
         .dashboard-grid {
             grid-template-columns: 1fr;
@@ -487,7 +511,8 @@
         
         .surveys-status,
         .current-theme,
-        .recent-activities {
+        .recent-activities,
+        .account-settings {
             grid-column: span 1;
         }
         

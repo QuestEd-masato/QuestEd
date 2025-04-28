@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // チャットコンテナの参照を取得 - chat-messagesではなくchat-containerに修正
+    // チャットコンテナの参照を取得
     const chatContainer = document.getElementById('chat-container');
     // メッセージ入力フィールドの参照を取得
     const messageInput = document.getElementById('message-input');
@@ -13,25 +13,33 @@ document.addEventListener('DOMContentLoaded', function() {
     // CSRFトークンを取得
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     
-    // 学習ステップボタンのイベントリスナー（学生用）
-    const stepButtons = document.querySelectorAll('.step-select');
-    stepButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            // 以前の選択を解除
-            stepButtons.forEach(btn => btn.classList.remove('active'));
-            // 新しい選択をハイライト
-            this.classList.add('active');
-            // 選択されたステップを隠しフィールドに設定
-            const stepId = this.getAttribute('data-step');
-            selectedStepField.value = stepId;
-            // 機能の選択をクリア（学生用）
-            selectedFunctionField.value = '';
-            // 現在選択されているステップを更新
-            currentStepBadge.textContent = this.textContent.trim();
-        });
-    });
+    // ユーザーロールを取得（data属性から）
+    const userRole = document.querySelector('.container').getAttribute('data-user-role') || '';
+    const isTeacher = userRole === 'teacher';
     
-    // 教師機能ボタンのイベントリスナー（教師用）
+    // 学習ステップボタンのイベントリスナー（学生用）
+    if (!isTeacher) {
+        const stepButtons = document.querySelectorAll('.step-select');
+        stepButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                // 以前の選択を解除
+                stepButtons.forEach(btn => btn.classList.remove('active'));
+                // 新しい選択をハイライト
+                this.classList.add('active');
+                // 選択されたステップを隠しフィールドに設定
+                const stepId = this.getAttribute('data-step');
+                selectedStepField.value = stepId;
+                // 機能の選択をクリア（学生用）
+                selectedFunctionField.value = '';
+                // 現在選択されているステップを更新
+                currentStepBadge.textContent = this.textContent.trim();
+            });
+        });
+    }
+    
+    // 教師機能ボタンのイベントリスナー（教師向け機能を非表示にするため、この部分は削除または無効化）
+    // 以下のコードはコメントアウトまたは削除する
+    /*
     const functionButtons = document.querySelectorAll('.function-select');
     functionButtons.forEach(button => {
         button.addEventListener('click', function() {
@@ -61,6 +69,16 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+    */
+    
+    // 教師の場合は常に自由記述モードに設定
+    if (isTeacher) {
+        selectedStepField.value = 'teacher_free';
+        selectedFunctionField.value = '';
+        if (currentStepBadge) {
+            currentStepBadge.textContent = '教師サポート';
+        }
+    }
     
     // チャットフォームの送信イベント
     const chatForm = document.getElementById('chat-form');
@@ -69,6 +87,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const message = messageInput.value.trim();
         if (!message) return;
+        
+        // 教師の場合は常に自由記述モードを使用
+        if (isTeacher) {
+            selectedStepField.value = 'teacher_free';
+            selectedFunctionField.value = '';
+        }
         
         // ユーザーメッセージを表示
         addMessage(message, true);
@@ -187,10 +211,20 @@ document.addEventListener('DOMContentLoaded', function() {
         return `${year}-${month}-${day} ${hours}:${minutes}`;
     }
     
-    // 初期状態で「自由質問」を選択状態にする
-    const freeQuestionButton = document.querySelector('.step-select[data-step="free"]');
-    if (freeQuestionButton) {
-        freeQuestionButton.classList.add('active');
-        selectedStepField.value = 'free';
+    // 初期状態の設定
+    if (isTeacher) {
+        // 教師の場合は常に教師サポートモードに設定
+        selectedStepField.value = 'teacher_free';
+        selectedFunctionField.value = '';
+        if (currentStepBadge) {
+            currentStepBadge.textContent = '教師サポート';
+        }
+    } else {
+        // 学生の場合は自由質問を初期選択
+        const freeQuestionButton = document.querySelector('.step-select[data-step="free"]');
+        if (freeQuestionButton) {
+            freeQuestionButton.classList.add('active');
+            selectedStepField.value = 'free';
+        }
     }
 });

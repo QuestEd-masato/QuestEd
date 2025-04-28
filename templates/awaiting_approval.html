@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}承認待ち | QuestEd{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card mt-5">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="my-0">承認待ち</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <p>あなたのアカウントは確認済みですが、教師の承認を待っています。</p>
+                        <p>承認されるまでしばらくお待ちください。</p>
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('login') }}" class="btn btn-outline-secondary">ログイン画面に戻る</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

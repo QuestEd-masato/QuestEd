@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}ユーザー一括インポート | QuestEd{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h2 class="mb-0 fs-4">ユーザー一括インポート</h2>
+        </div>
+        <div class="card-body">
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('teacher_dashboard') }}">ダッシュボード</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">ユーザー一括インポート</li>
+                </ol>
+            </nav>
+
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        CSVファイルから複数のユーザーを一度に登録できます。テンプレートをダウンロードして必要な情報を入力してください。
+                    </div>
+
+                    <form method="POST" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="mb-3">
+                            <label for="csv_file" class="form-label">CSVファイル選択</label>
+                            <input type="file" class="form-control" id="csv_file" name="csv_file" accept=".csv" required>
+                            <div class="form-text">UTF-8エンコードのCSVファイルをアップロードしてください。</div>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-file-import me-2"></i>インポート
+                            </button>
+                            <a href="{{ url_for('teacher_dashboard') }}" class="btn btn-outline-secondary">
+                                キャンセル
+                            </a>
+                            <a href="{{ url_for('download_user_template') }}" class="btn btn-outline-info ms-auto">
+                                <i class="fas fa-download me-2"></i>テンプレートをダウンロード
+                            </a>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="col-md-4 mt-4 mt-md-0">
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h5 class="card-title mb-0">CSVファイル形式</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">CSVファイルには以下の列が必要です：</p>
+                            <ul class="mb-3">
+                                <li><strong>username</strong>: ユーザー名（必須）</li>
+                                <li><strong>email</strong>: メールアドレス（必須）</li>
+                                <li><strong>password</strong>: パスワード（空白の場合は自動生成）</li>
+                                <li><strong>role</strong>: ロール（'student'または'teacher'）（必須）</li>
+                            </ul>
+                            
+                            <div class="alert alert-warning small">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                1行目はヘッダー行として扱われます。必ず上記の列名を含めてください。
+                            </div>
+                            
+                            <p class="card-text small">例：</p>
+                            <div class="bg-light p-2 mb-3 small">
+                                <code>
+                                username,email,password,role<br>
+                                student1,student1@example.com,password123,student<br>
+                                teacher1,teacher1@example.com,secure456,teacher
+                                </code>
+                            </div>
+                            
+                            <div class="alert alert-info small">
+                                <i class="fas fa-info-circle me-2"></i>
+                                パスワードを空欄にすると、ランダムなパスワードが自動生成されます。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

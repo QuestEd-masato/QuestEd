@@ -15,8 +15,10 @@
         <div class="dashboard-section my-classes">
             <div class="section-header">
                 <h3>担当クラス</h3>
-                <a href="{{ url_for('create_class') }}" class="btn btn-sm btn-primary">新規クラスを作成</a>
-                <a href="{{ url_for('import_users') }}" class="btn btn-sm btn-primary">ユーザー一括登録</a>
+                <div>
+                    <a href="{{ url_for('create_class') }}" class="btn btn-sm btn-primary">新規クラスを作成</a>
+                    <a href="{{ url_for('pending_users') }}" class="btn btn-sm btn-info">承認待ちユーザー</a>
+                </div>
             </div>
             
             {% if classes %}
@@ -65,6 +67,18 @@
                     <a href="{{ url_for('create_class') }}" class="btn btn-primary">クラスを作成する</a>
                 </div>
             {% endif %}
+        </div>
+        
+        <!-- 新しく追加するアカウント設定セクション -->
+        <div class="dashboard-section account-settings">
+            <div class="section-header">
+                <h3>アカウント設定</h3>
+            </div>
+            <div class="settings-actions d-flex justify-content-center">
+                <a href="{{ url_for('change_password') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-key"></i> パスワード変更
+                </a>
+            </div>
         </div>
         
         <!-- 基礎学力管理セクション -->
@@ -320,6 +334,14 @@
         font-size: 0.875rem;
     }
     
+    /* 新しく追加するアカウント設定セクションのスタイル */
+    .settings-actions {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        padding: 1rem;
+    }
+    
     @media (max-width: 768px) {
         .class-cards {
             grid-template-columns: 1fr;
@@ -340,5 +362,5 @@
             gap: 0.25rem;
         }
     }
-    </style>
-    {% endblock %}
+</style>
+{% endblock %}

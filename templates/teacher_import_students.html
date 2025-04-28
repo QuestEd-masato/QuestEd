@@ -1,4 +1,3 @@
-<!-- templates/add_students.html -->
 {% extends 'base.html' %}
 
 {% block title %}{{ class_obj.name }} - 生徒一括登録 | QuestEd{% endblock %}
@@ -50,7 +49,33 @@
                 </div>
                 
                 <div class="col-md-4 mt-4 mt-md-0">
-                    {% include '_csv_format_info.html' %}
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h5 class="card-title mb-0">CSV形式について</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">CSVファイルには以下の列が必要です：</p>
+                            <ul class="mb-3">
+                                <li><strong>name</strong>: 生徒名（必須）</li>
+                                <li><strong>email</strong>: メールアドレス（必須）</li>
+                                <li><strong>student_number</strong>: 出席番号（任意）</li>
+                            </ul>
+                            
+                            <div class="alert alert-warning small">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                1行目はヘッダー行として扱われます。必ず上記の列名を含めてください。
+                            </div>
+                            
+                            <p class="card-text small">例：</p>
+                            <div class="bg-light p-2 mb-3 small">
+                                <code>
+                                name,email,student_number<br>
+                                山田太郎,taro@example.com,1<br>
+                                佐藤花子,hanako@example.com,2
+                                </code>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

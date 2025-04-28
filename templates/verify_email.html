@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}メールアドレス確認 | QuestEd{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <h2>メールアドレスの確認</h2>
+        
+        <div class="verify-info">
+            <p>入力したメールアドレスに確認メールを送信しました。</p>
+            <p>メールに記載されているリンクをクリックして、アカウントの確認を完了してください。</p>
+            <p class="text-muted">確認メールが届かない場合は、迷惑メールフォルダも確認してください。</p>
+        </div>
+        
+        <div class="verify-actions">
+            <a href="{{ url_for('resend_verification', user_id=user.id) }}" class="btn btn-outline-primary">確認メールを再送信</a>
+            <a href="{{ url_for('login') }}" class="btn btn-link">ログイン画面に戻る</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .auth-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 70vh;
+    }
+    
+    .auth-card {
+        background-color: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 500px;
+    }
+    
+    .auth-card h2 {
+        text-align: center;
+        margin-bottom: 1.5rem;
+        color: #333;
+    }
+    
+    .verify-info {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .verify-info p {
+        margin-bottom: 0.75rem;
+    }
+    
+    .text-muted {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    .verify-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        align-items: center;
+    }
+    
+    .verify-actions .btn {
+        min-width: 200px;
+    }
+</style>
+{% endblock %}

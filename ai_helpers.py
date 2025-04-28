@@ -13,7 +13,7 @@ LEARNING_STEPS = [
     {'id': 'free', 'name': '自由質問'}
 ]
 
-# 教師用機能の定義
+# 教師用機能の定義（表示されないがコード構造維持のため残しておく）
 TEACHER_FUNCTIONS = [
     {'id': 'activity_summary', 'name': '活動記録要約'},
     {'id': 'evaluation', 'name': '評価文生成'},
@@ -75,13 +75,18 @@ def get_learning_step_prompt(step_id):
         
         'free': """自由に質問してください。
         学習の進行や探究活動、アントレプレナーシップに関することなど、
-        どんな質問にもお答えします。"""
+        どんな質問にもお答えします。""",
+        
+        'teacher_free': """教師向け自由質問モードです。
+        探究学習やアントレプレナーシップ教育、授業設計、評価方法など、
+        教育活動に関するどのような質問にもお答えします。
+        生徒の指導・支援に役立つ情報や助言を提供します。"""
     }
     
     return step_prompts.get(step_id, step_prompts['free'])
 
 def get_teacher_function_prompt(function_id):
-    """教師向け機能別プロンプト生成"""
+    """教師向け機能別プロンプト生成（使用されないが互換性のために維持）"""
     function_prompts = {
         'activity_summary': """以下の活動記録を簡潔に要約し、主なポイント、進捗状況、課題を200字程度でまとめてください。
         要約は客観的な視点で行い、重要なポイントに焦点を当ててください。""",
@@ -142,12 +147,11 @@ def generate_system_prompt(user, step_id=None, function_id=None, context=None):
             base_prompt += f"\n\n{get_learning_step_prompt(step_id)}"
     
     else:
-        # 教師の場合
+        # 教師の場合 - 常に自由記述モードを使用
         base_prompt = "あなたは教育支援AIアシスタントです。教員の探究学習指導とアントレプレナーシップ教育をサポートします。"
         
-        # 教師向け機能が指定されている場合、その機能のプロンプトを追加
-        if function_id:
-            base_prompt += f"\n\n{get_teacher_function_prompt(function_id)}"
+        # 教師用の自由記述プロンプトを追加
+        base_prompt += f"\n\n{get_learning_step_prompt('teacher_free')}"
     
     # 共通の安全性ガイドラインを追加
     safety_guidelines = """
