@@ -1,12 +1,13 @@
+# ai_curriculum_helpers.py
 import os
 import json
 import csv
 import io
-from openai import OpenAI
 
 def generate_curriculum_with_ai(class_details, curriculum_settings):
     """
     AIを使用してカリキュラムを生成する
+    両方のAPIバージョンをサポート
     
     Args:
         class_details: クラスに関する情報（名前、大テーマなど）
@@ -15,9 +16,6 @@ def generate_curriculum_with_ai(class_details, curriculum_settings):
     Returns:
         dict: カリキュラム内容
     """
-    # OpenAI APIクライアントの初期化
-    client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-    
     # システムプロンプトの構築
     system_prompt = """
     あなたは探究学習のカリキュラム設計専門AIアシスタントです。
@@ -80,19 +78,46 @@ def generate_curriculum_with_ai(class_details, curriculum_settings):
     """
     
     try:
-        # OpenAI APIを呼び出す
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            temperature=0.7,
-            max_tokens=3000
-        )
+        # APIキーの取得
+        api_key = os.getenv('OPENAI_API_KEY')
         
-        # APIレスポンスからカリキュラム内容を抽出
-        content = response.choices[0].message.content
+        # 新しいAPIスタイルを試す
+        try:
+            from openai import OpenAI
+            client = OpenAI(api_key=api_key)
+            
+            # OpenAI APIを呼び出す
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                temperature=0.7,
+                max_tokens=3000
+            )
+            
+            # APIレスポンスからカリキュラム内容を抽出
+            content = response.choices[0].message.content
+            
+        except (ImportError, AttributeError):
+            # 古いAPIスタイルにフォールバック
+            import openai
+            openai.api_key = api_key
+            
+            # OpenAI APIを呼び出す
+            response = openai.ChatCompletion.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                temperature=0.7,
+                max_tokens=3000
+            )
+            
+            # APIレスポンスからカリキュラム内容を抽出
+            content = response.choices[0].message['content']
         
         # JSONとして解析
         try:

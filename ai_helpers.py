@@ -1,6 +1,5 @@
 # ai_helpers.py
 import os
-from openai import OpenAI
 
 # モジュールレベルで変数を定義して、エクスポートできるようにする
 LEARNING_STEPS = [
@@ -167,6 +166,7 @@ def generate_system_prompt(user, step_id=None, function_id=None, context=None):
 def call_openai_api(messages, api_key=None, model="gpt-4", temperature=0.7, max_tokens=None, timeout=30):
     """
     OpenAI APIを呼び出し、応答を取得する関数
+    両方のAPIバージョンをサポート
     
     Args:
         messages (list): 会話メッセージのリスト
@@ -188,25 +188,50 @@ def call_openai_api(messages, api_key=None, model="gpt-4", temperature=0.7, max_
         if not api_key:
             return "APIキーが設定されていません。管理者に連絡してください。"
         
-        # クライアントの初期化
-        client = OpenAI(api_key=api_key, timeout=timeout)
-        
-        # パラメータの準備
-        params = {
-            "model": model,
-            "messages": messages,
-            "temperature": temperature
-        }
-        
-        # max_tokensが指定されている場合のみ追加
-        if max_tokens is not None:
-            params["max_tokens"] = max_tokens
-        
-        # APIリクエスト送信
-        response = client.chat.completions.create(**params)
-        
-        # 応答の取得
-        return response.choices[0].message.content
+        # 新しいAPIスタイルを試す
+        try:
+            from openai import OpenAI
+            # クライアントの初期化
+            client = OpenAI(api_key=api_key, timeout=timeout)
+            
+            # パラメータの準備
+            params = {
+                "model": model,
+                "messages": messages,
+                "temperature": temperature
+            }
+            
+            # max_tokensが指定されている場合のみ追加
+            if max_tokens is not None:
+                params["max_tokens"] = max_tokens
+            
+            # APIリクエスト送信
+            response = client.chat.completions.create(**params)
+            
+            # 応答の取得
+            return response.choices[0].message.content
+            
+        except (ImportError, AttributeError):
+            # 古いAPIスタイルにフォールバック
+            import openai
+            openai.api_key = api_key
+            
+            # パラメータの準備
+            params = {
+                "model": model,
+                "messages": messages,
+                "temperature": temperature
+            }
+            
+            # max_tokensが指定されている場合のみ追加
+            if max_tokens is not None:
+                params["max_tokens"] = max_tokens
+            
+            # APIリクエスト送信
+            response = openai.ChatCompletion.create(**params)
+            
+            # 応答の取得
+            return response.choices[0].message['content']
     
     except Exception as e:
         # エラーをログに記録
