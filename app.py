@@ -1,3 +1,4 @@
+# app.py
 import os
 import re
 import json
@@ -8,8 +9,8 @@ import io
 import csv
 import random
 import string
-import jinja2 #追加分
-import markupsafe #追加分
+import jinja2
+import markupsafe
 from datetime import datetime
 from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect
@@ -111,6 +112,7 @@ class User(UserMixin, db.Model):
     reset_token = db.Column(db.String(100), nullable=True)
     reset_token_created_at = db.Column(db.DateTime, nullable=True)
 
+    # リレーションシップの定義
     classes_teaching = db.relationship('Class', backref='teacher', lazy=True)
     interest_surveys = db.relationship('InterestSurvey', backref='student', lazy=True)
     personality_surveys = db.relationship('PersonalitySurvey', backref='student', lazy=True)
@@ -133,12 +135,6 @@ class User(UserMixin, db.Model):
             return False
         return InquiryTheme.query.filter_by(student_id=self.id, is_selected=True).first() is not None
 
-# BaseBuilderモデルのインポート
-from basebuilder.models import (
-    ProblemCategory, BasicKnowledgeItem, KnowledgeThemeRelation,
-    AnswerRecord, ProficiencyRecord, LearningPath, PathAssignment
-)
-
 # 学校管理のモデル定義
 class School(db.Model):
     __tablename__ = 'schools'
@@ -148,7 +144,8 @@ class School(db.Model):
     address = db.Column(db.Text)
     contact_email = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    # 修正後:
+    
+    # リレーションシップの定義 - string referencesを使用
     problem_categories = db.relationship('ProblemCategory', back_populates='school_ref', lazy=True)
     years = db.relationship('SchoolYear', backref='school', lazy=True)
     users = db.relationship('User', backref='school', lazy=True)
@@ -202,13 +199,12 @@ class StudentEnrollment(db.Model):
     student = db.relationship('User', backref='student_enrollments', lazy=True)
     school_year = db.relationship('SchoolYear', backref='student_enrollments', lazy=True)
 
-# 他のモデルの定義（必要に応じてフィールドを拡張してください）
-# Class モデルの定義を拡張
+# クラスモデル定義
 class Class(db.Model):
     __tablename__ = 'classes'
     id = db.Column(db.Integer, primary_key=True)
     teacher_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=False)  # 追加
+    school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     schedule = db.Column(db.String(200))
@@ -253,7 +249,7 @@ class InquiryTheme(db.Model):
     __tablename__ = 'inquiry_themes'
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    main_theme_id = db.Column(db.Integer, db.ForeignKey('main_themes.id'), nullable=True)  # 追加
+    main_theme_id = db.Column(db.Integer, db.ForeignKey('main_themes.id'), nullable=True)
     is_ai_generated = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     title = db.Column(db.String(200))
@@ -304,9 +300,7 @@ class Todo(db.Model):
     is_completed = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # ユーザーとの関連付け
-    #student = db.relationship('User', backref=db.backref('todos', lazy=True))
+
 class Goal(db.Model):
     __tablename__ = 'goals'
     id = db.Column(db.Integer, primary_key=True)
@@ -418,7 +412,6 @@ class Milestone(db.Model):
     # クラスとの関連付け
     class_obj = db.relationship('Class', backref=db.backref('milestones', lazy=True))
 
-
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -445,6 +438,13 @@ admin.add_view(AdminModelView(School, db.session))
 admin.add_view(AdminModelView(SchoolYear, db.session))
 admin.add_view(AdminModelView(ClassGroup, db.session))
 admin.add_view(AdminModelView(StudentEnrollment, db.session))
+
+# BaseBuilderモデルをインポートする前に基本モデルを定義完了
+from basebuilder.models import (
+    ProblemCategory, BasicKnowledgeItem, KnowledgeThemeRelation,
+    AnswerRecord, ProficiencyRecord, LearningPath, PathAssignment,
+    TextSet, TextDelivery, TextProficiencyRecord, WordProficiency
+)
 
 # その後、BaseBuilderモジュールを初期化
 from basebuilder import init_app as init_basebuilder
@@ -486,7 +486,6 @@ def admin_dashboard():
                           user_count=user_count, 
                           class_count=class_count)
 
-# 学校詳細表示
 @app.route('/admin/school/<int:school_id>')
 @login_required
 def admin_school_detail(school_id):
@@ -494,12 +493,18 @@ def admin_school_detail(school_id):
         flash('この機能は管理者のみ利用可能です。')
         return redirect(url_for('index'))
     
-    school = School.query.get_or_404(school_id)
-    school_years = SchoolYear.query.filter_by(school_id=school_id).all()
+    try:
+        school = School.query.get_or_404(school_id)
+        school_years = SchoolYear.query.filter_by(school_id=school_id).all()
+    except Exception as e:
+        import logging
+        logging.error(f"データベースエラー: {e}")
+        flash('データの取得中にエラーが発生しました。', 'error')
+        school_years = []
     
-    return render_template('admin/school_detail.html', 
-                           school=school, 
-                           school_years=school_years)
+    return render_template('admin/school_detail.html',
+                          school=school,
+                          school_years=school_years)
 
 # 学校作成
 @app.route('/admin/school/create', methods=['GET', 'POST'])
@@ -2408,78 +2413,107 @@ def regenerate_themes():
 # 既存の register ルートを以下の内容で置き換える
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        confirm_password = request.form.get('confirm_password')
-        email = request.form.get('email')
-        role = request.form.get('role', 'student')
-        school_code = request.form.get('school_code')
-        
-        # 入力検証
-        if password != confirm_password:
-            flash('パスワードが一致しません。')
-            return render_template('register.html')
-        
-        # 既存ユーザー/メールチェック
-        existing_user = User.query.filter_by(username=username).first()
-        if existing_user:
-            flash('そのユーザー名は既に使用されています。')
-            return render_template('register.html')
-        
-        existing_email = User.query.filter_by(email=email).first()
-        if existing_email:
-            flash('そのメールアドレスは既に使用されています。')
-            return render_template('register.html')
-        
-        # 学校コードのチェック
-        if not school_code:
-            flash('学校コードは必須です。')
-            return render_template('register.html')
+    try:
+        if request.method == 'POST':
+            username = request.form.get('username')
+            password = request.form.get('password')
+            confirm_password = request.form.get('confirm_password')
+            email = request.form.get('email')
+            role = request.form.get('role', 'student')
+            school_code = request.form.get('school_code')
             
-        school = School.query.filter_by(code=school_code).first()
-        if not school:
-            flash('入力された学校コードが見つかりません。')
-            return render_template('register.html')
-        school_id = school.id
+            # 入力検証
+            if password != confirm_password:
+                flash('パスワードが一致しません。')
+                return render_template('register.html')
+            
+            # 既存ユーザー/メールチェック
+            existing_user = User.query.filter_by(username=username).first()
+            if existing_user:
+                flash('そのユーザー名は既に使用されています。')
+                return render_template('register.html')
+            
+            existing_email = User.query.filter_by(email=email).first()
+            if existing_email:
+                flash('そのメールアドレスは既に使用されています。')
+                return render_template('register.html')
+            
+            # 学校コードのチェック
+            if not school_code:
+                flash('学校コードは必須です。')
+                return render_template('register.html')
+                
+            try:
+                school = School.query.filter_by(code=school_code).first()
+                if not school:
+                    flash('入力された学校コードが見つかりません。')
+                    return render_template('register.html')
+                school_id = school.id
+            except Exception as e:
+                import logging
+                logging.error(f"学校情報取得エラー: {e}")
+                flash('学校情報の取得に失敗しました。管理者にお問い合わせください。')
+                return render_template('register.html')
+            
+            # パスワード強度チェック
+            if len(password) < 8:
+                flash('パスワードは8文字以上である必要があります。')
+                return render_template('register.html')
+            
+            # 確認用トークンを生成
+            token = secrets.token_urlsafe(32)
+            token_created_at = datetime.utcnow()
+            
+            # 新しいユーザーの作成
+            try:
+                new_user = User(
+                    username=username,
+                    password=generate_password_hash(password),
+                    email=email,
+                    role=role,
+                    school_id=school_id,
+                    email_confirmed=False,
+                    email_token=token,
+                    token_created_at=token_created_at,
+                    is_approved=(role != 'student')  # 教師/管理者は自動承認
+                )
+                
+                db.session.add(new_user)
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                import logging
+                logging.error(f"ユーザー登録エラー: {e}")
+                flash('ユーザー登録に失敗しました。管理者にお問い合わせください。')
+                return render_template('register.html')
+            
+            # メール確認メールを送信
+            try:
+                from utils.email_sender import send_confirmation_email
+                # 引数の数が異なるようなので修正
+                # 元の関数: send_confirmation_email(email, new_user.id, token, username)
+                # 実装: send_confirmation_email(user_email, confirmation_link)
+                confirmation_link = f"{request.host_url}verify_email/{new_user.id}/{token}"
+                email_sent = send_confirmation_email(email, confirmation_link)
+                
+                if email_sent:
+                    flash('登録が完了しました。メールに送信された確認リンクをクリックしてください。')
+                else:
+                    flash('メールの送信に失敗しました。管理者にお問い合わせください。')
+            except Exception as e:
+                import logging
+                logging.error(f"メール送信エラー: {e}")
+                flash('登録は完了しましたが、メールの送信に失敗しました。管理者にお問い合わせください。')
+            
+            return redirect(url_for('verify_email', user_id=new_user.id))
         
-        # パスワード強度チェック
-        if len(password) < 8:
-            flash('パスワードは8文字以上である必要があります。')
-            return render_template('register.html')
+        return render_template('register.html')
         
-        # 確認用トークンを生成
-        token = secrets.token_urlsafe(32)
-        token_created_at = datetime.utcnow()
-        
-        # 新しいユーザーの作成
-        new_user = User(
-            username=username,
-            password=generate_password_hash(password),
-            email=email,
-            role=role,
-            school_id=school_id,
-            email_confirmed=False,
-            email_token=token,
-            token_created_at=token_created_at,
-            is_approved=(role != 'student')  # 教師/管理者は自動承認
-        )
-        
-        db.session.add(new_user)
-        db.session.commit()
-        
-        # メール確認メールを送信
-        from utils.email_sender import send_confirmation_email
-        email_sent = send_confirmation_email(email, new_user.id, token, username)
-        
-        if email_sent:
-            flash('登録が完了しました。メールに送信された確認リンクをクリックしてください。')
-        else:
-            flash('メールの送信に失敗しました。管理者にお問い合わせください。')
-        
-        return redirect(url_for('verify_email', user_id=new_user.id))
-    
-    return render_template('register.html')
+    except Exception as e:
+        import logging
+        logging.error(f"登録処理中に予期せぬエラーが発生しました: {e}")
+        flash('処理中にエラーが発生しました。後でもう一度お試しいただくか、管理者にお問い合わせください。')
+        return render_template('register.html')
 
 # クラス関連のルート
 @app.route('/create_class', methods=['GET', 'POST'])

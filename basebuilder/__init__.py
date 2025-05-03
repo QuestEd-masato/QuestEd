@@ -8,13 +8,15 @@ def init_app(app):
     
     # 管理画面へのモデル追加
     with app.app_context():
+        # 修正: app.dbとapp.adminではなく、直接インポート
         from app import admin, db
         from flask_admin.contrib.sqla import ModelView
         from basebuilder.models import (
             ProblemCategory, BasicKnowledgeItem, KnowledgeThemeRelation,
             AnswerRecord, ProficiencyRecord, LearningPath, PathAssignment,
-            TextSet, TextDelivery, TextProficiencyRecord, WordProficiency  # テキスト関連モデルを追加
+            TextSet, TextDelivery, TextProficiencyRecord, WordProficiency
         )
+        
         # 新しく追加したモジュールをインポート
         from basebuilder import exporters
         from basebuilder import importers
@@ -24,7 +26,7 @@ def init_app(app):
                 from flask_login import current_user
                 return current_user.is_authenticated and current_user.role == 'teacher'
         
-        # 管理画面にモデルを追加
+        # 修正: app.adminではなくadminを使用
         admin.add_view(BaseBuilderModelView(ProblemCategory, db.session, name='問題カテゴリ'))
         admin.add_view(BaseBuilderModelView(BasicKnowledgeItem, db.session, name='基礎知識問題'))
         admin.add_view(BaseBuilderModelView(KnowledgeThemeRelation, db.session, name='問題テーマ関連'))
@@ -38,7 +40,7 @@ def init_app(app):
         admin.add_view(BaseBuilderModelView(TextProficiencyRecord, db.session, name='テキスト熟練度'))
         admin.add_view(BaseBuilderModelView(WordProficiency, db.session, name='単語熟練度'))
     
-    # ナビゲーションのカスタマイズ
+    # ナビゲーションのカスタマイズ（変更なし）
     @app.context_processor
     def inject_basebuilder_nav():
         from flask_login import current_user

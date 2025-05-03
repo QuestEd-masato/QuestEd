@@ -11,9 +11,13 @@ class School(db.Model):
     contact_email = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # リレーションシップ
+    # リレーションシップ - 文字列参照を使用
     years = db.relationship('SchoolYear', backref='school', lazy=True)
     users = db.relationship('User', backref='school', lazy=True)
+    problem_categories = db.relationship('ProblemCategory', back_populates='school_ref', lazy=True)
+    text_sets = db.relationship('TextSet', back_populates='school_ref', lazy=True)
+    learning_paths = db.relationship('LearningPath', back_populates='school_ref', lazy=True)
+    basic_knowledge_items = db.relationship('BasicKnowledgeItem', back_populates='school_ref', lazy=True)
 
 class SchoolYear(db.Model):
     __tablename__ = 'school_years'
@@ -42,6 +46,7 @@ class ClassGroup(db.Model):
     
     # リレーションシップ
     enrollments = db.relationship('StudentEnrollment', backref='class_group', lazy=True)
+    teacher = db.relationship('User', backref='class_groups_teaching', lazy=True)
 
 class StudentEnrollment(db.Model):
     __tablename__ = 'student_enrollments'
@@ -56,5 +61,5 @@ class StudentEnrollment(db.Model):
     __table_args__ = (db.UniqueConstraint('student_id', 'class_group_id', 'school_year_id'),)
     
     # リレーションシップ
-    student = db.relationship('User', backref='enrollments', lazy=True)
-    school_year = db.relationship('SchoolYear', backref='enrollments', lazy=True)
+    student = db.relationship('User', backref='student_enrollments', lazy=True)
+    school_year = db.relationship('SchoolYear', backref='student_enrollments', lazy=True)

@@ -1,8 +1,7 @@
 # basebuilder/models.py
 from datetime import datetime
-from app import db, User  # Classのインポートを削除
+from app import db
 
-# 問題カテゴリモデル → 単語カテゴリモデルに変更
 # 問題カテゴリモデル → 単語カテゴリモデルに変更
 class ProblemCategory(db.Model):
     __tablename__ = 'problem_categories'
@@ -10,31 +9,32 @@ class ProblemCategory(db.Model):
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     parent_id = db.Column(db.Integer, db.ForeignKey('problem_categories.id'), nullable=True)
-    school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=True)  # 追加
+    school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     
-    # リレーションシップ
+    # リレーションシップ - 文字列参照を使用
     problems = db.relationship('BasicKnowledgeItem', backref='category', lazy=True)
     subcategories = db.relationship('ProblemCategory', backref=db.backref('parent', remote_side=[id]))
     creator = db.relationship('User', backref=db.backref('created_categories', lazy=True))
     text_sets = db.relationship('TextSet', backref='category', lazy=True)
     school_ref = db.relationship('School', back_populates='problem_categories', lazy=True)
     
-# テキスト配信モデル（新規）
+# テキスト配信モデル
 class TextDelivery(db.Model):
     __tablename__ = 'text_deliveries'
     id = db.Column(db.Integer, primary_key=True)
     text_set_id = db.Column(db.Integer, db.ForeignKey('text_sets.id'), nullable=False)
-    class_id = db.Column(db.Integer, db.ForeignKey('classes.id'), nullable=False)  # class_groupsからclassesに変更
+    class_id = db.Column(db.Integer, db.ForeignKey('classes.id'), nullable=False)
     delivered_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     delivered_at = db.Column(db.DateTime, default=datetime.utcnow)
     due_date = db.Column(db.Date, nullable=True)
     
-    # リレーションシップ - 循環インポートを避けるためにストリング形式で指定
+    # リレーションシップ - 文字列参照を使用
     deliverer = db.relationship('User', backref='delivered_texts')
-    # Classとのリレーションシップを文字列で参照
+    # Classとのリレーションシップを文字列で参照して循環インポートを回避
     delivered_class = db.relationship('Class', backref='text_deliveries')
+    text_set = db.relationship('TextSet', backref='deliveries')
 
 # 基礎知識問題モデル → 単語モデルに変更
 class BasicKnowledgeItem(db.Model):
@@ -43,7 +43,7 @@ class BasicKnowledgeItem(db.Model):
     category_id = db.Column(db.Integer, db.ForeignKey('problem_categories.id'), nullable=False)
     title = db.Column(db.String(200), nullable=False)  # 単語
     question = db.Column(db.Text, nullable=False)      # 意味
-    answer_type = db.Column(db.String(20), nullable=False, default='text')  # 常に'text'として扱う
+    answer_type = db.Column(db.String(20), nullable=False, default='text')
     correct_answer = db.Column(db.Text, nullable=False) # 別の表記など
     choices = db.Column(db.Text)  # 例文をJSONとして保存
     explanation = db.Column(db.Text)  # 発音記号や追加情報
@@ -53,13 +53,14 @@ class BasicKnowledgeItem(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     text_set_id = db.Column(db.Integer, db.ForeignKey('text_sets.id'), nullable=True)
     order_in_text = db.Column(db.Integer, nullable=True)  # テキスト内での順序
-    school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=True)  # 追加
+    school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=True)
     
     # リレーションシップ
     creator = db.relationship('User', backref=db.backref('created_problems', lazy=True))
     answer_records = db.relationship('AnswerRecord', backref='problem', lazy=True)
     theme_relations = db.relationship('KnowledgeThemeRelation', backref='problem', lazy=True)
     school_ref = db.relationship('School', back_populates='basic_knowledge_items', lazy=True)
+
 # 問題と探究テーマの関連付けモデル
 class KnowledgeThemeRelation(db.Model):
     __tablename__ = 'knowledge_theme_relations'
@@ -71,6 +72,7 @@ class KnowledgeThemeRelation(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     
     # リレーションシップ
+    # themeは文字列で参照して循環インポートを回避
     theme = db.relationship('InquiryTheme', backref=db.backref('knowledge_relations', lazy=True))
     creator = db.relationship('User', backref=db.backref('created_relations', lazy=True))
 
@@ -121,7 +123,7 @@ class TextProficiencyRecord(db.Model):
     # ユニーク制約（学生+テキストの組み合わせは一意）
     __table_args__ = (db.UniqueConstraint('student_id', 'text_set_id'),)
 
-# 学習パスモデル（そのまま利用）
+# 学習パスモデル
 class LearningPath(db.Model):
     __tablename__ = 'learning_paths'
     id = db.Column(db.Integer, primary_key=True)
@@ -131,14 +133,14 @@ class LearningPath(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     is_active = db.Column(db.Boolean, default=True)
-    school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=True)  # 追加
+    school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=True)
     
     # リレーションシップ
     creator = db.relationship('User', backref=db.backref('created_paths', lazy=True))
     assignments = db.relationship('PathAssignment', backref='path', lazy=True)
     school_ref = db.relationship('School', back_populates='learning_paths', lazy=True)
     
-    # 学習パス割り当てモデル（そのまま利用）
+# 学習パス割り当てモデル
 class PathAssignment(db.Model):
     __tablename__ = 'path_assignments'
     id = db.Column(db.Integer, primary_key=True)
@@ -157,7 +159,6 @@ class PathAssignment(db.Model):
     # ユニーク制約（学生+パスの組み合わせは一意）
     __table_args__ = (db.UniqueConstraint('path_id', 'student_id'),)
 
-# basebuilder/models.py に追加
 # 単語ごとの熟練度モデル
 class WordProficiency(db.Model):
     __tablename__ = 'word_proficiency_records'
@@ -175,19 +176,18 @@ class WordProficiency(db.Model):
     # ユニーク制約（学生+問題の組み合わせは一意）
     __table_args__ = (db.UniqueConstraint('student_id', 'problem_id'),)
 
-# テキストセットモデル（新規）
+# テキストセットモデル
 class TextSet(db.Model):
     __tablename__ = 'text_sets'
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
     category_id = db.Column(db.Integer, db.ForeignKey('problem_categories.id'), nullable=False)
-    school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=True)  # 追加
+    school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     
     # リレーションシップ
     problems = db.relationship('BasicKnowledgeItem', backref='text_set', lazy=True)
     creator = db.relationship('User', backref=db.backref('created_text_sets', lazy=True))
-    deliveries = db.relationship('TextDelivery', backref='text_set', lazy=True)
     school_ref = db.relationship('School', back_populates='text_sets', lazy=True)

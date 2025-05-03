@@ -10,3 +10,31 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     UPLOAD_FOLDER = 'static/uploads'
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 最大16MB
+    
+    # 追加の設定（必要に応じて）
+    DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
+    TESTING = False
+    
+class DevelopmentConfig(Config):
+    DEBUG = True
+    
+class TestingConfig(Config):
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    
+class ProductionConfig(Config):
+    DEBUG = False
+    TESTING = False
+    
+# 環境に基づいて設定を選択
+config_by_name = {
+    'development': DevelopmentConfig,
+    'testing': TestingConfig,
+    'production': ProductionConfig,
+    'default': DevelopmentConfig
+}
+
+def get_config():
+    """環境変数に基づいて設定を返す"""
+    env = os.getenv('FLASK_ENV', 'development')
+    return config_by_name.get(env, config_by_name['default'])
