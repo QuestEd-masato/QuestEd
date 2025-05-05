@@ -54,8 +54,10 @@ def send_confirmation_email(user_email, user_id, token, username):
     
     try:
         # SMTPサーバーに接続
-        server = smtplib.SMTP("smtp.gmail.com", 587)  # GMailの場合
-        server.starttls()
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.ehlo()  # サーバーと対話を開始
+        server.starttls()  # TLS暗号化を有効化
+        server.ehlo()  # TLS開始後に再度ehlo
         server.login(sender_email, password)
         server.sendmail(sender_email, user_email, message.as_string())
         server.quit()
@@ -115,8 +117,10 @@ def send_reset_password_email(user_email, user_id, token, username):
     
     try:
         # SMTPサーバーに接続
-        server = smtplib.SMTP("smtp.gmail.com", 587)  # GMailの場合
-        server.starttls()
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.ehlo()  # サーバーと対話を開始
+        server.starttls()  # TLS暗号化を有効化
+        server.ehlo()  # TLS開始後に再度ehlo
         server.login(sender_email, password)
         server.sendmail(sender_email, user_email, message.as_string())
         server.quit()

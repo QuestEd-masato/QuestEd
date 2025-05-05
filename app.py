@@ -2460,53 +2460,45 @@ def register():
                 flash('パスワードは8文字以上である必要があります。')
                 return render_template('register.html')
             
-            # 確認用トークンを生成
-            token = secrets.token_urlsafe(32)
-            token_created_at = datetime.utcnow()
+            # MVPモード: メール確認をバイパス
+            # MVPとしてメール確認なしで直接有効化
+            new_user = User(
+                username=username,
+                password=generate_password_hash(password),
+                email=email,
+                role=role,
+                school_id=school_id,
+                email_confirmed=True,  # メール確認をスキップ
+                email_token=None,      # トークン不要
+                token_created_at=None,
+                is_approved=(role != 'student')  # 教師/管理者は自動承認
+            )
             
-            # 新しいユーザーの作成
+            db.session.add(new_user)
+            db.session.commit()
+            
+            # オプションとしてメール送信を試み、失敗してもユーザー作成は続行
             try:
-                new_user = User(
-                    username=username,
-                    password=generate_password_hash(password),
-                    email=email,
-                    role=role,
-                    school_id=school_id,
-                    email_confirmed=False,
-                    email_token=token,
-                    token_created_at=token_created_at,
-                    is_approved=(role != 'student')  # 教師/管理者は自動承認
-                )
+                # 確認用トークンを生成（念のため）
+                token = secrets.token_urlsafe(32)
                 
-                db.session.add(new_user)
-                db.session.commit()
-            except Exception as e:
-                db.session.rollback()
-                import logging
-                logging.error(f"ユーザー登録エラー: {e}")
-                flash('ユーザー登録に失敗しました。管理者にお問い合わせください。')
-                return render_template('register.html')
-            
-            # メール確認メールを送信
-            try:
+                # メール送信試行（送信エラーでも続行）
                 from utils.email_sender import send_confirmation_email
-                # 引数の数が異なるようなので修正
-                # 元の関数: send_confirmation_email(email, new_user.id, token, username)
-                # 実装: send_confirmation_email(user_email, confirmation_link)
-                confirmation_link = f"{request.host_url}verify_email/{new_user.id}/{token}"
-                email_sent = send_confirmation_email(email, confirmation_link)
+                send_confirmation_email(email, new_user.id, token, username)
                 
-                if email_sent:
-                    flash('登録が完了しました。メールに送信された確認リンクをクリックしてください。')
-                else:
-                    flash('メールの送信に失敗しました。管理者にお問い合わせください。')
+                flash('登録が完了しました。ログインしてください。')
             except Exception as e:
+                # メール送信失敗しても登録は完了
                 import logging
                 logging.error(f"メール送信エラー: {e}")
-                flash('登録は完了しましたが、メールの送信に失敗しました。管理者にお問い合わせください。')
+                flash('登録は完了しましたが、確認メールの送信に失敗しました。ログインしてください。')
             
-            return redirect(url_for('verify_email', user_id=new_user.id))
-        
+            # 学生の場合は承認待ち、それ以外はログインページへ
+            if role == 'student' and not new_user.is_approved:
+                return redirect(url_for('awaiting_approval'))
+            else:
+                return redirect(url_for('login'))
+            
         return render_template('register.html')
         
     except Exception as e:
@@ -2514,7 +2506,6 @@ def register():
         logging.error(f"登録処理中に予期せぬエラーが発生しました: {e}")
         flash('処理中にエラーが発生しました。後でもう一度お試しいただくか、管理者にお問い合わせください。')
         return render_template('register.html')
-
 # クラス関連のルート
 @app.route('/create_class', methods=['GET', 'POST'])
 @login_required

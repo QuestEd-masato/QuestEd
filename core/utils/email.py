@@ -87,7 +87,9 @@ def send_confirmation_email(user_email, user_id, token, username):
     try:
         # SMTPサーバーに接続
         server = smtplib.SMTP(smtp_server, smtp_port)
-        server.starttls()
+        server.ehlo()  # サーバーと対話を開始
+        server.starttls()  # TLS暗号化を有効化
+        server.ehlo()  # TLS開始後に再度ehlo
         server.login(smtp_user, smtp_password)
         server.sendmail(sender_email, user_email, message.as_string())
         server.quit()
@@ -178,7 +180,9 @@ def send_reset_password_email(user_email, user_id, token, username):
     try:
         # SMTPサーバーに接続
         server = smtplib.SMTP(smtp_server, smtp_port)
-        server.starttls()
+        server.ehlo()  # サーバーと対話を開始
+        server.starttls()  # TLS暗号化を有効化
+        server.ehlo()  # TLS開始後に再度ehlo
         server.login(smtp_user, smtp_password)
         server.sendmail(sender_email, user_email, message.as_string())
         server.quit()
@@ -268,7 +272,15 @@ def send_invitation_email(name, email, username, password, school_name, class_na
     message.attach(MIMEText(body, "plain"))
     
     # メール送信
-    with smtplib.SMTP(smtp_server, smtp_port) as server:
+    try:
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.ehlo()  # サーバーと対話を開始
         server.starttls()  # TLS暗号化を有効化
+        server.ehlo()  # TLS開始後に再度ehlo
         server.login(smtp_user, smtp_password)
         server.send_message(message)
+        server.quit()
+        return True
+    except Exception as e:
+        print(f"メール送信エラー: {str(e)}")
+        return False
