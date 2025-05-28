@@ -10,7 +10,7 @@
         <p>{{ theme.question }}</p>
     </div>
     
-    <form method="POST" action="{{ url_for('student.create_activity') }}" enctype="multipart/form-data">
+    <form method="POST" action="{{ url_for('student.new_activity') }}" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         
         <div class="form-group">

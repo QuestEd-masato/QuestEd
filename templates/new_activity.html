@@ -25,7 +25,7 @@
         </select>
     </div>
     
-    <form method="POST" action="{{ url_for('student.create_activity') }}" enctype="multipart/form-data" id="activity-form">
+    <form method="POST" action="{{ url_for('student.new_activity') }}" enctype="multipart/form-data" id="activity-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         
         <div class="form-row">

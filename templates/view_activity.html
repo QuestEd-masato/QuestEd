@@ -9,9 +9,9 @@
             <span class="activity-date">{{ activity.date.strftime('%Y年%m月%d日') }}</span>
             {% if current_user.id == activity.student_id %}
             <div class="activity-actions">
-                <a href="{{ url_for('student.edit_activity', activity_id=activity.id) }}" class="btn btn-outline">編集</a>
+                <a href="{{ url_for('student.edit_activity', log_id=activity.id) }}" class="btn btn-outline">編集</a>
                 <button type="button" class="btn btn-danger" onclick="confirmDelete()">削除</button>
-                <form id="delete-form" method="POST" action="{{ url_for('student.delete_activity', activity_id=activity.id) }}" style="display: none;">
+                <form id="delete-form" method="POST" action="{{ url_for('student.delete_activity', log_id=activity.id) }}" style="display: none;">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 </form>
             </div>
@@ -49,7 +49,10 @@
     {% if current_user.role == 'teacher' %}
     <div class="teacher-feedback-section">
         <h3>フィードバックを追加</h3>
+        {# TODO: フィードバック機能実装時に有効化
         <form method="POST" action="{{ url_for('add_feedback', activity_id=activity.id) }}">
+        #}
+        <form method="POST" action="#">  {# 一時的に無効化 #}
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             
             <div class="form-group">

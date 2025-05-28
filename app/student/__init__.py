@@ -396,6 +396,43 @@ def delete_activity(log_id):
     flash('活動記録を削除しました。')
     return redirect(url_for('student.activities'))
 
+@student_bp.route('/activity/<int:activity_id>')
+@login_required
+def view_activity(activity_id):
+    """活動記録詳細表示"""
+    activity = ActivityLog.query.get_or_404(activity_id)
+    
+    # アクセス権限の確認
+    if current_user.role == 'student':
+        # 自分の活動記録のみ閲覧可能
+        if activity.student_id != current_user.id:
+            flash('この活動記録を閲覧する権限がありません。')
+            return redirect(url_for('student.activities'))
+    elif current_user.role == 'teacher':
+        # 教師は自分のクラスの学生の活動記録のみ閲覧可能
+        student_classes = ClassEnrollment.query.filter_by(student_id=activity.student_id).all()
+        teacher_class_ids = [c.id for c in Class.query.filter_by(teacher_id=current_user.id).all()]
+        
+        # 学生が履修しているクラスと教師が担当するクラスに重複があるか確認
+        student_class_ids = [e.class_id for e in student_classes]
+        if not any(class_id in teacher_class_ids for class_id in student_class_ids):
+            flash('この活動記録を閲覧する権限がありません。')
+            return redirect(url_for('teacher.dashboard'))
+    
+    # 選択中のテーマを取得
+    theme = InquiryTheme.query.filter_by(
+        student_id=activity.student_id,
+        is_selected=True
+    ).first()
+    
+    # TODO: フィードバック機能の実装時にフィードバックデータを取得
+    feedback = []
+    
+    return render_template('view_activity.html', 
+                         activity=activity,
+                         theme=theme,
+                         feedback=feedback)
+
 @student_bp.route('/activities/export/<format>')
 @login_required
 @student_required

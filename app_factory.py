@@ -32,6 +32,15 @@ def create_app(config_object=None):
         from basebuilder import init_app as init_basebuilder
         init_basebuilder(app)
     
+    # カスタムフィルターを追加
+    @app.template_filter('nl2br')
+    def nl2br_filter(text):
+        """改行をHTMLのbrタグに変換するフィルター"""
+        if not text:
+            return ''
+        import re
+        return re.sub(r'\n', '<br>', str(text))
+    
     return app
 
 # アプリケーション実行用コード

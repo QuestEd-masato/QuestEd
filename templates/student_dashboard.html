@@ -107,13 +107,13 @@
                 </div>
                 <div class="section-actions">
                     <a href="{{ url_for('student.activities') }}" class="btn btn-sm">すべての学習記録を見る</a>
-                    <a href="{{ url_for('student.create_activity') }}" class="btn btn-sm btn-primary">新しい学習記録の作成</a>
+                    <a href="{{ url_for('student.new_activity') }}" class="btn btn-sm btn-primary">新しい学習記録の作成</a>
                 </div>
             {% else %}
                 <div class="no-activities">
                     <p>まだ活動記録がありません</p>
                     {% if selected_theme %}
-                        <a href="{{ url_for('student.create_activity') }}" class="btn btn-primary">学習内容を記録する</a>
+                        <a href="{{ url_for('student.new_activity') }}" class="btn btn-primary">学習内容を記録する</a>
                     {% else %}
                         <p class="help-text">学習記録にはテーマ選択が必要です</p>
                     {% endif %}

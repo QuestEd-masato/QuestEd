@@ -10,7 +10,7 @@
             <h3>選択中のテーマ: {{ theme.title }}</h3>
             <p>{{ theme.question }}</p>
         </div>
-        <a href="{{ url_for('student.create_activity') }}" class="btn btn-primary">新しい学習を記録</a>
+        <a href="{{ url_for('student.new_activity') }}" class="btn btn-primary">新しい学習を記録</a>
     </div>
     
     <div class="filter-container">
@@ -138,7 +138,7 @@
     {% else %}
     <div class="no-records">
         <p>まだ学習記録がありません。「新しい学習を記録」ボタンから記録を始めましょう。</p>
-        <a href="{{ url_for('student.create_activity') }}" class="btn btn-primary">学習記録を作成</a>
+        <a href="{{ url_for('student.new_activity') }}" class="btn btn-primary">学習記録を作成</a>
     </div>
     {% endif %}
 </div>
