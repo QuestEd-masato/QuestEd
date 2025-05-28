@@ -266,34 +266,75 @@ def add_students(class_id):
         return redirect(url_for('teacher.classes'))
     
     if request.method == 'POST':
-        student_usernames = request.form.get('student_usernames', '').split(',')
         added_count = 0
+        error_count = 0
         
-        for username in student_usernames:
-            username = username.strip()
-            if username:
-                student = User.query.filter_by(username=username, role='student').first()
-                if student and student.school_id == current_user.school_id:
-                    # 既に登録されていないか確認
-                    existing = ClassEnrollment.query.filter_by(
-                        class_id=class_id,
-                        student_id=student.id
-                    ).first()
+        # CSVファイルアップロードの処理
+        if 'csv_file' in request.files:
+            file = request.files['csv_file']
+            if file and file.filename.endswith('.csv'):
+                try:
+                    # CSVファイルを読み込む
+                    import csv
+                    import io
+                    stream = io.StringIO(file.stream.read().decode('utf-8'))
+                    csv_reader = csv.DictReader(stream)
                     
-                    if not existing:
-                        enrollment = ClassEnrollment(
+                    for row in csv_reader:
+                        username = row.get('username', '').strip()
+                        if username:
+                            student = User.query.filter_by(username=username, role='student').first()
+                            if student and student.school_id == current_user.school_id:
+                                # 既に登録されていないか確認
+                                existing = ClassEnrollment.query.filter_by(
+                                    class_id=class_id,
+                                    student_id=student.id
+                                ).first()
+                                
+                                if not existing:
+                                    enrollment = ClassEnrollment(
+                                        class_id=class_id,
+                                        student_id=student.id
+                                    )
+                                    db.session.add(enrollment)
+                                    added_count += 1
+                            else:
+                                error_count += 1
+                except Exception as e:
+                    flash(f'CSVファイルの処理中にエラーが発生しました: {str(e)}')
+                    return redirect(url_for('teacher.add_students', class_id=class_id))
+        
+        # テキスト入力での処理（フォールバック）
+        elif 'student_usernames' in request.form:
+            student_usernames = request.form.get('student_usernames', '').split(',')
+            
+            for username in student_usernames:
+                username = username.strip()
+                if username:
+                    student = User.query.filter_by(username=username, role='student').first()
+                    if student and student.school_id == current_user.school_id:
+                        # 既に登録されていないか確認
+                        existing = ClassEnrollment.query.filter_by(
                             class_id=class_id,
                             student_id=student.id
-                        )
-                        db.session.add(enrollment)
-                        added_count += 1
+                        ).first()
+                        
+                        if not existing:
+                            enrollment = ClassEnrollment(
+                                class_id=class_id,
+                                student_id=student.id
+                            )
+                            db.session.add(enrollment)
+                            added_count += 1
         
         db.session.commit()
         
         if added_count > 0:
             flash(f'{added_count}名の生徒をクラスに追加しました。')
-        else:
-            flash('生徒が追加されませんでした。ユーザー名を確認してください。')
+        if error_count > 0:
+            flash(f'{error_count}名の生徒が見つからないか、追加できませんでした。')
+        if added_count == 0 and error_count == 0:
+            flash('生徒が追加されませんでした。CSVファイルまたはユーザー名を確認してください。')
         
         return redirect(url_for('teacher.class_details', class_id=class_id))
     

@@ -47,6 +47,48 @@
                             </a>
                         </div>
                     </form>
+                    
+                    <hr class="my-4">
+                    
+                    <h4>または、ユーザー名で直接追加</h4>
+                    <form method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="mb-3">
+                            <label for="student_usernames" class="form-label">生徒のユーザー名</label>
+                            <textarea class="form-control" id="student_usernames" name="student_usernames" rows="3" 
+                                placeholder="ユーザー名をカンマ区切りで入力&#10;例: taro_yamada, hanako_tanaka, jiro_suzuki"></textarea>
+                            <div class="form-text">複数の生徒を追加する場合は、カンマで区切ってください。</div>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-user-plus me-2"></i>生徒を追加
+                            </button>
+                        </div>
+                    </form>
+                    
+                    {% if available_students %}
+                    <hr class="my-4">
+                    <h4>追加可能な生徒</h4>
+                    <div class="list-group">
+                        {% for student in available_students[:10] %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ student.username }}</strong>
+                                    <small class="text-muted">{{ student.email }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% if available_students|length > 10 %}
+                        <div class="list-group-item text-center text-muted">
+                            他 {{ available_students|length - 10 }} 名
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
                 </div>
                 
                 <div class="col-md-4 mt-4 mt-md-0">
