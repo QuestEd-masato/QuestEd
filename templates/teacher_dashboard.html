@@ -16,8 +16,8 @@
             <div class="section-header">
                 <h3>担当クラス</h3>
                 <div>
-                    <a href="{{ url_for('create_class') }}" class="btn btn-sm btn-primary">新規クラスを作成</a>
-                    <a href="{{ url_for('pending_users') }}" class="btn btn-sm btn-info">承認待ちユーザー</a>
+                    <a href="{{ url_for('teacher.create_class') }}" class="btn btn-sm btn-primary">新規クラスを作成</a>
+                    <a href="{{ url_for('teacher.pending_users') }}" class="btn btn-sm btn-info">承認待ちユーザー</a>
                 </div>
             </div>
             
@@ -54,9 +54,9 @@
                             {% endif %}
                             
                             <div class="class-actions">
-                                <a href="{{ url_for('view_class', class_id=class_data.id) }}" class="btn btn-sm">クラス詳細</a>    
-                                <a href="{{ url_for('create_milestone', class_id=class_data.id) }}" class="btn btn-sm">マイルストーン作成</a>
-                                <a href="{{ url_for('view_curriculums', class_id=class_data.id) }}" class="btn btn-sm btn-info">カリキュラム管理</a>
+                                <a href="{{ url_for('teacher.view_class', class_id=class_data.id) }}" class="btn btn-sm">クラス詳細</a>    
+                                <a href="{{ url_for('teacher.create_milestone', class_id=class_data.id) }}" class="btn btn-sm">マイルストーン作成</a>
+                                <a href="{{ url_for('teacher.curriculums', class_id=class_data.id) }}" class="btn btn-sm btn-info">カリキュラム管理</a>
                             </div>
                         </div>
                     {% endfor %}
@@ -64,7 +64,7 @@
             {% else %}
                 <div class="no-classes">
                     <p>担当クラスがありません</p>
-                    <a href="{{ url_for('create_class') }}" class="btn btn-primary">クラスを作成する</a>
+                    <a href="{{ url_for('teacher.create_class') }}" class="btn btn-primary">クラスを作成する</a>
                 </div>
             {% endif %}
         </div>
@@ -75,7 +75,7 @@
                 <h3>アカウント設定</h3>
             </div>
             <div class="settings-actions d-flex justify-content-center">
-                <a href="{{ url_for('change_password') }}" class="btn btn-outline-primary">
+                <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-primary">
                     <i class="fas fa-key"></i> パスワード変更
                 </a>
             </div>
@@ -133,7 +133,7 @@
                                 <p class="activity-excerpt">{{ activity_data.activity.content|truncate(100) }}</p>
                             </div>
                             <div class="activity-actions">
-                                <a href="{{ url_for('view_activity', activity_id=activity_data.activity.id) }}" class="btn btn-sm btn-primary">フィードバック</a>
+                                <a href="{{ url_for('student.view_activity', activity_id=activity_data.activity.id) }}" class="btn btn-sm btn-primary">フィードバック</a>
                             </div>
                         </div>
                     {% endfor %}

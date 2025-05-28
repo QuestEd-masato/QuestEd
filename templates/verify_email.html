@@ -14,8 +14,8 @@
         </div>
         
         <div class="verify-actions">
-            <a href="{{ url_for('resend_verification', user_id=user.id) }}" class="btn btn-outline-primary">確認メールを再送信</a>
-            <a href="{{ url_for('login') }}" class="btn btn-link">ログイン画面に戻る</a>
+            <a href="{{ url_for('auth.resend_verification', user_id=user.id) }}" class="btn btn-outline-primary">確認メールを再送信</a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-link">ログイン画面に戻る</a>
         </div>
     </div>
 </div>

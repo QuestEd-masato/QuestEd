@@ -5,8 +5,8 @@
 {% block content %}
 <nav aria-label="breadcrumb" class="mb-4">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">ダッシュボード</a></li>
-        <li class="breadcrumb-item"><a href="{{ url_for('admin_schools') }}">学校管理</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('admin_panel.dashboard') }}">ダッシュボード</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('admin_panel.admin_schools') }}">学校管理</a></li>
         <li class="breadcrumb-item active" aria-current="page">{{ school.name }}</li>
     </ol>
 </nav>
@@ -17,10 +17,10 @@
         <p class="text-muted mb-md-0">学校コード: <code>{{ school.code }}</code></p>
     </div>
     <div class="page-actions mt-3 mt-md-0">
-        <a href="{{ url_for('edit_school', school_id=school.id) }}" class="btn btn-outline-primary me-2">
+        <a href="{{ url_for('admin_panel.edit_school', school_id=school.id) }}" class="btn btn-outline-primary me-2">
             <i class="fas fa-edit"></i> 編集
         </a>
-        <a href="{{ url_for('academic.list_years', school_id=school.id) }}" class="btn btn-primary">
+        <a href="{{ url_for('admin_panel.admin_school_years', school_id=school.id) }}" class="btn btn-primary">
             <i class="fas fa-calendar-alt"></i> 年度管理
         </a>
     </div>
@@ -108,7 +108,7 @@
         <h5 class="card-title mb-0 py-2">
             <i class="fas fa-calendar-alt me-2"></i>年度一覧
         </h5>
-        <a href="{{ url_for('academic.create_year', school_id=school.id) }}" class="btn btn-sm btn-primary">
+        <a href="{{ url_for('admin_panel.admin_create_school_year', school_id=school.id) }}" class="btn btn-sm btn-primary">
             <i class="fas fa-plus-circle"></i> 新規年度作成
         </a>
     </div>
@@ -139,16 +139,16 @@
                         </td>
                         <td class="text-end">
                             <div class="btn-group" role="group">
-                                <a href="{{ url_for('academic.list_classes', year_id=year.id) }}" class="btn btn-sm btn-outline-secondary" title="クラス管理">
+                                <a href="{{ url_for('admin_panel.admin_class_groups', year_id=year.id) }}" class="btn btn-sm btn-outline-secondary" title="クラス管理">
                                     <i class="fas fa-users d-md-none"></i>
                                     <span class="d-none d-md-inline">クラス</span>
                                 </a>
-                                <a href="{{ url_for('academic.edit_year', year_id=year.id) }}" class="btn btn-sm btn-outline-primary" title="編集">
+                                <a href="{{ url_for('admin_panel.admin_edit_school_year', year_id=year.id) }}" class="btn btn-sm btn-outline-primary" title="編集">
                                     <i class="fas fa-edit d-md-none"></i>
                                     <span class="d-none d-md-inline">編集</span>
                                 </a>
                                 {% if not year.is_current %}
-                                <a href="{{ url_for('academic.set_current_year', year_id=year.id) }}" class="btn btn-sm btn-outline-success" title="現在の年度に設定">
+                                <a href="{{ url_for('admin_panel.admin_set_current_year', year_id=year.id) }}" class="btn btn-sm btn-outline-success" title="現在の年度に設定">
                                     <i class="fas fa-check d-md-none"></i>
                                     <span class="d-none d-md-inline">現在に設定</span>
                                 </a>
@@ -162,7 +162,7 @@
                             <div class="py-5">
                                 <i class="fas fa-calendar-alt fa-3x text-muted mb-3"></i>
                                 <p class="lead text-muted">登録されている年度がありません。</p>
-                                <a href="{{ url_for('academic.create_year', school_id=school.id) }}" class="btn btn-primary">
+                                <a href="{{ url_for('admin_panel.admin_create_school_year', school_id=school.id) }}" class="btn btn-primary">
                                     <i class="fas fa-plus-circle"></i> 新規年度作成
                                 </a>
                             </div>

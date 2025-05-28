@@ -10,7 +10,7 @@
         <p>{{ theme.question }}</p>
     </div>
     
-    <form method="POST" action="{{ url_for('create_activity') }}" enctype="multipart/form-data">
+    <form method="POST" action="{{ url_for('student.create_activity') }}" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         
         <div class="form-group">
@@ -41,7 +41,7 @@
         
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">保存</button>
-            <a href="{{ url_for('activities') }}" class="btn btn-secondary">キャンセル</a>
+            <a href="{{ url_for('student.activities') }}" class="btn btn-secondary">キャンセル</a>
         </div>
     </form>
 </div>

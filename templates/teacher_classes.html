@@ -13,7 +13,7 @@
     
     {% if current_user.school %}
         <div class="mb-4">
-            <a href="{{ url_for('create_class') }}" class="btn btn-primary">
+            <a href="{{ url_for('teacher.create_class') }}" class="btn btn-primary">
                 <i class="fas fa-plus"></i> 新しいクラスを作成
             </a>
         </div>
@@ -35,14 +35,14 @@
                             </p>
                         </div>
                         <div class="card-footer d-flex justify-content-between">
-                            <a href="{{ url_for('class_details', class_id=class.id) }}" class="btn btn-outline-primary">
+                            <a href="{{ url_for('teacher.class_details', class_id=class.id) }}" class="btn btn-outline-primary">
                                 <i class="fas fa-eye"></i> 詳細
                             </a>
                             <div>
-                                <a href="{{ url_for('edit_class', class_id=class.id) }}" class="btn btn-outline-secondary">
+                                <a href="{{ url_for('teacher.edit_class', class_id=class.id) }}" class="btn btn-outline-secondary">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <a href="{{ url_for('delete_class', class_id=class.id) }}" 
+                                <a href="{{ url_for('teacher.delete_class', class_id=class.id) }}" 
                                    class="btn btn-outline-danger" 
                                    onclick="return confirm('このクラス「{{ class.name }}」を削除してもよろしいですか？この操作は元に戻せません。');">
                                     <i class="fas fa-trash"></i>

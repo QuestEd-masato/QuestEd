@@ -7,8 +7,8 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>{{ class_obj.name }} - グループ一覧</h2>
         <div>
-            <a href="{{ url_for('view_class', class_id=class_obj.id) }}" class="btn btn-outline-secondary">クラスに戻る</a>
-            <a href="{{ url_for('create_group', class_id=class_obj.id) }}" class="btn btn-primary">グループを作成</a>
+            <a href="{{ url_for('teacher.view_class', class_id=class_obj.id) }}" class="btn btn-outline-secondary">クラスに戻る</a>
+            <a href="{{ url_for('teacher.create_group', class_id=class_obj.id) }}" class="btn btn-primary">グループを作成</a>
         </div>
     </div>
     
@@ -28,9 +28,9 @@
                     </div>
                 </div>
                 <div class="card-footer bg-transparent border-top-0">
-                    <a href="{{ url_for('view_group', group_id=group_data.group.id) }}" class="btn btn-sm btn-outline-primary">詳細</a>
+                    <a href="{{ url_for('teacher.view_group', group_id=group_data.group.id) }}" class="btn btn-sm btn-outline-primary">詳細</a>
                     {% if is_teacher or current_user.id == group_data.group.created_by %}
-                    <a href="{{ url_for('edit_group', group_id=group_data.group.id) }}" class="btn btn-sm btn-outline-secondary">編集</a>
+                    <a href="{{ url_for('teacher.edit_group', group_id=group_data.group.id) }}" class="btn btn-sm btn-outline-secondary">編集</a>
                     <a href="{{ url_for('delete_group', group_id=group_data.group.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('このグループを削除してもよろしいですか？');">削除</a>
                     {% endif %}
                 </div>
@@ -41,7 +41,7 @@
     {% else %}
     <div class="alert alert-info text-center py-5">
         <p>このクラスにはまだグループがありません。</p>
-        <a href="{{ url_for('create_group', class_id=class_obj.id) }}" class="btn btn-primary mt-3">最初のグループを作成する</a>
+        <a href="{{ url_for('teacher.create_group', class_id=class_obj.id) }}" class="btn btn-primary mt-3">最初のグループを作成する</a>
     </div>
     {% endif %}
 </div>

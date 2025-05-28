@@ -12,9 +12,9 @@
         <div class="card-body">
             <nav aria-label="breadcrumb" class="mb-4">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ url_for('teacher_dashboard') }}">ダッシュボード</a></li>
-                    <li class="breadcrumb-item"><a href="{{ url_for('classes') }}">クラス管理</a></li>
-                    <li class="breadcrumb-item"><a href="{{ url_for('view_class', class_id=class_obj.id) }}">{{ class_obj.name }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('teacher.dashboard') }}">ダッシュボード</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('teacher.classes') }}">クラス管理</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('teacher.view_class', class_id=class_obj.id) }}">{{ class_obj.name }}</a></li>
                     <li class="breadcrumb-item active" aria-current="page">生徒一括登録</li>
                 </ol>
             </nav>
@@ -39,7 +39,7 @@
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-file-import me-2"></i>インポート
                             </button>
-                            <a href="{{ url_for('view_class', class_id=class_obj.id) }}" class="btn btn-outline-secondary">
+                            <a href="{{ url_for('teacher.view_class', class_id=class_obj.id) }}" class="btn btn-outline-secondary">
                                 キャンセル
                             </a>
                             <a href="{{ url_for('enrollment.download_template') }}" class="btn btn-outline-info ms-auto">

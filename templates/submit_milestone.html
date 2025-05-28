@@ -27,7 +27,7 @@
         </div>
     </div>
     
-    <form method="POST" action="{{ url_for('submit_milestone', milestone_id=milestone.id) }}">
+    <form method="POST" action="{{ url_for('student.submit_milestone', milestone_id=milestone.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         
         <div class="form-group">
@@ -42,7 +42,7 @@
         
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">提出する</button>
-            <a href="{{ url_for('view_milestone', milestone_id=milestone.id) }}" class="btn btn-secondary">キャンセル</a>
+            <a href="{{ url_for('teacher.view_milestone', milestone_id=milestone.id) }}" class="btn btn-secondary">キャンセル</a>
         </div>
     </form>
 </div>

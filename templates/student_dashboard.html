@@ -25,12 +25,12 @@
                     {% else %}
                        <p>回答済み</p>
                     {% endif %}
-                       <a href="{{ url_for('interest_survey') }}" class="btn btn-sm">編集する</a>
+                       <a href="{{ url_for('student.interest_survey') }}" class="btn btn-sm">編集する</a>
                     {% else %}
                            
                         <span class="status-badge">未回答</span>
                         <p>あなたの興味・関心を教えてください</p>
-                        <a href="{{ url_for('interest_survey') }}" class="btn btn-sm btn-primary">回答する</a>
+                        <a href="{{ url_for('student.interest_survey') }}" class="btn btn-sm btn-primary">回答する</a>
                     {% endif %}
                 </div>
                 
@@ -44,11 +44,11 @@
                         <p>回答済み</p>
                     {% endif %}
 
-                        <a href="{{ url_for('personality_survey') }}" class="btn btn-sm">編集する</a>
+                        <a href="{{ url_for('student.personality_survey') }}" class="btn btn-sm">編集する</a>
                     {% else %}
                         <span class="status-badge">未回答</span>
                         <p>あなたの学習スタイルを知るために回答してください</p>
-                        <a href="{{ url_for('personality_survey') }}" class="btn btn-sm btn-primary">回答する</a>
+                        <a href="{{ url_for('student.personality_survey') }}" class="btn btn-sm btn-primary">回答する</a>
                     {% endif %}
                 </div>
             </div>
@@ -56,7 +56,7 @@
             {% if interest_survey and personality_survey %}
                 {% if not selected_theme %}
                 <div class="action-button">
-                    <a href="{{ url_for('view_themes') }}" class="btn btn-primary">テーマを選択する</a>
+                    <a href="{{ url_for('student.view_themes') }}" class="btn btn-primary">テーマを選択する</a>
                 </div>
                 {% endif %}
             {% endif %}
@@ -73,15 +73,15 @@
                         <p>{{ selected_theme.description }}</p>
                     </div>
                     <div class="theme-actions">
-                        <a href="{{ url_for('view_themes') }}" class="btn btn-sm">テーマ詳細</a>
-                        <a href="{{ url_for('activities') }}" class="btn btn-sm btn-primary">学習記録</a>
+                        <a href="{{ url_for('student.view_themes') }}" class="btn btn-sm">テーマ詳細</a>
+                        <a href="{{ url_for('student.activities') }}" class="btn btn-sm btn-primary">学習記録</a>
                     </div>
                 </div>
             {% else %}
                 <div class="no-theme">
                     <p>まだテーマが選択されていません</p>
                     {% if interest_survey and personality_survey %}
-                        <a href="{{ url_for('view_themes') }}" class="btn btn-primary">テーマを選択する</a>
+                        <a href="{{ url_for('student.view_themes') }}" class="btn btn-primary">テーマを選択する</a>
                     {% else %}
                         <p class="help-text">テーマ生成にはアンケート回答が必要です</p>
                     {% endif %}
@@ -101,19 +101,19 @@
                                 <h4>{{ activity.title }}</h4>
                                 <p>{{ activity.content|truncate(80) }}</p>
                             </div>
-                            <a href="{{ url_for('edit_activity', log_id=activity.id) }}" class="btn btn-sm">詳細/編集</a>
+                            <a href="{{ url_for('student.edit_activity', log_id=activity.id) }}" class="btn btn-sm">詳細/編集</a>
                         </div>
                     {% endfor %}
                 </div>
                 <div class="section-actions">
-                    <a href="{{ url_for('activities') }}" class="btn btn-sm">すべての学習記録を見る</a>
-                    <a href="{{ url_for('new_activity') }}" class="btn btn-sm btn-primary">新しい学習記録の作成</a>
+                    <a href="{{ url_for('student.activities') }}" class="btn btn-sm">すべての学習記録を見る</a>
+                    <a href="{{ url_for('student.create_activity') }}" class="btn btn-sm btn-primary">新しい学習記録の作成</a>
                 </div>
             {% else %}
                 <div class="no-activities">
                     <p>まだ活動記録がありません</p>
                     {% if selected_theme %}
-                        <a href="{{ url_for('new_activity') }}" class="btn btn-primary">学習内容を記録する</a>
+                        <a href="{{ url_for('student.create_activity') }}" class="btn btn-primary">学習内容を記録する</a>
                     {% else %}
                         <p class="help-text">学習記録にはテーマ選択が必要です</p>
                     {% endif %}
@@ -136,7 +136,7 @@
                                     (あと{{ milestone_data.days_remaining }}日)
                                 </div>
                             </div>
-                            <a href="{{ url_for('view_milestone', milestone_id=milestone_data.id) }}" class="btn btn-sm">詳細</a>
+                            <a href="{{ url_for('teacher.view_milestone', milestone_id=milestone_data.id) }}" class="btn btn-sm">詳細</a>
                         </div>
                     {% endfor %}
                 </div>
@@ -151,7 +151,7 @@
         <div class="dashboard-section account-settings">
             <h3>アカウント設定</h3>
             <div class="settings-actions">
-                <a href="{{ url_for('change_password') }}" class="btn btn-outline-primary">
+                <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-primary">
                     <i class="fas fa-key"></i> パスワード変更
                 </a>
             </div>
@@ -160,7 +160,7 @@
         <div class="dashboard-section my-todos">
             <div class="d-flex justify-content-between align-items-center">
                 <h3>To Doリスト</h3>
-                <a href="{{ url_for('todos') }}" class="btn btn-sm">すべて表示</a>
+                <a href="{{ url_for('student.todos') }}" class="btn btn-sm">すべて表示</a>
             </div>
             
             {% if todos %}
@@ -182,17 +182,17 @@
                                     </span>
                                 {% endif %}
                             </div>
-                            <a href="{{ url_for('edit_todo', todo_id=todo.id) }}" class="btn btn-sm">詳細/編集</a>
+                            <a href="{{ url_for('student.edit_todo', todo_id=todo.id) }}" class="btn btn-sm">詳細/編集</a>
                         </div>
                     {% endfor %}
                 </div>
                 <div class="section-actions">
-                    <a href="{{ url_for('new_todo') }}" class="btn btn-sm btn-primary">新規作成</a>
+                    <a href="{{ url_for('student.new_todo') }}" class="btn btn-sm btn-primary">新規作成</a>
                 </div>
             {% else %}
                 <div class="no-todos">
                     <p>To Doがまだありません</p>
-                    <a href="{{ url_for('new_todo') }}" class="btn btn-primary">To Doを作成する</a>
+                    <a href="{{ url_for('student.new_todo') }}" class="btn btn-primary">To Doを作成する</a>
                 </div>
             {% endif %}
         </div>
@@ -206,7 +206,7 @@
                         <div class="class-item">
                             <h4>{{ class.name }}</h4>
                             <p>{% if class.description is not none %}{{ class.description|truncate(50) }}{% else %}説明なし{% endif %}</p>
-                            <a href="{{ url_for('view_class', class_id=class.id) }}" class="btn btn-sm">詳細</a>
+                            <a href="{{ url_for('teacher.view_class', class_id=class.id) }}" class="btn btn-sm">詳細</a>
                         </div>
                     {% endfor %}
                 </div>

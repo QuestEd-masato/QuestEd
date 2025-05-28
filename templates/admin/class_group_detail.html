@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}{{ class_group.name }} - クラス詳細 - Quested{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('admin_panel.dashboard') }}">管理者ダッシュボード</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('admin_panel.admin_schools') }}">学校一覧</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('admin_panel.admin_school_detail', school_id=class_group.school_year.school_id) }}">{{ class_group.school_year.school.name }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('admin_panel.admin_class_groups', year_id=class_group.school_year_id) }}">{{ class_group.school_year.year }}年度クラス一覧</a></li>
+            <li class="breadcrumb-item active">{{ class_group.name }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">クラス情報</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-3">クラス名</dt>
+                        <dd class="col-sm-9">{{ class_group.name }}</dd>
+                        
+                        {% if class_group.grade %}
+                        <dt class="col-sm-3">学年</dt>
+                        <dd class="col-sm-9">{{ class_group.grade }}</dd>
+                        {% endif %}
+                        
+                        <dt class="col-sm-3">担当教師</dt>
+                        <dd class="col-sm-9">
+                            {% if class_group.teacher %}
+                                {{ class_group.teacher.username }} ({{ class_group.teacher.email }})
+                            {% else %}
+                                <span class="text-muted">未設定</span>
+                            {% endif %}
+                        </dd>
+                        
+                        {% if class_group.description %}
+                        <dt class="col-sm-3">説明</dt>
+                        <dd class="col-sm-9">{{ class_group.description }}</dd>
+                        {% endif %}
+                        
+                        <dt class="col-sm-3">生徒数</dt>
+                        <dd class="col-sm-9">{{ enrollments|length }}人</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">生徒一覧</h5>
+                    <a href="{{ url_for('admin_panel.admin_add_students_to_class', class_group_id=class_group.id) }}" class="btn btn-sm btn-primary">生徒を追加</a>
+                </div>
+                <div class="card-body">
+                    {% if enrollments %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>氏名</th>
+                                    <th>メールアドレス</th>
+                                    <th>登録日</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for enrollment in enrollments %}
+                                <tr>
+                                    <td>{{ enrollment.student.username }}</td>
+                                    <td>{{ enrollment.student.email }}</td>
+                                    <td>{{ enrollment.enrolled_at.strftime('%Y/%m/%d') if enrollment.enrolled_at else '-' }}</td>
+                                    <td>
+                                        <form method="POST" action="{{ url_for('admin_panel.admin_delete_enrollment', enrollment_id=enrollment.id) }}" style="display: inline;">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('この生徒をクラスから削除しますか？')">削除</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">まだ生徒が登録されていません。</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">年度情報</h6>
+                </div>
+                <div class="card-body">
+                    <dl class="mb-0">
+                        <dt>学校名</dt>
+                        <dd>{{ class_group.school_year.school.name }}</dd>
+                        <dt>年度</dt>
+                        <dd>{{ class_group.school_year.year }}年度</dd>
+                        {% if class_group.school_year.is_current %}
+                        <dt>ステータス</dt>
+                        <dd><span class="badge bg-success">現在の年度</span></dd>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

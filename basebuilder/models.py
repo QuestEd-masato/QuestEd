@@ -1,6 +1,6 @@
 # basebuilder/models.py
 from datetime import datetime
-from app import db
+from extensions import db
 
 # 問題カテゴリモデル → 単語カテゴリモデルに変更
 class ProblemCategory(db.Model):
@@ -18,7 +18,7 @@ class ProblemCategory(db.Model):
     subcategories = db.relationship('ProblemCategory', backref=db.backref('parent', remote_side=[id]))
     creator = db.relationship('User', backref=db.backref('created_categories', lazy=True))
     text_sets = db.relationship('TextSet', backref='category', lazy=True)
-    school_ref = db.relationship('School', back_populates='problem_categories', lazy=True)
+    # school_ref = db.relationship('School', back_populates='problem_categories', lazy=True)
     
 # テキスト配信モデル
 class TextDelivery(db.Model):
@@ -59,7 +59,7 @@ class BasicKnowledgeItem(db.Model):
     creator = db.relationship('User', backref=db.backref('created_problems', lazy=True))
     answer_records = db.relationship('AnswerRecord', backref='problem', lazy=True)
     theme_relations = db.relationship('KnowledgeThemeRelation', backref='problem', lazy=True)
-    school_ref = db.relationship('School', back_populates='basic_knowledge_items', lazy=True)
+    # school_ref = db.relationship('School', back_populates='basic_knowledge_items', lazy=True)
 
 # 問題と探究テーマの関連付けモデル
 class KnowledgeThemeRelation(db.Model):
@@ -138,7 +138,7 @@ class LearningPath(db.Model):
     # リレーションシップ
     creator = db.relationship('User', backref=db.backref('created_paths', lazy=True))
     assignments = db.relationship('PathAssignment', backref='path', lazy=True)
-    school_ref = db.relationship('School', back_populates='learning_paths', lazy=True)
+    # school_ref = db.relationship('School', back_populates='learning_paths', lazy=True)
     
 # 学習パス割り当てモデル
 class PathAssignment(db.Model):
@@ -190,4 +190,4 @@ class TextSet(db.Model):
     # リレーションシップ
     problems = db.relationship('BasicKnowledgeItem', backref='text_set', lazy=True)
     creator = db.relationship('User', backref=db.backref('created_text_sets', lazy=True))
-    school_ref = db.relationship('School', back_populates='text_sets', lazy=True)
+    # school_ref = db.relationship('School', back_populates='text_sets', lazy=True)

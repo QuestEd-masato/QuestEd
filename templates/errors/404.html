@@ -11,9 +11,9 @@
         <a href="{{ url_for('index') }}" class="btn btn-primary">ホームに戻る</a>
         {% if current_user.is_authenticated %}
             {% if current_user.role == 'student' %}
-                <a href="{{ url_for('student_dashboard') }}" class="btn btn-secondary">ダッシュボードへ</a>
+                <a href="{{ url_for('student.dashboard') }}" class="btn btn-secondary">ダッシュボードへ</a>
             {% elif current_user.role == 'teacher' %}
-                <a href="{{ url_for('teacher_dashboard') }}" class="btn btn-secondary">ダッシュボードへ</a>
+                <a href="{{ url_for('teacher.dashboard') }}" class="btn btn-secondary">ダッシュボードへ</a>
             {% endif %}
         {% endif %}
     </div>

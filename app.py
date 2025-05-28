@@ -36,7 +36,6 @@ client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 # アプリケーション初期化
 app = Flask(__name__)
-csrf = CSRFProtect(app)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{os.getenv('DB_USERNAME')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}/{os.getenv('DB_NAME')}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -470,6 +469,158 @@ def admin_users():
     
     users = User.query.all()
     return render_template('admin/users.html', users=users)
+
+@app.route('/admin/users/<int:user_id>/delete', methods=['POST'])
+@login_required
+def admin_delete_user(user_id):
+    # 管理者のみアクセス可能
+    if current_user.role != 'admin':
+        flash('この機能は管理者のみ利用可能です。')
+        return redirect(url_for('index'))
+    
+    # 削除対象のユーザーを取得
+    user = User.query.get_or_404(user_id)
+    
+    # 自分自身は削除できないようにする
+    if user.id == current_user.id:
+        flash('自分自身を削除することはできません。')
+        return redirect(url_for('admin_users'))
+    
+    try:
+        # ユーザーのロールに応じた処理
+        if user.role == 'teacher':
+            # 教師が担当するクラスの確認
+            classes = Class.query.filter_by(teacher_id=user_id).all()
+            if classes:
+                class_names = ", ".join([c.name for c in classes])
+                flash(f'このユーザーは以下のクラスを担当しているため削除できません: {class_names}')
+                return redirect(url_for('admin_users'))
+            
+            # クラスグループの確認
+            class_groups = ClassGroup.query.filter_by(teacher_id=user_id).all()
+            if class_groups:
+                group_names = ", ".join([g.name for g in class_groups])
+                flash(f'このユーザーは以下のクラスグループを担当しているため削除できません: {group_names}')
+                return redirect(url_for('admin_users'))
+            
+            # 教師が作成した大テーマの削除
+            main_themes = MainTheme.query.filter_by(teacher_id=user_id).all()
+            for theme in main_themes:
+                # 関連する個人テーマのmain_theme_idをNULLに設定
+                InquiryTheme.query.filter_by(main_theme_id=theme.id).update({'main_theme_id': None})
+                db.session.delete(theme)
+            
+            # カリキュラムの削除
+            Curriculum.query.filter_by(teacher_id=user_id).delete()
+            
+            # ルーブリックテンプレートの削除
+            RubricTemplate.query.filter_by(teacher_id=user_id).delete()
+        
+        # 学生ロールの場合の処理
+        if user.role == 'student':
+            # AnswerRecordの削除（追加）
+            AnswerRecord.query.filter_by(student_id=user_id).delete()
+            
+            # StudentEvaluationの削除
+            StudentEvaluation.query.filter_by(student_id=user_id).delete()
+            
+            # StudentEnrollmentの削除
+            StudentEnrollment.query.filter_by(student_id=user_id).delete()
+            
+            # ClassEnrollmentの削除
+            ClassEnrollment.query.filter_by(student_id=user_id).delete()
+            
+            # ActivityLogの削除
+            ActivityLog.query.filter_by(student_id=user_id).delete()
+            
+            # InquiryThemeの削除
+            InquiryTheme.query.filter_by(student_id=user_id).delete()
+            
+            # InterestSurveyの削除
+            InterestSurvey.query.filter_by(student_id=user_id).delete()
+            
+            # PersonalitySurveyの削除
+            PersonalitySurvey.query.filter_by(student_id=user_id).delete()
+            
+            # TodoとGoalの削除
+            Todo.query.filter_by(student_id=user_id).delete()
+            Goal.query.filter_by(student_id=user_id).delete()
+            
+            # WordProficiencyとProficiencyRecordの削除
+            WordProficiency.query.filter_by(student_id=user_id).delete()
+            ProficiencyRecord.query.filter_by(student_id=user_id).delete()
+            
+            # TextProficiencyRecordの削除(もし存在すれば)
+            try:
+                TextProficiencyRecord.query.filter_by(student_id=user_id).delete()
+            except Exception:
+                # モデルが存在しない場合は無視
+                pass
+            
+            # 学生が作成したグループの処理
+            groups_created = Group.query.filter_by(created_by=user_id).all()
+            for group in groups_created:
+                # グループメンバーシップの削除
+                GroupMembership.query.filter_by(group_id=group.id).delete()
+                # グループ自体の削除
+                db.session.delete(group)
+            
+            # 学生のグループメンバーシップの削除
+            GroupMembership.query.filter_by(student_id=user_id).delete()
+            
+            # PathAssignmentの削除（BaseBuilderモジュール関連）
+            try:
+                PathAssignment.query.filter_by(student_id=user_id).delete()
+            except Exception:
+                # モデルが存在しない場合は無視
+                pass
+                
+            # TextDeliveryの削除（BaseBuilderモジュール関連）
+            try:
+                TextDelivery.query.filter_by(student_id=user_id).delete()
+            except Exception:
+                # モデルが存在しない場合は無視
+                pass
+        
+        # 共通の処理：ユーザーによって作成されたグループの処理
+        groups = Group.query.filter_by(created_by=user_id).all()
+        for group in groups:
+            # グループメンバーシップの削除
+            GroupMembership.query.filter_by(group_id=group.id).delete()
+            # グループ自体の削除
+            db.session.delete(group)
+        
+        # ChatHistoryの削除
+        ChatHistory.query.filter_by(user_id=user_id).delete()
+        
+        # BasicKnowledgeItemの削除（BaseBuilderモジュール関連、created_byがある場合）
+        try:
+            BasicKnowledgeItem.query.filter_by(created_by=user_id).delete()
+        except Exception:
+            # モデルが存在しない場合またはcreated_byカラムがない場合は無視
+            pass
+            
+        # ProblemCategoryの削除（BaseBuilderモジュール関連、created_byがある場合）
+        try:
+            ProblemCategory.query.filter_by(created_by=user_id).delete()
+        except Exception:
+            # モデルが存在しない場合またはcreated_byカラムがない場合は無視
+            pass
+        
+        # ユーザー自体を削除
+        db.session.delete(user)
+        db.session.commit()
+        
+        flash(f'ユーザー"{user.username}"を削除しました。')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'ユーザーの削除中にエラーが発生しました: {str(e)}')
+        # デバッグ情報を詳細に出力
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"ユーザー削除エラー詳細: {error_details}")
+    
+    return redirect(url_for('admin_users'))
 
 @app.route('/admin/dashboard')
 @login_required
@@ -2235,7 +2386,6 @@ def add_students(class_id):
     enrolled_student_ids = [student.id for student in class_obj.students]
     
     # 追加可能な学生（まだクラスに所属していない学生かつ同じ学校に所属している学生）を取得
-    # 修正: 同じschool_idの学生のみを対象にする
     available_students = User.query.filter(
         User.role == 'student',
         ~User.id.in_(enrolled_student_ids) if enrolled_student_ids else True,
@@ -2249,26 +2399,36 @@ def add_students(class_id):
             flash('学生が選択されていません。')
             return render_template('add_students.html', class_obj=class_obj, available_students=available_students)
         
-        # 選択された学生をクラスに追加
-        for student_id in student_ids:
-            # 学校IDの再確認（セキュリティのため）
-            student = User.query.get(int(student_id))
+        try:
+            # 選択された学生をクラスに追加
+            for student_id in student_ids:
+                # 学校IDの再確認（セキュリティのため）
+                student = User.query.get(int(student_id))
+                
+                # 学生が存在し、同じ学校に所属していることを確認
+                if student and student.school_id == class_obj.school_id:
+                    # 既に登録されていないことを確認
+                    if int(student_id) not in enrolled_student_ids:
+                        enrollment = ClassEnrollment(
+                            class_id=class_id,
+                            student_id=int(student_id)
+                        )
+                        db.session.add(enrollment)
+                else:
+                    flash(f'学生 ID:{student_id} は同じ学校に所属していないため追加できません。', 'error')
             
-            # 学生が存在し、同じ学校に所属していることを確認
-            if student and student.school_id == class_obj.school_id:
-                # 既に登録されていないことを確認
-                if int(student_id) not in enrolled_student_ids:
-                    enrollment = ClassEnrollment(
-                        class_id=class_id,
-                        student_id=int(student_id)
-                    )
-                    db.session.add(enrollment)
-            else:
-                flash(f'学生 ID:{student_id} は同じ学校に所属していないため追加できません。', 'error')
-        
-        db.session.commit()
-        flash(f'{len(student_ids)}人の学生をクラスに追加しました。')
-        return redirect(url_for('view_class', class_id=class_id))
+            db.session.commit()
+            flash(f'{len(student_ids)}人の学生をクラスに追加しました。')
+            return redirect(url_for('view_class', class_id=class_id))
+            
+        except Exception as e:
+            db.session.rollback()
+            # エラーログを詳細に
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"学生追加エラー: {str(e)}\n{error_details}")
+            flash(f'学生の追加中にエラーが発生しました: {str(e)}')
+            return render_template('add_students.html', class_obj=class_obj, available_students=available_students)
     
     return render_template('add_students.html', class_obj=class_obj, available_students=available_students)
 
@@ -4569,15 +4729,10 @@ def import_students(class_id):
     # GETリクエスト処理（フォーム表示）
     return render_template(template_path, **template_vars)
 
-
 def process_student_csv(file, class_id, current_user):
     """CSVファイルを処理し、生徒をインポートする共通関数"""
-    # ここに実際のCSV処理ロジックを実装
-    # この関数は管理者と教師の両方から利用される
-    
-    # 以下はサンプル実装
     try:
-        stream = io.StringIO(file.stream.read().decode('utf-8-sig'))  # BOM対応
+        stream = io.StringIO(file.stream.read().decode('utf-8-sig'))
         csv_reader = csv.DictReader(stream)
         
         success_count = 0
@@ -4599,8 +4754,8 @@ def process_student_csv(file, class_id, current_user):
                 if existing_user:
                     # 既に登録済みかチェック
                     if current_user.role == 'admin':
-                        # 管理者向け処理: ClassGroupメンバーシップをチェック
-                        existing_enrollment = ClassGroupMembership.query.filter_by(
+                        # 管理者向け処理: StudentEnrollmentをチェック
+                        existing_enrollment = StudentEnrollment.query.filter_by(
                             student_id=existing_user.id,
                             class_group_id=class_id
                         ).first()
@@ -4611,16 +4766,17 @@ def process_student_csv(file, class_id, current_user):
                             continue
                             
                         # クラスに追加
-                        new_membership = ClassGroupMembership(
+                        new_membership = StudentEnrollment(
                             student_id=existing_user.id,
                             class_group_id=class_id,
+                            school_year_id=ClassGroup.query.get(class_id).school_year_id,  # 必要なschool_year_idを追加
                             student_number=row.get('student_number')
                         )
                         db.session.add(new_membership)
                         
                     else:
-                        # 教師向け処理: Classメンバーシップをチェック
-                        existing_enrollment = ClassMembership.query.filter_by(
+                        # 教師向け処理: ClassEnrollmentをチェック
+                        existing_enrollment = ClassEnrollment.query.filter_by(
                             student_id=existing_user.id,
                             class_id=class_id
                         ).first()
@@ -4637,10 +4793,9 @@ def process_student_csv(file, class_id, current_user):
                             continue
                             
                         # クラスに追加
-                        new_membership = ClassMembership(
+                        new_membership = ClassEnrollment(
                             student_id=existing_user.id,
-                            class_id=class_id,
-                            student_number=row.get('student_number')
+                            class_id=class_id
                         )
                         db.session.add(new_membership)
                     
@@ -4653,6 +4808,7 @@ def process_student_csv(file, class_id, current_user):
             except Exception as e:
                 error_count += 1
                 errors.append(f"行 {csv_reader.line_num}: 処理エラー: {str(e)}")
+                print(f"詳細エラー: {e}")  # サーバーログに詳細を出力
         
         # 変更をコミット
         db.session.commit()
@@ -4666,6 +4822,7 @@ def process_student_csv(file, class_id, current_user):
     except Exception as e:
         # ロールバック
         db.session.rollback()
+        print(f"CSV処理エラー: {e}")  # エラーログを出力
         raise Exception(f"CSVファイルの読み込みに失敗しました: {str(e)}")
 
 

@@ -8,7 +8,7 @@
         <div class="col-md-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1>To Doリスト</h1>
-                <a href="{{ url_for('new_todo') }}" class="btn btn-primary">
+                <a href="{{ url_for('student.new_todo') }}" class="btn btn-primary">
                     <i class="fas fa-plus"></i> 新規作成
                 </a>
             </div>
@@ -36,7 +36,7 @@
                             <li class="list-group-item {% if todo.is_completed %}text-muted bg-light{% endif %}">
                                 <div class="row align-items-center">
                                     <div class="col-md-1">
-                                        <a href="{{ url_for('toggle_todo', todo_id=todo.id) }}" class="btn btn-sm {% if todo.is_completed %}btn-success{% else %}btn-outline-secondary{% endif %}">
+                                        <a href="{{ url_for('student.toggle_todo', todo_id=todo.id) }}" class="btn btn-sm {% if todo.is_completed %}btn-success{% else %}btn-outline-secondary{% endif %}">
                                             {% if todo.is_completed %}<i class="fas fa-check"></i>{% else %}<i class="far fa-square"></i>{% endif %}
                                         </a>
                                     </div>
@@ -66,10 +66,10 @@
                                     </div>
                                     <div class="col-md-3">
                                         <div class="btn-group">
-                                            <a href="{{ url_for('edit_todo', todo_id=todo.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <a href="{{ url_for('student.edit_todo', todo_id=todo.id) }}" class="btn btn-sm btn-outline-primary">
                                                 <i class="fas fa-edit"></i> 編集
                                             </a>
-                                            <a href="{{ url_for('delete_todo', todo_id=todo.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('このTo Doを削除してもよろしいですか？');">
+                                            <a href="{{ url_for('student.delete_todo', todo_id=todo.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('このTo Doを削除してもよろしいですか？');">
                                                 <i class="fas fa-trash"></i> 削除
                                             </a>
                                         </div>

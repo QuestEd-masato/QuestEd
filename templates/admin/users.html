@@ -7,7 +7,7 @@
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-3 mb-md-0">ユーザー管理</h1>
         <div class="d-flex flex-wrap gap-2">
-            <a href="{{ url_for('import_users') }}" class="btn btn-primary btn-sm btn-md-lg">
+            <a href="{{ url_for('admin_panel.import_users') }}" class="btn btn-primary btn-sm btn-md-lg">
                 <i class="fas fa-file-import me-1"></i>
                 <span>ユーザー一括インポート</span>
             </a>
@@ -73,9 +73,12 @@
                                     <a href="#" class="btn btn-outline-primary" title="編集">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <button type="button" class="btn btn-outline-danger" title="削除">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
+                                    <form action="{{ url_for('admin_panel.delete_user', user_id=user.id) }}" method="post" class="d-inline" onsubmit="return confirm('ユーザー「{{ user.username }}」を削除しますか？この操作は元に戻せません。');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-outline-danger" title="削除">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>
@@ -85,7 +88,7 @@
                                 <div class="py-5">
                                     <i class="fas fa-users fa-3x text-muted mb-3"></i>
                                     <p class="lead text-muted">登録されているユーザーがありません。</p>
-                                    <a href="{{ url_for('import_users') }}" class="btn btn-primary">
+                                    <a href="{{ url_for('admin_panel.import_users') }}" class="btn btn-primary">
                                         <i class="fas fa-file-import"></i> ユーザー一括インポート
                                     </a>
                                 </div>

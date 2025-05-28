@@ -6,39 +6,42 @@ def init_app(app):
     from basebuilder.routes import basebuilder_module
     app.register_blueprint(basebuilder_module)
     
-    # 管理画面へのモデル追加
+    # 管理画面へのモデル追加（Flask-Adminが利用可能な場合のみ）
     with app.app_context():
-        # 修正: app.dbとapp.adminではなく、直接インポート
-        from app import admin, db
-        from flask_admin.contrib.sqla import ModelView
-        from basebuilder.models import (
-            ProblemCategory, BasicKnowledgeItem, KnowledgeThemeRelation,
-            AnswerRecord, ProficiencyRecord, LearningPath, PathAssignment,
-            TextSet, TextDelivery, TextProficiencyRecord, WordProficiency
-        )
-        
-        # 新しく追加したモジュールをインポート
-        from basebuilder import exporters
-        from basebuilder import importers
-        
-        class BaseBuilderModelView(ModelView):
-            def is_accessible(self):
-                from flask_login import current_user
-                return current_user.is_authenticated and current_user.role == 'teacher'
-        
-        # 修正: app.adminではなくadminを使用
-        admin.add_view(BaseBuilderModelView(ProblemCategory, db.session, name='問題カテゴリ'))
-        admin.add_view(BaseBuilderModelView(BasicKnowledgeItem, db.session, name='基礎知識問題'))
-        admin.add_view(BaseBuilderModelView(KnowledgeThemeRelation, db.session, name='問題テーマ関連'))
-        admin.add_view(BaseBuilderModelView(AnswerRecord, db.session, name='解答記録'))
-        admin.add_view(BaseBuilderModelView(ProficiencyRecord, db.session, name='熟練度記録'))
-        admin.add_view(BaseBuilderModelView(LearningPath, db.session, name='学習パス'))
-        admin.add_view(BaseBuilderModelView(PathAssignment, db.session, name='パス割り当て'))
-        # テキスト関連のモデルを管理画面に追加
-        admin.add_view(BaseBuilderModelView(TextSet, db.session, name='テキストセット'))
-        admin.add_view(BaseBuilderModelView(TextDelivery, db.session, name='テキスト配信'))
-        admin.add_view(BaseBuilderModelView(TextProficiencyRecord, db.session, name='テキスト熟練度'))
-        admin.add_view(BaseBuilderModelView(WordProficiency, db.session, name='単語熟練度'))
+        try:
+            from extensions import admin, db
+            if admin:
+                from flask_admin.contrib.sqla import ModelView
+                from basebuilder.models import (
+                    ProblemCategory, BasicKnowledgeItem, KnowledgeThemeRelation,
+                    AnswerRecord, ProficiencyRecord, LearningPath, PathAssignment,
+                    TextSet, TextDelivery, TextProficiencyRecord, WordProficiency
+                )
+                
+                # 新しく追加したモジュールをインポート
+                from basebuilder import exporters
+                from basebuilder import importers
+                
+                class BaseBuilderModelView(ModelView):
+                    def is_accessible(self):
+                        from flask_login import current_user
+                        return current_user.is_authenticated and current_user.role == 'teacher'
+                
+                # 修正: app.adminではなくadminを使用
+                admin.add_view(BaseBuilderModelView(ProblemCategory, db.session, name='問題カテゴリ'))
+                admin.add_view(BaseBuilderModelView(BasicKnowledgeItem, db.session, name='基礎知識問題'))
+                admin.add_view(BaseBuilderModelView(KnowledgeThemeRelation, db.session, name='問題テーマ関連'))
+                admin.add_view(BaseBuilderModelView(AnswerRecord, db.session, name='解答記録'))
+                admin.add_view(BaseBuilderModelView(ProficiencyRecord, db.session, name='熟練度記録'))
+                admin.add_view(BaseBuilderModelView(LearningPath, db.session, name='学習パス'))
+                admin.add_view(BaseBuilderModelView(PathAssignment, db.session, name='パス割り当て'))
+                # テキスト関連のモデルを管理画面に追加
+                admin.add_view(BaseBuilderModelView(TextSet, db.session, name='テキストセット'))
+                admin.add_view(BaseBuilderModelView(TextDelivery, db.session, name='テキスト配信'))
+                admin.add_view(BaseBuilderModelView(TextProficiencyRecord, db.session, name='テキスト熟練度'))
+                admin.add_view(BaseBuilderModelView(WordProficiency, db.session, name='単語熟練度'))
+        except ImportError:
+            print("Warning: Flask-Admin not available for BaseBuilder module")
     
     # ナビゲーションのカスタマイズ（変更なし）
     @app.context_processor

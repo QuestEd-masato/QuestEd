@@ -1,13 +1,13 @@
 <!-- templates/admin/class_groups.html -->
-{% extends 'shared/base.html' %}
+{% extends 'base.html' %}
 
 {% block content %}
 <div class="container mt-4">
     <h1>{{ school_year.school.name }} - {{ school_year.year }} - クラス管理</h1>
     
     <div class="mb-3">
-        <a href="{{ url_for('academic.list_years', school_id=school_year.school_id) }}" class="btn btn-secondary">年度一覧に戻る</a>
-        <a href="{{ url_for('academic.create_class', year_id=school_year.id) }}" class="btn btn-primary">新規クラス作成</a>
+        <a href="{{ url_for('admin_panel.admin_school_years', school_id=school_year.school_id) }}" class="btn btn-secondary">年度一覧に戻る</a>
+        <a href="{{ url_for('admin_panel.admin_create_class_group', year_id=school_year.id) }}" class="btn btn-primary">新規クラス作成</a>
     </div>
     
     <div class="table-responsive">
@@ -29,7 +29,7 @@
                     <td>{{ class_group.teacher.username }}</td>
                     <td>{{ class_group.description }}</td>
                     <td>
-                        <a href="{{ url_for('enrollment.list_students', class_id=class_group.id) }}" class="btn btn-sm btn-primary">生徒管理</a>
+                        <a href="{{ url_for('admin_panel.admin_student_enrollment', class_id=class_group.id) }}" class="btn btn-sm btn-primary">生徒管理</a>
                         <a href="{{ url_for('academic.edit_class', class_id=class_group.id) }}" class="btn btn-sm btn-secondary">編集</a>
                     </td>
                 </tr>

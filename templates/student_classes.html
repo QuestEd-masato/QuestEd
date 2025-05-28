@@ -22,7 +22,7 @@
                             <p class="card-text"><strong>担当教師:</strong> {{ class.teacher.username }}</p>
                         </div>
                         <div class="card-footer">
-                            <a href="{{ url_for('class_details', class_id=class.id) }}" class="btn btn-primary">詳細を見る</a>
+                            <a href="{{ url_for('teacher.class_details', class_id=class.id) }}" class="btn btn-primary">詳細を見る</a>
                         </div>
                     </div>
                 </div>

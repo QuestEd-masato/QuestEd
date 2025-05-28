@@ -459,7 +459,7 @@
     <!-- 管理画面用ヘッダー -->
     <header class="admin-header">
         <nav>
-            <a href="{{ url_for('admin_dashboard') }}" class="logo">
+            <a href="{{ url_for('admin_panel.dashboard') }}" class="logo">
                 <img src="{{ url_for('static', filename='logo.png') }}" alt="QuestEd Logo" class="logo-img" />
                 <span class="admin-title">管理画面</span>
             </a>
@@ -473,15 +473,15 @@
             <div class="main-nav">
                 <ul id="main-menu">
                     <!-- デスクトップ用メニュー（管理者） -->
-                    <li><a href="{{ url_for('admin_dashboard') }}"><i class="fas fa-tachometer-alt"></i> ダッシュボード</a></li>
+                    <li><a href="{{ url_for('admin_panel.dashboard') }}"><i class="fas fa-tachometer-alt"></i> ダッシュボード</a></li>
                     
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle js-dropdown-toggle" href="#" role="button">
                             <i class="fas fa-school"></i> 学校管理
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a href="{{ url_for('admin_schools') }}">学校一覧</a></li>
-                            <li><a href="{{ url_for('create_school') }}">学校登録</a></li>
+                            <li><a href="{{ url_for('admin_panel.admin_schools') }}">学校一覧</a></li>
+                            <li><a href="{{ url_for('admin_panel.create_school') }}">学校登録</a></li>
                         </ul>
                     </li>
                     
@@ -490,8 +490,8 @@
                             <i class="fas fa-users"></i> ユーザー管理
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a href="{{ url_for('admin_users') }}">ユーザー一覧</a></li>
-                            <li><a href="{{ url_for('import_users') }}">一括インポート</a></li>
+                            <li><a href="{{ url_for('admin_panel.users') }}">ユーザー一覧</a></li>
+                            <li><a href="{{ url_for('admin_panel.import_users') }}">一括インポート</a></li>
                         </ul>
                     </li>
                     
@@ -508,11 +508,11 @@
                     
                     <li><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> フロントに戻る</a></li>
                     
-                    <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> ログアウト</a></li>
+                    <li><a href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt"></i> ログアウト</a></li>
                     
                     <!-- モバイル用メニュー（管理者） -->
                     <div class="mobile-menu-list">
-                        <a href="{{ url_for('admin_dashboard') }}" class="mobile-menu-item">
+                        <a href="{{ url_for('admin_panel.dashboard') }}" class="mobile-menu-item">
                             <i class="fas fa-tachometer-alt"></i> ダッシュボード
                         </a>
                         
@@ -520,16 +520,16 @@
                             <i class="fas fa-school"></i> 学校管理
                         </div>
                         <div id="mobile-menu-schools" class="mobile-submenu">
-                            <a href="{{ url_for('admin_schools') }}" class="mobile-submenu-item">学校一覧</a>
-                            <a href="{{ url_for('create_school') }}" class="mobile-submenu-item">学校登録</a>
+                            <a href="{{ url_for('admin_panel.admin_schools') }}" class="mobile-submenu-item">学校一覧</a>
+                            <a href="{{ url_for('admin_panel.create_school') }}" class="mobile-submenu-item">学校登録</a>
                         </div>
                         
                         <div class="mobile-menu-item mobile-dropdown" data-target="mobile-menu-users">
                             <i class="fas fa-users"></i> ユーザー管理
                         </div>
                         <div id="mobile-menu-users" class="mobile-submenu">
-                            <a href="{{ url_for('admin_users') }}" class="mobile-submenu-item">ユーザー一覧</a>
-                            <a href="{{ url_for('import_users') }}" class="mobile-submenu-item">一括インポート</a>
+                            <a href="{{ url_for('admin_panel.users') }}" class="mobile-submenu-item">ユーザー一覧</a>
+                            <a href="{{ url_for('admin_panel.import_users') }}" class="mobile-submenu-item">一括インポート</a>
                         </div>
                         
                         <div class="mobile-menu-item mobile-dropdown" data-target="mobile-menu-settings">
@@ -547,7 +547,7 @@
                             <i class="fas fa-home"></i> フロントに戻る
                         </a>
                         
-                        <a href="{{ url_for('logout') }}" class="mobile-menu-item">
+                        <a href="{{ url_for('auth.logout') }}" class="mobile-menu-item">
                             <i class="fas fa-sign-out-alt"></i> ログアウト
                         </a>
                     </div>
@@ -566,20 +566,20 @@
             </div>
             <ul class="nav flex-column">
                 <li class="nav-item">
-                    <a class="nav-link {% if request.path == url_for('admin_dashboard') %}active{% endif %}" 
-                       href="{{ url_for('admin_dashboard') }}">
+                    <a class="nav-link {% if request.path == url_for('admin_panel.dashboard') %}active{% endif %}" 
+                       href="{{ url_for('admin_panel.dashboard') }}">
                         <i class="fas fa-tachometer-alt"></i> ダッシュボード
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {% if 'school' in request.path %}active{% endif %}" 
-                       href="{{ url_for('admin_schools') }}">
+                       href="{{ url_for('admin_panel.admin_schools') }}">
                         <i class="fas fa-school"></i> 学校管理
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {% if request.path == url_for('admin_users') %}active{% endif %}" 
-                       href="{{ url_for('admin_users') }}">
+                    <a class="nav-link {% if request.path == url_for('admin_panel.users') %}active{% endif %}" 
+                       href="{{ url_for('admin_panel.users') }}">
                         <i class="fas fa-users"></i> ユーザー管理
                     </a>
                 </li>
@@ -624,16 +624,16 @@
                     {% if current_user.is_authenticated %}
                         {% if current_user.role == 'student' %}
                             <!-- デスクトップ用メニュー（学生） -->
-                            <li><a href="{{ url_for('student_dashboard') }}"><i class="fas fa-tachometer-alt"></i> ダッシュボード</a></li>
+                            <li><a href="{{ url_for('student.dashboard') }}"><i class="fas fa-tachometer-alt"></i> ダッシュボード</a></li>
                             
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle js-dropdown-toggle" href="#" role="button">
                                     <i class="fas fa-search"></i> 探究活動
                                 </a>
                                 <ul class="dropdown-menu">
-                                    <li><a href="{{ url_for('view_themes') }}">探究テーマ</a></li>
-                                    <li><a href="{{ url_for('student_view_main_themes') }}">大テーマ一覧</a></li>
-                                    <li><a href="{{ url_for('activities') }}">活動記録</a></li>
+                                    <li><a href="{{ url_for('student.view_themes') }}">探究テーマ</a></li>
+                                    <li><a href="{{ url_for('student.student_view_main_themes') }}">大テーマ一覧</a></li>
+                                    <li><a href="{{ url_for('student.activities') }}">活動記録</a></li>
                                 </ul>
                             </li>
                             
@@ -654,20 +654,20 @@
                                     <i class="fas fa-tools"></i> ツール
                                 </a>
                                 <ul class="dropdown-menu">
-                                    <li><a href="{{ url_for('chat_page') }}">AIチャット</a></li>
-                                    <li><a href="{{ url_for('surveys') }}">アンケート</a></li>
-                                    <li><a href="{{ url_for('todos') }}">To Doリスト</a></li>
-                                    <li><a href="{{ url_for('goals') }}">目標管理</a></li>
+                                    <li><a href="{{ url_for('api.chat') }}">AIチャット</a></li>
+                                    <li><a href="{{ url_for('student.surveys') }}">アンケート</a></li>
+                                    <li><a href="{{ url_for('student.todos') }}">To Doリスト</a></li>
+                                    <li><a href="{{ url_for('student.goals') }}">目標管理</a></li>
                                 </ul>
                             </li>
                             
-                            <li><a href="{{ url_for('classes') }}"><i class="fas fa-users"></i> クラス</a></li>
+                            <li><a href="{{ url_for('teacher.classes') }}"><i class="fas fa-users"></i> クラス</a></li>
                             
-                            <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> ログアウト</a></li>
+                            <li><a href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt"></i> ログアウト</a></li>
                             
                             <!-- モバイル用メニュー（学生） -->
                             <div class="mobile-menu-list">
-                                <a href="{{ url_for('student_dashboard') }}" class="mobile-menu-item">
+                                <a href="{{ url_for('student.dashboard') }}" class="mobile-menu-item">
                                     <i class="fas fa-tachometer-alt"></i> ダッシュボード
                                 </a>
                                 
@@ -675,9 +675,9 @@
                                     <i class="fas fa-search"></i> 探究活動
                                 </div>
                                 <div id="mobile-menu-inquiry" class="mobile-submenu">
-                                    <a href="{{ url_for('view_themes') }}" class="mobile-submenu-item">探究テーマ</a>
-                                    <a href="{{ url_for('student_view_main_themes') }}" class="mobile-submenu-item">大テーマ一覧</a>
-                                    <a href="{{ url_for('activities') }}" class="mobile-submenu-item">活動記録</a>
+                                    <a href="{{ url_for('student.view_themes') }}" class="mobile-submenu-item">探究テーマ</a>
+                                    <a href="{{ url_for('student.student_view_main_themes') }}" class="mobile-submenu-item">大テーマ一覧</a>
+                                    <a href="{{ url_for('student.activities') }}" class="mobile-submenu-item">活動記録</a>
                                 </div>
                                 
                                 <div class="mobile-menu-item mobile-dropdown" data-target="mobile-menu-basic">
@@ -694,33 +694,33 @@
                                     <i class="fas fa-tools"></i> ツール
                                 </div>
                                 <div id="mobile-menu-tools" class="mobile-submenu">
-                                    <a href="{{ url_for('chat_page') }}" class="mobile-submenu-item">AIチャット</a>
-                                    <a href="{{ url_for('surveys') }}" class="mobile-submenu-item">アンケート</a>
-                                    <a href="{{ url_for('todos') }}" class="mobile-submenu-item">To Doリスト</a>
-                                    <a href="{{ url_for('goals') }}" class="mobile-submenu-item">目標管理</a>
+                                    <a href="{{ url_for('api.chat') }}" class="mobile-submenu-item">AIチャット</a>
+                                    <a href="{{ url_for('student.surveys') }}" class="mobile-submenu-item">アンケート</a>
+                                    <a href="{{ url_for('student.todos') }}" class="mobile-submenu-item">To Doリスト</a>
+                                    <a href="{{ url_for('student.goals') }}" class="mobile-submenu-item">目標管理</a>
                                 </div>
                                 
-                                <a href="{{ url_for('classes') }}" class="mobile-menu-item">
+                                <a href="{{ url_for('teacher.classes') }}" class="mobile-menu-item">
                                     <i class="fas fa-users"></i> クラス
                                 </a>
                                 
                                 <div class="mobile-menu-divider"></div>
                                 
-                                <a href="{{ url_for('logout') }}" class="mobile-menu-item">
+                                <a href="{{ url_for('auth.logout') }}" class="mobile-menu-item">
                                     <i class="fas fa-sign-out-alt"></i> ログアウト
                                 </a>
                             </div>
                         {% elif current_user.role == 'teacher' %}
                             <!-- デスクトップ用メニュー（教師） -->
-                            <li><a href="{{ url_for('teacher_dashboard') }}"><i class="fas fa-tachometer-alt"></i> ダッシュボード</a></li>
+                            <li><a href="{{ url_for('teacher.dashboard') }}"><i class="fas fa-tachometer-alt"></i> ダッシュボード</a></li>
                             
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle js-dropdown-toggle" href="#" role="button">
                                     <i class="fas fa-search"></i> 探究活動
                                 </a>
                                 <ul class="dropdown-menu">
-                                    <li><a href="{{ url_for('view_themes') }}">テーマ管理</a></li>
-                                    <li><a href="{{ url_for('classes') }}">クラス管理</a></li>
+                                    <li><a href="{{ url_for('student.view_themes') }}">テーマ管理</a></li>
+                                    <li><a href="{{ url_for('teacher.classes') }}">クラス管理</a></li>
                                 </ul>
                             </li>
                             
@@ -741,15 +741,15 @@
                                     <i class="fas fa-tools"></i> ツール
                                 </a>
                                 <ul class="dropdown-menu">
-                                    <li><a href="{{ url_for('chat_page') }}">AIチャット</a></li>
+                                    <li><a href="{{ url_for('api.chat') }}">AIチャット</a></li>
                                 </ul>
                             </li>
                             
-                            <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> ログアウト</a></li>
+                            <li><a href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt"></i> ログアウト</a></li>
                             
                             <!-- モバイル用メニュー（教師） -->
                             <div class="mobile-menu-list">
-                                <a href="{{ url_for('teacher_dashboard') }}" class="mobile-menu-item">
+                                <a href="{{ url_for('teacher.dashboard') }}" class="mobile-menu-item">
                                     <i class="fas fa-tachometer-alt"></i> ダッシュボード
                                 </a>
                                 
@@ -757,8 +757,8 @@
                                     <i class="fas fa-search"></i> 探究活動
                                 </div>
                                 <div id="mobile-menu-teacher-inquiry" class="mobile-submenu">
-                                    <a href="{{ url_for('view_themes') }}" class="mobile-submenu-item">テーマ管理</a>
-                                    <a href="{{ url_for('classes') }}" class="mobile-submenu-item">クラス管理</a>
+                                    <a href="{{ url_for('student.view_themes') }}" class="mobile-submenu-item">テーマ管理</a>
+                                    <a href="{{ url_for('teacher.classes') }}" class="mobile-submenu-item">クラス管理</a>
                                 </div>
                                 
                                 <div class="mobile-menu-item mobile-dropdown" data-target="mobile-menu-teacher-basic">
@@ -775,27 +775,27 @@
                                     <i class="fas fa-tools"></i> ツール
                                 </div>
                                 <div id="mobile-menu-teacher-tools" class="mobile-submenu">
-                                    <a href="{{ url_for('chat_page') }}" class="mobile-submenu-item">AIチャット</a>
+                                    <a href="{{ url_for('api.chat') }}" class="mobile-submenu-item">AIチャット</a>
                                 </div>
                                 
                                 <div class="mobile-menu-divider"></div>
                                 
-                                <a href="{{ url_for('logout') }}" class="mobile-menu-item">
+                                <a href="{{ url_for('auth.logout') }}" class="mobile-menu-item">
                                     <i class="fas fa-sign-out-alt"></i> ログアウト
                                 </a>
                             </div>
                         {% endif %}
                     {% else %}
                         <!-- 未ログイン時のメニュー（デスクトップ） -->
-                        <li><a href="{{ url_for('login') }}"><i class="fas fa-sign-in-alt"></i> ログイン</a></li>
-                        <li><a href="{{ url_for('register') }}"><i class="fas fa-user-plus"></i> 登録</a></li>
+                        <li><a href="{{ url_for('auth.login') }}"><i class="fas fa-sign-in-alt"></i> ログイン</a></li>
+                        <li><a href="{{ url_for('auth.register') }}"><i class="fas fa-user-plus"></i> 登録</a></li>
                         
                         <!-- 未ログイン時のメニュー（モバイル） -->
                         <div class="mobile-menu-list">
-                            <a href="{{ url_for('login') }}" class="mobile-menu-item">
+                            <a href="{{ url_for('auth.login') }}" class="mobile-menu-item">
                                 <i class="fas fa-sign-in-alt"></i> ログイン
                             </a>
-                            <a href="{{ url_for('register') }}" class="mobile-menu-item">
+                            <a href="{{ url_for('auth.register') }}" class="mobile-menu-item">
                                 <i class="fas fa-user-plus"></i> 登録
                             </a>
                         </div>

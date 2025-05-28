@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}管理者アクセス - Quested{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">管理者アクセス</h5>
+                </div>
+                <div class="card-body">
+                    <p>このページは管理者アクセス確認用のページです。</p>
+                    {% if current_user.is_authenticated %}
+                        <p>ユーザー名: {{ current_user.username }}</p>
+                        <p>ロール: {{ current_user.role }}</p>
+                        <p>ID: {{ current_user.id }}</p>
+                        {% if current_user.role == 'admin' %}
+                            <a href="{{ url_for('admin_panel.dashboard') }}" class="btn btn-primary">管理者ダッシュボードへ</a>
+                        {% else %}
+                            <p class="text-warning">あなたは管理者ではありません。</p>
+                        {% endif %}
+                    {% else %}
+                        <p>ログインしていません。</p>
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-primary">ログイン</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

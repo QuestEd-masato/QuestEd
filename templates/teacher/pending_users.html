@@ -6,7 +6,7 @@
 <div class="container">
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
         <h2>承認待ちユーザー</h2>
-        <a href="{{ url_for('teacher_dashboard') }}" class="btn btn-primary">ダッシュボードに戻る</a>
+        <a href="{{ url_for('teacher.dashboard') }}" class="btn btn-primary">ダッシュボードに戻る</a>
     </div>
     
     {% if pending_students %}
@@ -29,7 +29,7 @@
                             <td>{{ student.email }}</td>
                             <td>{{ student.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
                             <td>
-                                <form action="{{ url_for('approve_user', user_id=student.id) }}" method="post" style="display: inline;">
+                                <form action="{{ url_for('teacher.approve_user', user_id=student.id) }}" method="post" style="display: inline;">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="btn btn-success btn-sm">承認</button>
                                 </form>

@@ -3,10 +3,10 @@ from flask_login import login_required, current_user
 import json
 import random
 from datetime import datetime, timedelta, date
-from app import db, User, InquiryTheme
+from extensions import db
+from app.models import User, InquiryTheme, Class
 from basebuilder import exporters
 from sqlalchemy import func
-from app import Class  # アプリケーションのメインモデルからClassをインポート
 
 from basebuilder.models import (
     ProblemCategory, BasicKnowledgeItem, KnowledgeThemeRelation,
@@ -2580,7 +2580,7 @@ def view_text_set(text_id):
                     answers[problem.id] = answer
         
         return render_template(
-            'basebuilder/view_text.html',
+            'basebuilder/View_text.html',
             text_set=text_set,
             problems=problems,
             answers=answers,

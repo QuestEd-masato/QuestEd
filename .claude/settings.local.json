@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(python3:*)",
+      "Bash(ls:*)",
+      "Bash(venv/Scripts/pip.exe install:*)",
+      "Bash(venv/Scripts/python.exe:*)",
+      "Bash(sudo apt:*)",
+      "Bash(sudo apt install:*)",
+      "Bash(source:*)",
+      "Bash(python:*)",
+      "Bash(./venv/Scripts/python.exe:*)",
+      "Bash(rg:*)",
+      "Bash(/mnt/c/Users/masat/AppData/Local/Programs/Python/Python313/python.exe run.py)",
+      "Bash(/home/masat/.npm-global/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/x64-linux/rg \"admin\\.dashboard\")",
+      "Bash(pkill:*)",
+      "Bash(sed:*)",
+      "Bash(PYTHONDONTWRITEBYTECODE=1 /mnt/c/Users/masat/AppData/Local/Programs/Python/Python313/python.exe run.py)"
+    ],
+    "deny": []
+  }
+}

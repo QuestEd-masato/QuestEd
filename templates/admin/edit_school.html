@@ -5,8 +5,8 @@
 {% block content %}
 <nav aria-label="breadcrumb" class="mb-4">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">ダッシュボード</a></li>
-        <li class="breadcrumb-item"><a href="{{ url_for('admin_schools') }}">学校管理</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('admin_panel.dashboard') }}">ダッシュボード</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('admin_panel.admin_schools') }}">学校管理</a></li>
         <li class="breadcrumb-item active" aria-current="page">{% if school %}学校編集{% else %}学校登録{% endif %}</li>
     </ol>
 </nav>
@@ -63,7 +63,7 @@
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save"></i> {% if school %}更新{% else %}登録{% endif %}
                         </button>
-                        <a href="{{ url_for('admin_schools') }}" class="btn btn-outline-secondary">
+                        <a href="{{ url_for('admin_panel.admin_schools') }}" class="btn btn-outline-secondary">
                             <i class="fas fa-times"></i> キャンセル
                         </a>
                     </div>

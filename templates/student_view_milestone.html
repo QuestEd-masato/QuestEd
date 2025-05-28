@@ -81,12 +81,12 @@
     {% endif %}
     
     <div class="submission-actions">
-        <a href="{{ url_for('submit_milestone', milestone_id=milestone.id) }}" class="btn btn-primary">編集する</a>
+        <a href="{{ url_for('student.submit_milestone', milestone_id=milestone.id) }}" class="btn btn-primary">編集する</a>
     </div>
     {% else %}
     <div class="submission-prompt">
         <p>このマイルストーンはまだ提出されていません。「提出する」ボタンをクリックして、作業内容を提出してください。</p>
-        <a href="{{ url_for('submit_milestone', milestone_id=milestone.id) }}" class="btn btn-primary">提出する</a>
+        <a href="{{ url_for('student.submit_milestone', milestone_id=milestone.id) }}" class="btn btn-primary">提出する</a>
     </div>
     {% endif %}
 </div>

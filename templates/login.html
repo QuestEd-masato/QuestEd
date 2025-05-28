@@ -7,7 +7,7 @@
     <div class="auth-card">
         <h2>ログイン</h2>
         
-        <form method="POST" action="{{ url_for('login') }}" data-validate="true">
+        <form method="POST" action="{{ url_for('auth.login') }}" data-validate="true">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             
             <div class="form-group">
@@ -26,9 +26,9 @@
         </form>
         
         <div class="auth-links">
-            <p>アカウントをお持ちでないですか？ <a href="{{ url_for('register') }}">新規登録</a></p>
+            <p>アカウントをお持ちでないですか？ <a href="{{ url_for('auth.register') }}">新規登録</a></p>
             <!-- 追加: パスワード忘れのリンク -->
-            <p><a href="{{ url_for('forgot_password') }}">パスワードをお忘れですか？</a></p>
+            <p><a href="{{ url_for('auth.forgot_password') }}">パスワードをお忘れですか？</a></p>
         </div>
     </div>
 </div>

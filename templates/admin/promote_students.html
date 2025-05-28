@@ -1,5 +1,5 @@
 <!-- templates/admin/promote_students.html -->
-{% extends 'shared/base.html' %}
+{% extends 'base.html' %}
 
 {% block content %}
 <div class="container mt-4">
@@ -7,7 +7,7 @@
     <h3>{{ from_year.year }} → {{ to_year.year }}</h3>
     
     <div class="mb-3">
-        <a href="{{ url_for('academic.list_years', school_id=from_year.school_id) }}" class="btn btn-secondary">年度一覧に戻る</a>
+        <a href="{{ url_for('admin_panel.admin_school_years', school_id=from_year.school_id) }}" class="btn btn-secondary">年度一覧に戻る</a>
     </div>
     
     <form method="post">

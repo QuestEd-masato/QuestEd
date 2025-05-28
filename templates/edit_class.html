@@ -5,7 +5,7 @@
 {% block content %}
 <div class="container mt-4">
     <h2>クラス編集</h2>
-    <form method="POST" action="{{ url_for('edit_class', class_id=class_obj.id) }}">
+    <form method="POST" action="{{ url_for('teacher.edit_class', class_id=class_obj.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-group mb-3">
             <label for="class_name">クラス名</label>
@@ -24,7 +24,7 @@
             <input type="text" class="form-control" id="location" name="location" value="{{ class_obj.location or '' }}">
         </div>
         <button type="submit" class="btn btn-primary">更新</button>
-        <a href="{{ url_for('view_class', class_id=class_obj.id) }}" class="btn btn-secondary">キャンセル</a>
+        <a href="{{ url_for('teacher.view_class', class_id=class_obj.id) }}" class="btn btn-secondary">キャンセル</a>
     </form>
 </div>
 {% endblock %}

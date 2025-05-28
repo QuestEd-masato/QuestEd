@@ -7,10 +7,10 @@
   <h1>大テーマ一覧</h1>
   
   <div class="mb-4">
-    <a href="{{ url_for('student_dashboard') }}" class="btn btn-secondary">
+    <a href="{{ url_for('student.dashboard') }}" class="btn btn-secondary">
       <i class="fas fa-arrow-left"></i> ダッシュボードに戻る
     </a>
-    <a href="{{ url_for('view_themes') }}" class="btn btn-info">
+    <a href="{{ url_for('student.view_themes') }}" class="btn btn-info">
       <i class="fas fa-list"></i> 個人テーマ一覧を見る
     </a>
   </div>
@@ -41,10 +41,10 @@
                   <p class="card-text">{{ item.theme.description }}</p>
                 </div>
                 <div class="card-footer">
-                  <a href="{{ url_for('create_personal_theme', theme_id=item.theme.id) }}" class="btn btn-outline-primary">
+                  <a href="{{ url_for('student.create_personal_theme', theme_id=item.theme.id) }}" class="btn btn-outline-primary">
                     <i class="fas fa-plus"></i> 自分でテーマを作成
                   </a>
-                  <a href="{{ url_for('generate_theme', theme_id=item.theme.id) }}" class="btn btn-outline-success">
+                  <a href="{{ url_for('student.generate_theme', theme_id=item.theme.id) }}" class="btn btn-outline-success">
                     <i class="fas fa-robot"></i> AIにテーマを提案してもらう
                   </a>
                 </div>

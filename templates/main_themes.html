@@ -7,10 +7,10 @@
   <h1>大テーマ管理 - {{ class_obj.name }}</h1>
   
   <div class="mb-4">
-    <a href="{{ url_for('view_class', class_id=class_obj.id) }}" class="btn btn-secondary">
+    <a href="{{ url_for('teacher.view_class', class_id=class_obj.id) }}" class="btn btn-secondary">
       <i class="fas fa-arrow-left"></i> クラス詳細に戻る
     </a>
-    <a href="{{ url_for('create_main_theme', class_id=class_obj.id) }}" class="btn btn-primary">
+    <a href="{{ url_for('teacher.create_main_theme', class_id=class_obj.id) }}" class="btn btn-primary">
       <i class="fas fa-plus"></i> 新しい大テーマを作成
     </a>
   </div>
@@ -46,10 +46,10 @@
                   <td>{{ theme.description|truncate(50) }}</td>
                   <td>{{ theme.created_at.strftime('%Y-%m-%d') }}</td>
                   <td>
-                    <a href="{{ url_for('edit_main_theme', theme_id=theme.id) }}" class="btn btn-sm btn-outline-primary">
+                    <a href="{{ url_for('teacher.edit_main_theme', theme_id=theme.id) }}" class="btn btn-sm btn-outline-primary">
                       <i class="fas fa-edit"></i> 編集
                     </a>
-                    <a href="{{ url_for('delete_main_theme', theme_id=theme.id) }}" class="btn btn-sm btn-outline-danger" 
+                    <a href="{{ url_for('teacher.delete_main_theme', theme_id=theme.id) }}" class="btn btn-sm btn-outline-danger" 
                        onclick="return confirm('本当に削除しますか？関連する個人テーマへの影響があります。');">
                       <i class="fas fa-trash"></i> 削除
                     </a>

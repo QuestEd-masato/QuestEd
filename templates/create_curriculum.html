@@ -7,7 +7,7 @@
     <h1>カリキュラム作成 - {{ class_obj.name }}</h1>
     
     <div class="mb-3">
-        <a href="{{ url_for('view_curriculums', class_id=class_obj.id) }}" class="btn btn-secondary">
+        <a href="{{ url_for('teacher.curriculums', class_id=class_obj.id) }}" class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> カリキュラム一覧に戻る
         </a>
     </div>
@@ -17,7 +17,7 @@
             <h2 class="h5 mb-0">カリキュラム設定</h2>
         </div>
         <div class="card-body">
-            <form method="post" action="{{ url_for('generate_curriculum', class_id=class_obj.id) }}">
+            <form method="post" action="{{ url_for('teacher.generate_curriculum', class_id=class_obj.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 
                 <div class="row mb-3">

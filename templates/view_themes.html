@@ -7,10 +7,10 @@
     <h2>あなたの探究テーマ</h2>
     
     <div class="actions-bar">
-        <a href="{{ url_for('student_dashboard') }}" class="btn btn-secondary">
+        <a href="{{ url_for('student.dashboard') }}" class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> ダッシュボードに戻る
         </a>
-        <a href="{{ url_for('student_view_main_themes') }}" class="btn btn-info">
+        <a href="{{ url_for('student.student_view_main_themes') }}" class="btn btn-info">
             <i class="fas fa-list"></i> 大テーマ一覧を見る
         </a>
     </div>
@@ -127,7 +127,7 @@
                         <ul class="dropdown-menu" aria-labelledby="createThemeDropdown">
                             {% for main_theme in available_main_themes %}
                                 <li>
-                                    <a class="dropdown-item" href="{{ url_for('create_personal_theme', theme_id=main_theme.id) }}">
+                                    <a class="dropdown-item" href="{{ url_for('student.create_personal_theme', theme_id=main_theme.id) }}">
                                         {{ main_theme.title }}
                                     </a>
                                 </li>
@@ -147,7 +147,7 @@
                         <ul class="dropdown-menu" aria-labelledby="generateThemeDropdown">
                             {% for main_theme in available_main_themes %}
                                 <li>
-                                    <a class="dropdown-item" href="{{ url_for('generate_theme', theme_id=main_theme.id) }}">
+                                    <a class="dropdown-item" href="{{ url_for('student.generate_theme', theme_id=main_theme.id) }}">
                                         {{ main_theme.title }}
                                     </a>
                                 </li>

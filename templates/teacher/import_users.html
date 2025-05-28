@@ -11,7 +11,7 @@
         <div class="card-body">
             <nav aria-label="breadcrumb" class="mb-4">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ url_for('teacher_dashboard') }}">ダッシュボード</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('teacher.dashboard') }}">ダッシュボード</a></li>
                     <li class="breadcrumb-item active" aria-current="page">ユーザー一括インポート</li>
                 </ol>
             </nav>
@@ -36,10 +36,10 @@
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-file-import me-2"></i>インポート
                             </button>
-                            <a href="{{ url_for('teacher_dashboard') }}" class="btn btn-outline-secondary">
+                            <a href="{{ url_for('teacher.dashboard') }}" class="btn btn-outline-secondary">
                                 キャンセル
                             </a>
-                            <a href="{{ url_for('download_user_template') }}" class="btn btn-outline-info ms-auto">
+                            <a href="{{ url_for('admin_panel.download_user_template') }}" class="btn btn-outline-info ms-auto">
                                 <i class="fas fa-download me-2"></i>テンプレートをダウンロード
                             </a>
                         </div>

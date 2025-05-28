@@ -13,7 +13,7 @@
         {% endif %}
     </div>
     
-    <form method="POST" action="{{ url_for('add_student', class_id=class_.id) }}">
+    <form method="POST" action="{{ url_for('teacher.add_student', class_id=class_.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         
         <div class="form-group">
@@ -24,7 +24,7 @@
         
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">学生を追加</button>
-            <a href="{{ url_for('view_class', class_id=class_.id) }}" class="btn btn-secondary">キャンセル</a>
+            <a href="{{ url_for('teacher.view_class', class_id=class_.id) }}" class="btn btn-secondary">キャンセル</a>
         </div>
     </form>
     

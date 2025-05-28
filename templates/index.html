@@ -9,13 +9,13 @@
         <div class="hero-actions">
             {% if current_user.is_authenticated %}
                 {% if current_user.role == 'student' %}
-                    <a href="{{ url_for('student_dashboard') }}" class="btn btn-primary">マイダッシュボード</a>
+                    <a href="{{ url_for('student.dashboard') }}" class="btn btn-primary">マイダッシュボード</a>
                 {% elif current_user.role == 'teacher' %}
-                    <a href="{{ url_for('teacher_dashboard') }}" class="btn btn-primary">教師ダッシュボード</a>
+                    <a href="{{ url_for('teacher.dashboard') }}" class="btn btn-primary">教師ダッシュボード</a>
                 {% endif %}
             {% else %}
-                <a href="{{ url_for('login') }}" class="btn btn-primary">ログイン</a>
-                <a href="{{ url_for('register') }}" class="btn btn-secondary">新規登録</a>
+                <a href="{{ url_for('auth.login') }}" class="btn btn-primary">ログイン</a>
+                <a href="{{ url_for('auth.register') }}" class="btn btn-secondary">新規登録</a>
             {% endif %}
         </div>
     </div>

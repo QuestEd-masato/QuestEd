@@ -4,15 +4,16 @@
 
 {% block content %}
 <div class="container mt-4">
-    <div class="row">
-        <div class="col-md-8">
-            <h1>{{ class_obj.name }}</h1>
-            
-            <div class="card mb-4">
-                <div class="card-header">
-                    クラス情報
-                </div>
-                <div class="card-body">
+    <h1>{{ class_obj.name }}</h1>
+    
+    <!-- クラス情報 -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">クラス情報</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
                     <p><strong>担当教師:</strong> 
                         {% if class_obj.teacher %}
                         {{ class_obj.teacher.username }}
@@ -20,7 +21,17 @@
                         <em>未割り当て</em>
                         {% endif %}
                     </p>
-                    
+                    {% if class_obj.description %}
+                    <p><strong>説明:</strong> {{ class_obj.description }}</p>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    {% if class_obj.schedule %}
+                    <p><strong>スケジュール:</strong> {{ class_obj.schedule }}</p>
+                    {% endif %}
+                    {% if class_obj.location %}
+                    <p><strong>場所:</strong> {{ class_obj.location }}</p>
+                    {% endif %}
                     {% if class_obj.created_at %}
                     <p><strong>作成日:</strong> {{ class_obj.created_at.strftime('%Y年%m月%d日') }}</p>
                     {% endif %}
@@ -28,122 +39,205 @@
             </div>
             
             {% if current_user.role == 'teacher' and current_user.id == class_obj.teacher_id %}
-            <div class="mb-4">
-                <a href="{{ url_for('edit_class', class_id=class_obj.id) }}" class="btn btn-primary">クラス情報を編集</a>
-                <a href="{{ url_for('add_students', class_id=class_obj.id) }}" class="btn btn-success">学生を追加</a>
-                <a href="{{ url_for('delete_class', class_id=class_obj.id) }}" class="btn btn-danger" onclick="return confirm('本当にこのクラスを削除しますか？');">クラスを削除</a>
+            <div class="mt-3">
+                <a href="{{ url_for('teacher.edit_class', class_id=class_obj.id) }}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> クラス情報を編集
+                </a>
+                <a href="{{ url_for('teacher.add_students', class_id=class_obj.id) }}" class="btn btn-success">
+                    <i class="fas fa-user-plus"></i> 学生を追加
+                </a>
+                <a href="{{ url_for('teacher.import_students', class_id=class_obj.id) }}" class="btn btn-info">
+                    <i class="fas fa-file-import"></i> 一括インポート
+                </a>
+                <a href="{{ url_for('teacher.delete_class', class_id=class_obj.id) }}" class="btn btn-danger" 
+                   onclick="return confirm('本当にこのクラスを削除しますか？');">
+                    <i class="fas fa-trash"></i> クラスを削除
+                </a>
             </div>
             {% endif %}
         </div>
-        
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-header">
-                    受講生一覧
+    </div>
+    
+    <!-- 受講生一覧 -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">受講生一覧 ({{ students_info|length }}名)</h5>
+        </div>
+        <div class="card-body">
+            {% if students_info %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th style="width: 20%">氏名</th>
+                                <th style="width: 30%">探究テーマ</th>
+                                <th style="width: 35%">最新の活動記録</th>
+                                <th style="width: 15%">登録日</th>
+                                {% if current_user.role == 'teacher' and current_user.id == class_obj.teacher_id %}
+                                <th style="width: 10%">操作</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for info in students_info %}
+                            <tr>
+                                <td>
+                                    <strong>{{ info.student.username }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ info.student.email }}</small>
+                                </td>
+                                <td>
+                                    {% if info.selected_theme %}
+                                        <div class="theme-info">
+                                            <span class="badge bg-success">{{ info.selected_theme.title }}</span>
+                                            {% if info.selected_theme.question %}
+                                            <br>
+                                            <small class="text-muted">{{ info.selected_theme.question|truncate(50) }}</small>
+                                            {% endif %}
+                                        </div>
+                                    {% else %}
+                                        <span class="badge bg-secondary">未選択</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if info.latest_activity %}
+                                        <div class="activity-info">
+                                            <strong>{{ info.latest_activity.title }}</strong>
+                                            <br>
+                                            <small class="text-muted">
+                                                {{ info.latest_activity.timestamp.strftime('%Y/%m/%d %H:%M') }}
+                                            </small>
+                                            {% if info.latest_activity.content %}
+                                            <br>
+                                            <small>{{ info.latest_activity.content|truncate(50) }}</small>
+                                            {% endif %}
+                                            {% if info.latest_activity.reflection %}
+                                            <br>
+                                            <small class="text-info">
+                                                <i class="fas fa-comment"></i> 振り返りあり
+                                            </small>
+                                            {% endif %}
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted">記録なし</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small>{{ info.enrollment.enrolled_at.strftime('%Y/%m/%d') }}</small>
+                                </td>
+                                {% if current_user.role == 'teacher' and current_user.id == class_obj.teacher_id %}
+                                <td>
+                                    <form method="POST" action="{{ url_for('teacher.remove_student', class_id=class_obj.id, student_id=info.student.id) }}" 
+                                          onsubmit="return confirm('{{ info.student.username }}さんをクラスから削除してもよろしいですか？');" 
+                                          class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-user-times"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                                {% endif %}
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                <div class="card-body">
-                    {% if students %}
-                        <table class="table table-sm table-hover student-table">
-                            <thead>
-                                <tr>
-                                    <th>氏名</th>
-                                    <th>テーマ</th>
-                                    <th>最新学習記録</th>
-                                    {% if current_user.role == 'teacher' and current_user.id == class_obj.teacher_id %}
-                                    <th>操作</th>
-                                    {% endif %}
-                                </tr>
-                            </thead>
-                            <tbody>
-                            {% for student_info in students %}
-                                <tr>
-                                    <td><strong>{{ student_info.student.username }}</strong></td>
-                                    <td>
-                                        {% if student_info.selected_theme %}
-                                            <span class="badge bg-info text-dark">{{ student_info.selected_theme.title|truncate(20) }}</span>
-                                        {% else %}
-                                            <span class="badge bg-secondary">未選択</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if student_info.latest_activity %}
-                                            <div class="activity-preview">
-                                                {% if student_info.latest_activity.content %}
-                                                    <span class="activity-content" title="{{ student_info.latest_activity.content }}">{{ student_info.latest_activity.content|truncate(15, true, "...") }}</span>
-                                                    {% if student_info.latest_activity.date and current_user.role == 'teacher' %}
-                                                        <small class="activity-date">{{ student_info.latest_activity.date.strftime('%Y-%m-%d') }}</small>
-                                                    {% endif %}
-                                                {% elif student_info.latest_activity.date %}
-                                                    <span class="activity-date-only">{{ student_info.latest_activity.date.strftime('%Y-%m-%d') }}</span>
-                                                {% else %}
-                                                    <span class="text-muted">内容なし</span>
-                                                {% endif %}
-                                            </div>
-                                        {% else %}
-                                            <span class="text-muted">記録なし</span>
-                                        {% endif %}
-                                    </td>
-                                    {% if current_user.role == 'teacher' and current_user.id == class_obj.teacher_id %}
-                                    <td>
-                                        <form method="POST" action="{{ url_for('remove_student', class_id=class_obj.id, student_id=student_info.student.id) }}" onsubmit="return confirm('この学生をクラスから削除してもよろしいですか？');" class="d-inline">
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            <button type="submit" class="btn btn-sm btn-danger">削除</button>
-                                        </form>
-                                    </td>
-                                    {% endif %}
-                                </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
-                    {% else %}
-                        <p class="text-center">このクラスにはまだ学生がいません。</p>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">このクラスにはまだ学生がいません。</p>
+                    {% if current_user.role == 'teacher' and current_user.id == class_obj.teacher_id %}
+                    <a href="{{ url_for('teacher.add_students', class_id=class_obj.id) }}" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i> 学生を追加
+                    </a>
                     {% endif %}
-                </div>    
+                </div>
+            {% endif %}
+        </div>    
+    </div>
+    
+    <!-- メインテーマ一覧 -->
+    {% if main_themes %}
+    <div class="card mb-4">
+        <div class="card-header bg-warning">
+            <h5 class="mb-0">メインテーマ</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for theme in main_themes %}
+                <div class="col-md-6 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h6 class="card-title">{{ theme.title }}</h6>
+                            <p class="card-text small">{{ theme.description|truncate(100) }}</p>
+                            <small class="text-muted">
+                                作成: {{ theme.created_at.strftime('%Y/%m/%d') }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
         </div>
     </div>
+    {% endif %}
+    
+    <!-- マイルストーン -->
+    {% if milestones %}
+    <div class="card mb-4">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">マイルストーン</h5>
+        </div>
+        <div class="card-body">
+            <div class="list-group">
+                {% for milestone in milestones %}
+                <div class="list-group-item">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">{{ milestone.title }}</h6>
+                        <small>期限: {{ milestone.due_date.strftime('%Y/%m/%d') }}</small>
+                    </div>
+                    {% if milestone.description %}
+                    <p class="mb-1">{{ milestone.description }}</p>
+                    {% endif %}
+                    <small class="text-muted">
+                        {% set days_left = (milestone.due_date - today).days %}
+                        {% if days_left > 0 %}
+                            あと{{ days_left }}日
+                        {% elif days_left == 0 %}
+                            <span class="text-danger">本日締切</span>
+                        {% else %}
+                            <span class="text-danger">{{ -days_left }}日超過</span>
+                        {% endif %}
+                    </small>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
     
     <div class="mt-4">
-        <a href="{{ url_for('classes') }}" class="btn btn-secondary">クラス一覧に戻る</a>
+        <a href="{{ url_for('teacher.classes') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> クラス一覧に戻る
+        </a>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_css %}
 <style>
-    .student-table {
-        font-size: 0.9rem;
+    .theme-info {
+        line-height: 1.4;
     }
-    .student-table th {
-        font-weight: 500;
+    .activity-info {
+        line-height: 1.3;
     }
-    .student-table td {
-        vertical-align: middle;
+    .table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
     }
-    .badge {
-        font-weight: normal;
-        font-size: 0.85rem;
-        padding: 0.35em 0.65em;
-    }
-    .activity-preview {
-        display: flex;
-        flex-direction: column;
-        line-height: 1.2;
-    }
-    .activity-content {
-        font-size: 0.85rem;
-        color: #333;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .activity-date {
-        font-size: 0.75rem;
-        color: #6c757d;
-    }
-    .activity-date-only {
-        font-size: 0.85rem;
-        color: #6c757d;
+    .card-header h5 {
+        font-size: 1.1rem;
     }
 </style>
 {% endblock %}

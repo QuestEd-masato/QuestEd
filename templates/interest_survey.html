@@ -7,7 +7,7 @@
     <h2>興味・関心アンケート</h2>
     <p class="survey-intro">あなたの興味・関心に合った探究テーマを提案するため、以下の質問に答えてください。</p>
     
-    <form method="POST" action="{{ url_for('interest_survey') }}">
+    <form method="POST" action="{{ url_for('student.interest_survey') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         
         <div class="survey-section">
@@ -360,7 +360,7 @@
         
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">回答を保存</button>
-            <a href="{{ url_for('surveys') }}" class="btn btn-secondary">キャンセル</a>
+            <a href="{{ url_for('student.surveys') }}" class="btn btn-secondary">キャンセル</a>
         </div>
     </form>
 </div>

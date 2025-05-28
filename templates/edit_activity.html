@@ -13,7 +13,7 @@
     </div>
     {% endif %}
     
-    <form method="POST" action="{{ url_for('edit_activity', log_id=activity.id) }}" enctype="multipart/form-data" id="activity-form">
+    <form method="POST" action="{{ url_for('student.edit_activity', log_id=activity.id) }}" enctype="multipart/form-data" id="activity-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         
         <div class="form-row">
@@ -87,7 +87,7 @@
         
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">保存</button>
-            <a href="{{ url_for('activities') }}" class="btn btn-secondary">キャンセル</a>
+            <a href="{{ url_for('student.activities') }}" class="btn btn-secondary">キャンセル</a>
         </div>
     </form>
 </div>

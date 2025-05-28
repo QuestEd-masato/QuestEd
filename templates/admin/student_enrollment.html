@@ -1,13 +1,13 @@
 <!-- templates/admin/student_enrollment.html -->
-{% extends 'shared/base.html' %}
+{% extends 'base.html' %}
 
 {% block content %}
 <div class="container mt-4">
     <h1>{{ class_group.school_year.school.name }} - {{ class_group.name }} - 生徒管理</h1>
     
     <div class="mb-3">
-        <a href="{{ url_for('academic.list_classes', year_id=class_group.school_year_id) }}" class="btn btn-secondary">クラス一覧に戻る</a>
-        <a href="{{ url_for('enrollment.import_students', class_id=class_group.id) }}" class="btn btn-primary">生徒一括登録</a>
+        <a href="{{ url_for('admin_panel.admin_class_groups', year_id=class_group.school_year_id) }}" class="btn btn-secondary">クラス一覧に戻る</a>
+        <!-- <a href="{{ url_for('enrollment.import_students', class_id=class_group.id) }}" class="btn btn-primary">生徒一括登録</a> -->
     </div>
     
     <div class="table-responsive">
