@@ -9,6 +9,7 @@ import io
 import random
 import string
 import logging
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.models import (
     db, User, School, SchoolYear, ClassGroup, StudentEnrollment,
@@ -90,10 +91,25 @@ def delete_user(user_id):
         db.session.commit()
         
         flash(f'ユーザー "{user.username}" を削除しました。')
+    except IntegrityError as e:
+        db.session.rollback()
+        logging.error(f"ユーザー削除時の整合性エラー: {e}")
+        
+        error_message = str(e.orig) if hasattr(e, 'orig') else str(e)
+        if 'foreign key constraint' in error_message.lower() or 'cannot delete' in error_message.lower():
+            flash(f'ユーザー "{user.username}" を削除できません。このユーザーに関連付けられたデータが存在します。先に関連データを削除してください。', 'error')
+        else:
+            flash(f'ユーザー "{user.username}" を削除できません。データベースの整合性制約に違反しています。', 'error')
+    
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        logging.error(f"ユーザー削除時のデータベースエラー: {e}")
+        flash(f'ユーザー "{user.username}" の削除中にデータベースエラーが発生しました。', 'error')
+    
     except Exception as e:
         db.session.rollback()
-        logging.error(f"ユーザー削除エラー: {e}")
-        flash('ユーザーの削除中にエラーが発生しました。')
+        logging.error(f"ユーザー削除時の予期しないエラー: {e}")
+        flash(f'ユーザー "{user.username}" の削除中に予期しないエラーが発生しました。', 'error')
     
     return redirect(url_for('admin_panel.users'))
 

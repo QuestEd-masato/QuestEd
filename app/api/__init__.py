@@ -9,10 +9,14 @@ from app.ai import generate_chat_response
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
-@api_bp.route('/chat', methods=['POST'])
+@api_bp.route('/chat', methods=['GET', 'POST'])
 @login_required
 def chat():
     """チャットAPIエンドポイント - AIチャット応答を生成"""
+    # GETリクエストの場合はエラーを返す
+    if request.method == 'GET':
+        return jsonify({"error": "このエンドポイントはPOSTメソッドのみ対応しています"}), 405
+    
     try:
         # リクエストデータを取得
         if request.is_json:

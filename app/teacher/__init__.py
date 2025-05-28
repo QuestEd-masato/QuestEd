@@ -348,6 +348,33 @@ def add_students(class_id):
     
     return render_template('add_students.html', class_obj=class_obj, available_students=available_students)
 
+@teacher_bp.route('/download_student_template')
+@login_required
+@teacher_required
+def download_student_template():
+    """生徒追加用CSVテンプレートダウンロード"""
+    from flask import make_response
+    
+    # CSVデータを作成
+    csv_data = io.StringIO()
+    csv_writer = csv.writer(csv_data)
+    
+    # ヘッダー行
+    csv_writer.writerow(['username'])
+    
+    # サンプル行
+    csv_writer.writerow(['taro_yamada'])
+    csv_writer.writerow(['hanako_tanaka'])
+    csv_writer.writerow(['jiro_suzuki'])
+    
+    # CSVデータを取得
+    csv_data.seek(0)
+    output = make_response(csv_data.getvalue())
+    output.headers["Content-Disposition"] = "attachment; filename=student_add_template.csv"
+    output.headers["Content-type"] = "text/csv; charset=utf-8"
+    
+    return output
+
 @teacher_bp.route('/class/<int:class_id>/remove_student/<int:student_id>', methods=['POST'])
 @login_required
 @teacher_required
