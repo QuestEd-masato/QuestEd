@@ -654,7 +654,7 @@
                                     <i class="fas fa-tools"></i> ツール
                                 </a>
                                 <ul class="dropdown-menu">
-                                    <li><a href="{{ url_for('api.chat') }}">AIチャット</a></li>
+                                    <li><a href="{{ url_for('student.chat_page') }}">AIチャット</a></li>
                                     <li><a href="{{ url_for('student.surveys') }}">アンケート</a></li>
                                     <li><a href="{{ url_for('student.todos') }}">To Doリスト</a></li>
                                     <li><a href="{{ url_for('student.goals') }}">目標管理</a></li>
@@ -694,7 +694,7 @@
                                     <i class="fas fa-tools"></i> ツール
                                 </div>
                                 <div id="mobile-menu-tools" class="mobile-submenu">
-                                    <a href="{{ url_for('api.chat') }}" class="mobile-submenu-item">AIチャット</a>
+                                    <a href="{{ url_for('student.chat_page') }}" class="mobile-submenu-item">AIチャット</a>
                                     <a href="{{ url_for('student.surveys') }}" class="mobile-submenu-item">アンケート</a>
                                     <a href="{{ url_for('student.todos') }}" class="mobile-submenu-item">To Doリスト</a>
                                     <a href="{{ url_for('student.goals') }}" class="mobile-submenu-item">目標管理</a>
@@ -741,7 +741,7 @@
                                     <i class="fas fa-tools"></i> ツール
                                 </a>
                                 <ul class="dropdown-menu">
-                                    <li><a href="{{ url_for('api.chat') }}">AIチャット</a></li>
+                                    <li><a href="{{ url_for('teacher.chat_page') }}">AIチャット</a></li>
                                 </ul>
                             </li>
                             
@@ -775,7 +775,7 @@
                                     <i class="fas fa-tools"></i> ツール
                                 </div>
                                 <div id="mobile-menu-teacher-tools" class="mobile-submenu">
-                                    <a href="{{ url_for('api.chat') }}" class="mobile-submenu-item">AIチャット</a>
+                                    <a href="{{ url_for('teacher.chat_page') }}" class="mobile-submenu-item">AIチャット</a>
                                 </div>
                                 
                                 <div class="mobile-menu-divider"></div>

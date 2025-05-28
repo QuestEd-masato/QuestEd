@@ -280,8 +280,7 @@ def create_school():
             name=name,
             code=code,
             address=address,
-            phone=phone,
-            email=email
+            contact_email=email  # emailをcontact_emailフィールドにマッピング
         )
         
         db.session.add(new_school)
@@ -304,8 +303,7 @@ def edit_school(school_id):
         school.name = request.form.get('name')
         school.code = request.form.get('code')
         school.address = request.form.get('address')
-        school.phone = request.form.get('phone')
-        school.email = request.form.get('email')
+        school.contact_email = request.form.get('email')  # emailをcontact_emailフィールドにマッピング
         
         if not school.name:
             flash('学校名は必須です。')

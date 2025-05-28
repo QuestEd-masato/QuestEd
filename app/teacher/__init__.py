@@ -1008,3 +1008,17 @@ def api_teacher_first_class():
         return jsonify({'class_id': first_class.id})
     else:
         return jsonify({'class_id': None})
+
+# チャット機能
+@teacher_bp.route('/chat')
+@login_required
+@teacher_required
+def chat_page():
+    """チャットページ"""
+    # チャット履歴を取得
+    from app.models import ChatHistory
+    chat_history = ChatHistory.query.filter_by(user_id=current_user.id)\
+        .order_by(ChatHistory.timestamp)\
+        .all()
+    
+    return render_template('chat.html', chat_history=chat_history)
