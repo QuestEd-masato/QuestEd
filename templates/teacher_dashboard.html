@@ -56,7 +56,7 @@
                             <div class="class-actions">
                                 <a href="{{ url_for('teacher.view_class', class_id=class_data.class.id) }}" class="btn btn-sm">クラス詳細</a>    
                                 <a href="{{ url_for('teacher.create_milestone', class_id=class_data.class.id) }}" class="btn btn-sm">マイルストーン作成</a>
-                                <a href="{{ url_for('teacher.curriculums', class_id=class_data.class.id) }}" class="btn btn-sm btn-info">カリキュラム管理</a>
+                                <a href="{{ url_for('teacher.view_curriculums', class_id=class_data.class.id) }}" class="btn btn-sm btn-info">カリキュラム管理</a>
                             </div>
                         </div>
                     {% endfor %}
