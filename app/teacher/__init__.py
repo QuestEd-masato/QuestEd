@@ -37,13 +37,42 @@ def dashboard():
     # 教師が担当するクラスを取得
     classes = Class.query.filter_by(teacher_id=current_user.id).all()
     
-    # 各クラスの生徒数を計算
+    # 各クラスの生徒数と統計情報を計算
     class_info = []
     for class_obj in classes:
-        student_count = ClassEnrollment.query.filter_by(class_id=class_obj.id).count()
+        # 生徒数を取得
+        enrollments = ClassEnrollment.query.filter_by(class_id=class_obj.id).all()
+        student_count = len(enrollments)
+        
+        # アンケート完了数を計算
+        survey_completed = 0
+        theme_selected = 0
+        
+        for enrollment in enrollments:
+            student = enrollment.student
+            # アンケート完了確認
+            if student.has_completed_surveys():
+                survey_completed += 1
+            
+            # テーマ選択確認
+            selected_theme = InquiryTheme.query.filter_by(
+                student_id=student.id,
+                is_selected=True
+            ).first()
+            if selected_theme:
+                theme_selected += 1
+        
+        # 次回のマイルストーンを取得
+        next_milestone = Milestone.query.filter_by(class_id=class_obj.id)\
+            .filter(Milestone.due_date >= datetime.utcnow().date())\
+            .order_by(Milestone.due_date).first()
+        
         class_info.append({
             'class': class_obj,
-            'student_count': student_count
+            'student_count': student_count,
+            'survey_completed': survey_completed,
+            'theme_selected': theme_selected,
+            'next_milestone': next_milestone
         })
     
     # 承認待ちの学生数を取得
@@ -57,7 +86,7 @@ def dashboard():
         ).count()
     
     return render_template('teacher_dashboard.html', 
-                         class_info=class_info,
+                         classes=class_info,  # テンプレートはclassesを期待している
                          pending_students_count=pending_students_count)
 
 @teacher_bp.route('/teacher/pending_users')
