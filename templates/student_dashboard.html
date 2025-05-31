@@ -218,35 +218,52 @@
         </div>
         <div class="dashboard-section basebuilder-summary">
             <h3>基礎学力トレーニング</h3>
-            {% if category_proficiency %}
-               <div class="proficiency-overview mb-3">
-                   <h4>カテゴリ別熟練度</h4>
-                   {% for category_name, level in category_proficiency.items() %}
-                       <div class="mb-2">
-                          <div class="d-flex justify-content-between">
-                              <span>{{ category_name }}</span>
-                              <span>{{ level }}%</span>
-                          </div>
-                          <div class="progress">
-                              <div class="progress-bar 
-                                  {% if level >= 80 %}bg-success
-                                  {% elif level >= 50 %}bg-primary
-                                  {% elif level >= 30 %}bg-warning
-                                  {% else %}bg-danger{% endif %}" 
-                                   style="width: {{ level }}%"></div>
-                              </div>
-                          </div>
-                   {% endfor %}
+            {% if delivered_texts %}
+               <div class="delivered-texts mb-3">
+                   <h4>配信されたテキスト</h4>
+                   <div class="text-list">
+                       {% for item in delivered_texts[:3] %}
+                           <div class="text-item mb-2 p-2 bg-light rounded">
+                               <div class="d-flex justify-content-between align-items-center">
+                                   <div>
+                                       <h5 class="mb-1">{{ item.text_set.title }}</h5>
+                                       <small class="text-muted">
+                                           {{ item.delivery.delivered_at.strftime('%Y年%m月%d日') }} 配信
+                                           {% if item.delivery.due_date %}
+                                               | 期限: {{ item.delivery.due_date.strftime('%Y年%m月%d日') }}
+                                           {% endif %}
+                                       </small>
+                                   </div>
+                                   <div class="text-right">
+                                       {% if item.proficiency %}
+                                           <span class="badge 
+                                               {% if item.proficiency.level >= 80 %}badge-success
+                                               {% elif item.proficiency.level >= 50 %}badge-primary
+                                               {% elif item.proficiency.level >= 30 %}badge-warning
+                                               {% else %}badge-danger{% endif %}">
+                                               進捗: {{ item.proficiency.level }}%
+                                           </span>
+                                       {% else %}
+                                           <span class="badge badge-secondary">未着手</span>
+                                       {% endif %}
+                                   </div>
+                               </div>
+                           </div>
+                       {% endfor %}
+                   </div>
+                   {% if delivered_texts|length > 3 %}
+                       <p class="text-muted text-center mt-2">他{{ delivered_texts|length - 3 }}件のテキストがあります</p>
+                   {% endif %}
                </div>
             {% else %}
                <div class="alert alert-info">
-                    まだ熟練度データがありません。問題を解いて熟練度を上げましょう。
+                    配信されたテキストがまだありません。
                </div>
             {% endif %}
     
             <div class="section-actions">
                 <a href="{{ url_for('basebuilder_module.index') }}" class="btn btn-primary">基礎学力ホームへ</a>
-                <a href="{{ url_for('basebuilder_module.problems') }}" class="btn btn-outline">問題に挑戦</a>
+                <a href="{{ url_for('basebuilder_module.my_texts') }}" class="btn btn-outline-primary">配信テキスト一覧</a>
            </div>
        </div>
     </div>
@@ -504,6 +521,29 @@
         padding: 1rem;
     }
     
+    /* 基礎学力トレーニングセクションのスタイル */
+    .basebuilder-summary {
+        grid-column: span 2;
+    }
+    
+    .text-item {
+        transition: background-color 0.2s;
+    }
+    
+    .text-item:hover {
+        background-color: #e9ecef !important;
+    }
+    
+    .text-item h5 {
+        font-size: 1rem;
+        color: #333;
+    }
+    
+    .badge {
+        font-size: 0.85rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
     @media (max-width: 768px) {
         .dashboard-grid {
             grid-template-columns: 1fr;
@@ -512,7 +552,8 @@
         .surveys-status,
         .current-theme,
         .recent-activities,
-        .account-settings {
+        .account-settings,
+        .basebuilder-summary {
             grid-column: span 1;
         }
         

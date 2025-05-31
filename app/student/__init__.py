@@ -51,8 +51,17 @@ def dashboard():
     enrollments = ClassEnrollment.query.filter_by(student_id=current_user.id).all()
     classes = [enrollment.class_obj for enrollment in enrollments]
     
-    # アンケート完了状態をチェック
-    has_completed_surveys = current_user.has_completed_surveys()
+    # アンケートデータを個別に取得（テンプレートで参照されるため）
+    interest_survey = InterestSurvey.query.filter_by(
+        student_id=current_user.id
+    ).order_by(InterestSurvey.submitted_at.desc()).first()
+    
+    personality_survey = PersonalitySurvey.query.filter_by(
+        student_id=current_user.id
+    ).order_by(PersonalitySurvey.submitted_at.desc()).first()
+    
+    # アンケート完了状態をチェック（後方互換性のため）
+    has_completed_surveys = bool(interest_survey and personality_survey)
     
     # 選択中のテーマを取得
     selected_theme = InquiryTheme.query.filter_by(
@@ -62,18 +71,26 @@ def dashboard():
     
     # 最新のマイルストーンを取得
     upcoming_milestones = []
+    today = datetime.utcnow().date()
+    
     for class_obj in classes:
         milestones = Milestone.query.filter_by(class_id=class_obj.id)\
-            .filter(Milestone.due_date >= datetime.utcnow().date())\
+            .filter(Milestone.due_date >= today)\
             .order_by(Milestone.due_date).limit(3).all()
         for milestone in milestones:
+            days_remaining = (milestone.due_date - today).days
             upcoming_milestones.append({
+                'id': milestone.id,
+                'title': milestone.title,
+                'due_date': milestone.due_date,
+                'days_remaining': days_remaining,
+                'class_name': class_obj.name,
                 'milestone': milestone,
                 'class': class_obj
             })
     
     # 期限日でソート
-    upcoming_milestones.sort(key=lambda x: x['milestone'].due_date)
+    upcoming_milestones.sort(key=lambda x: x['due_date'])
     
     # 未完了のTo Doを取得
     pending_todos = Todo.query.filter_by(
@@ -87,13 +104,60 @@ def dashboard():
         is_completed=False
     ).order_by(Goal.due_date).limit(3).all()
     
+    # 最近の活動記録を取得
+    recent_activities = ActivityLog.query.filter_by(
+        student_id=current_user.id
+    ).order_by(ActivityLog.timestamp.desc()).limit(5).all()
+    
+    # 基礎学力トレーニングデータの取得
+    # BaseBuilderのインポートを試みる
+    try:
+        from basebuilder.models import TextDelivery, TextSet, TextProficiencyRecord
+        
+        # 配信されたテキストを取得
+        delivered_texts = []
+        for class_obj in classes:
+            deliveries = db.session.query(TextDelivery, TextSet)\
+                .join(TextSet, TextDelivery.text_set_id == TextSet.id)\
+                .filter(TextDelivery.class_id == class_obj.id)\
+                .order_by(TextDelivery.delivered_at.desc())\
+                .limit(5).all()
+            
+            for delivery, text_set in deliveries:
+                # 生徒の熟練度を取得
+                proficiency = TextProficiencyRecord.query.filter_by(
+                    student_id=current_user.id,
+                    text_set_id=text_set.id
+                ).first()
+                
+                delivered_texts.append({
+                    'delivery': delivery,
+                    'text_set': text_set,
+                    'proficiency': proficiency,
+                    'class': class_obj
+                })
+        
+        # 配信日でソート（最新順）
+        delivered_texts.sort(key=lambda x: x['delivery'].delivered_at, reverse=True)
+        delivered_texts = delivered_texts[:5]  # 最新5件のみ
+        
+    except ImportError:
+        # BaseBuilderモジュールが利用できない場合
+        delivered_texts = []
+    
     return render_template('student_dashboard.html',
                          classes=classes,
                          has_completed_surveys=has_completed_surveys,
+                         interest_survey=interest_survey,
+                         personality_survey=personality_survey,
                          selected_theme=selected_theme,
                          upcoming_milestones=upcoming_milestones,
                          pending_todos=pending_todos,
-                         active_goals=active_goals)
+                         todos=pending_todos,  # テンプレートがtodosを期待している
+                         active_goals=active_goals,
+                         recent_activities=recent_activities,
+                         delivered_texts=delivered_texts,
+                         today=datetime.utcnow().date())
 
 # アンケート関連
 @student_bp.route('/surveys')
