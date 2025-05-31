@@ -11,7 +11,7 @@
     {% if deliveries %}
       <div class="row">
         {% for delivery in deliveries %}
-          <div class="col-md-6 mb-4">
+          <div class="col-12 col-md-6 col-lg-4 mb-4">
             <div class="card h-100">
               <div class="card-body">
                 <h5 class="card-title">{{ delivery.text_set.title }}</h5>
@@ -80,4 +80,76 @@
     {% endif %}
   </div>
 </div>
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+    /* レスポンシブデザインの改善 */
+    .delivered-texts {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    /* カードのタイトルが長い場合の対応 */
+    .card-title {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        line-height: 1.5;
+        max-height: 3em;
+    }
+    
+    /* 提出期限の表示改善 */
+    .badge {
+        white-space: nowrap;
+        display: inline-block;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* プログレスバーのアニメーション */
+    .progress-bar {
+        transition: width 0.6s ease;
+    }
+    
+    /* モバイル対応 */
+    @media (max-width: 768px) {
+        .card-body {
+            padding: 1rem;
+        }
+        
+        .btn {
+            display: block;
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+        
+        .btn + .btn {
+            margin-left: 0;
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+    }
+    
+    /* タブレット対応 */
+    @media (min-width: 768px) and (max-width: 991px) {
+        .col-md-6 {
+            flex: 0 0 50%;
+            max-width: 50%;
+        }
+    }
+    
+    /* 大画面対応 */
+    @media (min-width: 1200px) {
+        .container-fluid {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+    }
+</style>
 {% endblock %}

@@ -1207,6 +1207,9 @@ def leave_group(group_id):
 @login_required
 def chat_page():
     """チャットページ"""
+    # デバッグ用ログ
+    current_app.logger.info(f"Student chat access by user: {current_user.username}, role: {current_user.role}")
+    
     # ユーザーの役割に応じて適切なチャット履歴を取得
     chat_history = ChatHistory.query.filter_by(user_id=current_user.id)\
         .order_by(ChatHistory.timestamp)\

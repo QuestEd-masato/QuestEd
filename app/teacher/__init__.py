@@ -1041,9 +1041,11 @@ def api_teacher_first_class():
 # チャット機能
 @teacher_bp.route('/chat')
 @login_required
-@teacher_required
 def chat_page():
     """チャットページ"""
+    # デバッグ用ログ
+    current_app.logger.info(f"Teacher chat access by user: {current_user.username}, role: {current_user.role}")
+    
     # チャット履歴を取得
     from app.models import ChatHistory
     chat_history = ChatHistory.query.filter_by(user_id=current_user.id)\
