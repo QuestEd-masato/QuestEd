@@ -10,7 +10,7 @@
         <a href="{{ url_for('teacher.view_class', class_id=class_obj.id) }}" class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> クラスに戻る
         </a>
-        <a href="{{ url_for('teacher.create_curriculum', class_id=class_obj.id) }}" class="btn btn-primary">
+        <a href="{{ url_for('teacher.create_curriculum_form', class_id=class_obj.id) }}" class="btn btn-primary">
             <i class="fas fa-plus"></i> 新しいカリキュラムを作成
         </a>
             <a href="{{ url_for('teacher.import_curriculum', class_id=class_obj.id) }}" class="btn btn-success">

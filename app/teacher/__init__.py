@@ -1,5 +1,5 @@
 # app/teacher/__init__.py
-from flask import Blueprint, render_template, request, redirect, url_for, flash, Response, jsonify, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, Response, jsonify, session, current_app
 from flask_login import login_required, current_user
 from werkzeug.security import generate_password_hash
 from datetime import datetime
