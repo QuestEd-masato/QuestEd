@@ -449,6 +449,135 @@
             background-color: #4a6da7;
             color: white;
         }
+        /* カスタムカラーパレット - 柔らかい色調への変更 */
+        :root {
+            --primary-color: #6c757d;
+            --primary-hover: #5a6268;
+            --secondary-color: #868e96;
+            --accent-color: #495057;
+            --success-color: #5a8c5a;
+            --danger-color: #975757;
+            --warning-color: #997a5c;
+            --info-color: #6c8fa6;
+            --light-bg: #f8f9fa;
+            --border-color: #dee2e6;
+        }
+
+        /* Bootstrapボタンのオーバーライド */
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover, .btn-primary:focus {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-hover);
+        }
+        
+        .btn-info {
+            background-color: var(--info-color);
+            border-color: var(--info-color);
+            color: white;
+        }
+        
+        .btn-info:hover, .btn-info:focus {
+            background-color: #5a7d94;
+            border-color: #5a7d94;
+        }
+        
+        .btn-success {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+        }
+        
+        .btn-success:hover, .btn-success:focus {
+            background-color: #4a7a4a;
+            border-color: #4a7a4a;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+        
+        .btn-danger:hover, .btn-danger:focus {
+            background-color: #854848;
+            border-color: #854848;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning-color);
+            border-color: var(--warning-color);
+            color: white;
+        }
+        
+        .btn-warning:hover, .btn-warning:focus {
+            background-color: #876a4c;
+            border-color: #876a4c;
+            color: white;
+        }
+        
+        /* バッジのオーバーライド */
+        .badge-primary {
+            background-color: var(--primary-color);
+        }
+        
+        .badge-info {
+            background-color: var(--info-color);
+        }
+        
+        /* アラートのオーバーライド */
+        .alert-primary {
+            background-color: rgba(108, 117, 125, 0.1);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        
+        .alert-info {
+            background-color: rgba(108, 143, 166, 0.1);
+            border-color: var(--info-color);
+            color: var(--info-color);
+        }
+        
+        /* プログレスバーのオーバーライド */
+        .progress-bar {
+            background-color: var(--primary-color);
+        }
+        
+        .bg-primary {
+            background-color: var(--primary-color) !important;
+        }
+        
+        .bg-info {
+            background-color: var(--info-color) !important;
+        }
+        
+        .text-primary {
+            color: var(--primary-color) !important;
+        }
+        
+        .text-info {
+            color: var(--info-color) !important;
+        }
+        
+        /* リンクの色 */
+        a {
+            color: var(--primary-color);
+        }
+        
+        a:hover {
+            color: var(--primary-hover);
+        }
+        
+        /* ヘッダーの色を柔らかく */
+        .front-header {
+            background-color: #7a8e9d;
+        }
+        
+        .admin-header {
+            background-color: #6b7a88;
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>

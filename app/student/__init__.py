@@ -1215,4 +1215,65 @@ def chat_page():
         .order_by(ChatHistory.timestamp)\
         .all()
     
-    return render_template('chat.html', chat_history=chat_history)
+    # 学習ステップの定義
+    learning_steps = [
+        {
+            'id': 'theme_explore',
+            'name': 'テーマを探す',
+            'description': '興味のあるテーマを見つけましょう',
+            'functions': [
+                {'id': 'brainstorm', 'name': 'アイデア出し'},
+                {'id': 'research', 'name': 'リサーチ方法'},
+                {'id': 'question', 'name': '問いの立て方'}
+            ]
+        },
+        {
+            'id': 'planning',
+            'name': '計画を立てる',
+            'description': '探究活動の計画を作成しましょう',
+            'functions': [
+                {'id': 'schedule', 'name': 'スケジュール作成'},
+                {'id': 'resources', 'name': 'リソース探し'},
+                {'id': 'methods', 'name': '方法の検討'}
+            ]
+        },
+        {
+            'id': 'research',
+            'name': '調査・研究',
+            'description': '実際に調査や研究を進めましょう',
+            'functions': [
+                {'id': 'data_collect', 'name': 'データ収集'},
+                {'id': 'analysis', 'name': '分析方法'},
+                {'id': 'interpret', 'name': '解釈のヒント'}
+            ]
+        },
+        {
+            'id': 'presentation',
+            'name': '発表準備',
+            'description': '成果を効果的に伝える準備をしましょう',
+            'functions': [
+                {'id': 'structure', 'name': '構成作り'},
+                {'id': 'visual', 'name': 'ビジュアル作成'},
+                {'id': 'practice', 'name': '発表練習'}
+            ]
+        },
+        {
+            'id': 'free',
+            'name': '自由質問',
+            'description': '何でも自由に質問してください',
+            'functions': []
+        }
+    ]
+    
+    # 選択中のテーマを取得（学生の場合）
+    theme = None
+    if current_user.role == 'student':
+        theme = InquiryTheme.query.filter_by(
+            student_id=current_user.id,
+            is_selected=True
+        ).first()
+    
+    return render_template('chat.html', 
+                         chat_history=chat_history,
+                         learning_steps=learning_steps,
+                         theme=theme)

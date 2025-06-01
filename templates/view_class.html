@@ -23,6 +23,9 @@
         <a href="{{ url_for('teacher.view_curriculums', class_id=class_.id) }}" class="btn btn-primary me-2">
             <i class="fas fa-book"></i> カリキュラム
         </a>
+        <a href="{{ url_for('teacher.view_main_themes', class_id=class_.id) }}" class="btn btn-primary me-2">
+            <i class="fas fa-lightbulb"></i> 大テーマ管理
+        </a>
         <a href="{{ url_for('teacher.generate_evaluations', class_id=class_.id) }}" class="btn btn-primary">
             <i class="fas fa-star"></i> 評価
         </a>
