@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}クラス選択 - AIチャット{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">
+        <i class="fas fa-comments"></i> AIチャットを利用するクラスを選択してください
+    </h2>
+
+    <div class="row">
+        {% for class in classes %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm class-card chat-card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-chalkboard"></i> {{ class.name }}
+                    </h5>
+                    {% if class.description %}
+                    <p class="card-text">{{ class.description }}</p>
+                    {% else %}
+                    <p class="card-text text-muted">説明はありません</p>
+                    {% endif %}
+                    <div class="card-features mb-3">
+                        <small class="text-muted">
+                            <i class="fas fa-robot"></i> AI学習アシスタントが探究活動をサポート
+                        </small>
+                    </div>
+                    <a href="{{ url_for('student.chat_page', class_id=class.id) }}" class="btn btn-primary btn-chat">
+                        <i class="fas fa-comments"></i> チャットを開始
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not classes %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> 現在、登録されているクラスはありません。
+    </div>
+    {% endif %}
+
+    <div class="mt-4">
+        <a href="{{ url_for('student.dashboard') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> ダッシュボードに戻る
+        </a>
+    </div>
+</div>
+
+<style>
+.chat-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.chat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 .5rem 1.5rem rgba(93, 168, 232, 0.2)!important;
+}
+
+.chat-card .card-title {
+    color: var(--primary-color);
+}
+
+.btn-chat {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    border-radius: 25px;
+    padding: 10px 25px;
+    font-weight: 500;
+}
+
+.btn-chat:hover {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+    transform: scale(1.05);
+}
+
+.card-features {
+    padding: 10px 0;
+    border-top: 1px solid #e9ecef;
+    border-bottom: 1px solid #e9ecef;
+}
+</style>
+{% endblock %}

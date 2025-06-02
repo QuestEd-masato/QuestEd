@@ -62,6 +62,57 @@
             {% endif %}
         </div>
         
+        <!-- クラス別テーマセクション -->
+        {% if class_themes %}
+        <div class="dashboard-section class-themes-section">
+            <h3><i class="fas fa-graduation-cap"></i> クラス別探究テーマ</h3>
+            <div class="class-themes-grid">
+                {% for item in class_themes %}
+                <div class="class-theme-card">
+                    <div class="class-header">
+                        <h4><i class="fas fa-chalkboard"></i> {{ item.class.name }}</h4>
+                    </div>
+                    <div class="class-body">
+                        {% if item.main_theme %}
+                            <div class="main-theme-info">
+                                <h5>大テーマ</h5>
+                                <p>{{ item.main_theme.title }}</p>
+                                <a href="{{ url_for('student.student_view_main_themes', class_id=item.class.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-book"></i> 詳細
+                                </a>
+                            </div>
+                        {% endif %}
+                        
+                        {% if item.personal_theme %}
+                            <div class="personal-theme-info">
+                                <h5>個人テーマ</h5>
+                                <p class="theme-title">{{ item.personal_theme.title }}</p>
+                                <p class="theme-question">{{ item.personal_theme.question }}</p>
+                                <div class="theme-actions">
+                                    <a href="{{ url_for('student.view_themes', class_id=item.class.id) }}" class="btn btn-sm btn-outline-info">
+                                        <i class="fas fa-lightbulb"></i> 管理
+                                    </a>
+                                    <a href="{{ url_for('student.activities', class_id=item.class.id) }}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-pen"></i> 記録
+                                    </a>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="no-personal-theme">
+                                <p class="text-muted">個人テーマが未選択です</p>
+                                <a href="{{ url_for('student.view_themes', class_id=item.class.id) }}" class="btn btn-sm btn-warning">
+                                    <i class="fas fa-plus"></i> 選択する
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 既存のテーマセクション（後方互換性のため保持） -->
         <div class="dashboard-section current-theme">
             <h3>探究テーマ</h3>
             
@@ -560,6 +611,95 @@
         .status-cards {
             grid-template-columns: 1fr;
         }
+    }
+    
+    /* クラス別テーマスタイル */
+    .class-themes-section {
+        margin-bottom: 30px;
+    }
+    
+    .class-themes-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-top: 15px;
+    }
+    
+    .class-theme-card {
+        background: #ffffff;
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .class-theme-card:hover {
+        box-shadow: 0 4px 12px rgba(93, 168, 232, 0.15);
+        transform: translateY(-2px);
+    }
+    
+    .class-header {
+        background: var(--primary-soft);
+        padding: 15px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .class-header h4 {
+        margin: 0;
+        color: var(--primary-color);
+        font-size: 1.1rem;
+    }
+    
+    .class-body {
+        padding: 15px;
+    }
+    
+    .main-theme-info,
+    .personal-theme-info {
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .main-theme-info:last-child,
+    .personal-theme-info:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+    }
+    
+    .main-theme-info h5,
+    .personal-theme-info h5 {
+        color: #666;
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+    }
+    
+    .theme-title {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+    }
+    
+    .theme-question {
+        color: #666;
+        font-size: 0.9rem;
+        margin-bottom: 10px;
+    }
+    
+    .theme-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+    }
+    
+    .no-personal-theme {
+        text-align: center;
+        padding: 20px 0;
+    }
+    
+    .no-personal-theme p {
+        margin-bottom: 10px;
     }
 </style>
 {% endblock %}

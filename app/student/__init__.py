@@ -46,9 +46,30 @@ def student_required(f):
 @login_required
 @student_required
 def dashboard():
-    """学生ダッシュボード"""
-    # 学生が履修しているクラスを取得
-    enrollments = ClassEnrollment.query.filter_by(student_id=current_user.id).all()
+    """学生ダッシュボード（クラス別テーマ表示）"""
+    # 生徒が所属するクラスとテーマを取得
+    class_themes = []
+    enrollments = ClassEnrollment.query.filter_by(
+        student_id=current_user.id,
+        is_active=True
+    ).all()
+    
+    for enrollment in enrollments:
+        class_obj = enrollment.class_obj
+        main_theme = MainTheme.query.filter_by(class_id=class_obj.id).first()
+        personal_theme = InquiryTheme.query.filter_by(
+            student_id=current_user.id,
+            class_id=class_obj.id,
+            is_selected=True
+        ).first()
+        
+        class_themes.append({
+            'class': class_obj,
+            'main_theme': main_theme,
+            'personal_theme': personal_theme
+        })
+    
+    # 学生が履修しているクラスを取得（既存コードの互換性のため）
     classes = [enrollment.class_obj for enrollment in enrollments]
     
     # アンケートデータを個別に取得（テンプレートで参照されるため）
@@ -146,6 +167,7 @@ def dashboard():
         delivered_texts = []
     
     return render_template('student_dashboard.html',
+                         class_themes=class_themes,
                          classes=classes,
                          has_completed_surveys=has_completed_surveys,
                          interest_survey=interest_survey,
@@ -924,23 +946,53 @@ def update_goal_progress(goal_id):
 @student_bp.route('/themes')
 @login_required
 def view_themes():
-    """テーマ一覧"""
+    """個人テーマ一覧（クラス別）"""
     if current_user.role == 'student':
-        # 学生の場合、自分のテーマを表示
-        themes = InquiryTheme.query.filter_by(student_id=current_user.id).all()
-        selected_theme = next((t for t in themes if t.is_selected), None)
+        class_id = request.args.get('class_id', type=int)
         
-        # 利用可能なメインテーマを取得
-        enrolled_classes = ClassEnrollment.query.filter_by(student_id=current_user.id).all()
-        main_themes = []
-        for enrollment in enrolled_classes:
-            class_themes = MainTheme.query.filter_by(class_id=enrollment.class_id).all()
-            main_themes.extend(class_themes)
+        if not class_id:
+            # クラス選択画面
+            enrollments = ClassEnrollment.query.filter_by(
+                student_id=current_user.id,
+                is_active=True
+            ).all()
+            classes = [e.class_obj for e in enrollments]
+            return render_template('select_class_for_themes.html', 
+                                 classes=classes,
+                                 theme_type='personal')
         
-        return render_template('view_themes.html', 
-                             themes=themes, 
+        # 権限確認
+        enrollment = ClassEnrollment.query.filter_by(
+            student_id=current_user.id,
+            class_id=class_id,
+            is_active=True
+        ).first()
+        
+        if not enrollment:
+            flash('このクラスにアクセスする権限がありません。')
+            return redirect(url_for('student.view_themes'))
+        
+        # 個人テーマを取得
+        themes = InquiryTheme.query.filter_by(
+            student_id=current_user.id,
+            class_id=class_id
+        ).all()
+        
+        selected_theme = InquiryTheme.query.filter_by(
+            student_id=current_user.id,
+            class_id=class_id,
+            is_selected=True
+        ).first()
+        
+        class_obj = Class.query.get_or_404(class_id)
+        main_theme = MainTheme.query.filter_by(class_id=class_id).first()
+        
+        return render_template('view_themes.html',
+                             themes=themes,
                              selected_theme=selected_theme,
-                             main_themes=main_themes)
+                             class_obj=class_obj,
+                             main_theme=main_theme,
+                             class_id=class_id)
     else:
         flash('学生のみアクセス可能です。')
         return redirect(url_for('index'))
@@ -1010,20 +1062,38 @@ def regenerate_themes():
 @login_required
 @student_required
 def student_view_main_themes():
-    """学生用メインテーマ一覧"""
-    # 履修しているクラスのメインテーマを取得
-    enrolled_classes = ClassEnrollment.query.filter_by(student_id=current_user.id).all()
+    """大テーマ一覧（クラス別）"""
+    class_id = request.args.get('class_id', type=int)
     
-    class_themes = []
-    for enrollment in enrolled_classes:
-        themes = MainTheme.query.filter_by(class_id=enrollment.class_id).all()
-        if themes:
-            class_themes.append({
-                'class': enrollment.class_obj,
-                'themes': themes
-            })
+    if not class_id:
+        # クラス選択画面
+        enrollments = ClassEnrollment.query.filter_by(
+            student_id=current_user.id,
+            is_active=True
+        ).all()
+        classes = [e.class_obj for e in enrollments]
+        return render_template('select_class_for_themes.html', 
+                             classes=classes,
+                             theme_type='main')
     
-    return render_template('student_main_themes.html', class_themes=class_themes)
+    # 選択されたクラスの大テーマを表示
+    enrollment = ClassEnrollment.query.filter_by(
+        student_id=current_user.id,
+        class_id=class_id,
+        is_active=True
+    ).first()
+    
+    if not enrollment:
+        flash('このクラスにアクセスする権限がありません。')
+        return redirect(url_for('student.student_view_main_themes'))
+    
+    main_theme = MainTheme.query.filter_by(class_id=class_id).first()
+    class_obj = Class.query.get_or_404(class_id)
+    
+    return render_template('student_main_themes.html',
+                         main_theme=main_theme,
+                         class_obj=class_obj,
+                         class_id=class_id)
 
 @student_bp.route('/main_theme/<int:theme_id>/create_personal', methods=['GET', 'POST'])
 @login_required
@@ -1315,16 +1385,24 @@ def chat_page():
     """チャットページ（クラス別）"""
     class_id = request.args.get('class_id', type=int)
     
-    # クラスが指定されている場合は所属確認
-    if class_id:
-        enrollment = ClassEnrollment.query.filter_by(
+    if not class_id:
+        # クラス選択画面
+        enrollments = ClassEnrollment.query.filter_by(
             student_id=current_user.id,
-            class_id=class_id
-        ).first()
-        
-        if not enrollment:
-            flash('このクラスのチャットにアクセスする権限がありません。')
-            return redirect(url_for('student.dashboard'))
+            is_active=True
+        ).all()
+        classes = [e.class_obj for e in enrollments]
+        return render_template('select_class_for_chat.html', classes=classes)
+    
+    # クラスが指定されている場合は所属確認
+    enrollment = ClassEnrollment.query.filter_by(
+        student_id=current_user.id,
+        class_id=class_id
+    ).first()
+    
+    if not enrollment:
+        flash('このクラスのチャットにアクセスする権限がありません。')
+        return redirect(url_for('student.chat_page'))
     
     # デバッグ用ログ
     current_app.logger.info(f"Student chat access by user: {current_user.username}, role: {current_user.role}, class_id: {class_id}")

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}クラス選択 - {% if theme_type == 'main' %}大テーマ{% else %}個人テーマ{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">
+        {% if theme_type == 'main' %}
+            大テーマを見るクラスを選択してください
+        {% else %}
+            個人テーマを管理するクラスを選択してください
+        {% endif %}
+    </h2>
+
+    <div class="row">
+        {% for class in classes %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm class-card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-chalkboard"></i> {{ class.name }}
+                    </h5>
+                    {% if class.description %}
+                    <p class="card-text">{{ class.description }}</p>
+                    {% else %}
+                    <p class="card-text text-muted">説明はありません</p>
+                    {% endif %}
+                    <p class="small text-muted">
+                        <i class="fas fa-user-tie"></i> 担当: {{ class.teacher.name }}
+                    </p>
+                    {% if theme_type == 'main' %}
+                        <a href="{{ url_for('student.student_view_main_themes', class_id=class.id) }}" class="btn btn-primary">
+                            <i class="fas fa-book"></i> 大テーマを見る
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('student.view_themes', class_id=class.id) }}" class="btn btn-primary">
+                            <i class="fas fa-lightbulb"></i> 個人テーマを管理
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not classes %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> 現在、登録されているクラスはありません。
+    </div>
+    {% endif %}
+
+    <div class="mt-4">
+        <a href="{{ url_for('student.dashboard') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> ダッシュボードに戻る
+        </a>
+    </div>
+</div>
+
+<style>
+.class-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    border-radius: 10px;
+}
+
+.class-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+}
+
+.class-card .card-title {
+    color: var(--primary-color);
+}
+
+.class-card .btn {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    border-radius: 20px;
+}
+
+.class-card .btn:hover {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+</style>
+{% endblock %}
