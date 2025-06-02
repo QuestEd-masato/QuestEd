@@ -311,11 +311,20 @@ def personality_survey_edit():
 @student_required
 def activities():
     """活動記録一覧"""
+    # 活動記録を取得
     activity_logs = ActivityLog.query.filter_by(student_id=current_user.id)\
         .order_by(ActivityLog.date.desc())\
         .all()
     
-    return render_template('activities.html', activity_logs=activity_logs)
+    # 選択中のテーマを取得
+    theme = InquiryTheme.query.filter_by(
+        student_id=current_user.id,
+        is_selected=True
+    ).first()
+    
+    return render_template('activities.html', 
+                         activity_logs=activity_logs,
+                         theme=theme)  # themeを追加
 
 @student_bp.route('/new_activity', methods=['GET', 'POST'])
 @login_required

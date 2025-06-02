@@ -7,10 +7,18 @@
     <div class="learning-records-header">
         <h2>学習記録</h2>
         <div class="theme-info">
-            <h3>選択中のテーマ: {{ theme.title }}</h3>
-            <p>{{ theme.question }}</p>
+            {% if theme %}
+                <h3>選択中のテーマ: {{ theme.title }}</h3>
+                <p>{{ theme.question }}</p>
+            {% else %}
+                <h3>テーマが選択されていません</h3>
+                <p>学習記録を作成する前に、探究テーマを選択してください。</p>
+                <a href="{{ url_for('student.view_themes') }}" class="btn btn-outline-primary">テーマを選択する</a>
+            {% endif %}
         </div>
-        <a href="{{ url_for('student.new_activity') }}" class="btn btn-primary">新しい学習を記録</a>
+        {% if theme %}
+            <a href="{{ url_for('student.new_activity') }}" class="btn btn-primary">新しい学習を記録</a>
+        {% endif %}
     </div>
     
     <div class="filter-container">
