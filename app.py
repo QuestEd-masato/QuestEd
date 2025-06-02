@@ -2442,138 +2442,143 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-@app.route('/themes')
-@login_required
-def view_themes():
-    if current_user.role == 'student':
-        # 学生の場合
-        # ログイン中の学生の探究テーマを取得
-        themes = InquiryTheme.query.filter_by(student_id=current_user.id).all()
-        
-        # テーマごとに関連する大テーマの情報を取得
-        themes_with_main = []
-        for theme in themes:
-            main_theme = None
-            if theme.main_theme_id:
-                main_theme = MainTheme.query.get(theme.main_theme_id)
-            
-            themes_with_main.append({
-                'theme': theme,
-                'main_theme': main_theme
-            })
-        
-        # 学生が所属するクラスの大テーマを取得（新規作成用）
-        enrolled_classes = current_user.enrolled_classes.all()
-        class_ids = [c.id for c in enrolled_classes]
-        available_main_themes = MainTheme.query.filter(MainTheme.class_id.in_(class_ids)).all()
-        
-        return render_template('view_themes.html', 
-                             themes_with_main=themes_with_main, 
-                             available_main_themes=available_main_themes)
-    
-    elif current_user.role == 'teacher':
-        # 教師の場合、担当クラスと各クラスの大テーマを表示
-        classes = Class.query.filter_by(teacher_id=current_user.id).all()
-        
-        classes_with_themes = []
-        for class_obj in classes:
-            main_themes = MainTheme.query.filter_by(class_id=class_obj.id).all()
-            classes_with_themes.append({
-                'class': class_obj,
-                'main_themes': main_themes
-            })
-        
-        return render_template('teacher_themes.html', classes_with_themes=classes_with_themes)
-    
-    elif current_user.role == 'admin':
-        # 管理者の場合は管理画面にリダイレクト
-        return redirect(url_for('admin_schools'))
-    
-    # その他のロールの場合
-    return redirect(url_for('index'))
+# # ===== 以下、Blueprint版に移行済みのためコメントアウト =====
+# # @app.route('/themes')
+# # @login_required
+# # def view_themes():
+#     if current_user.role == 'student':
+#         # 学生の場合
+#         # ログイン中の学生の探究テーマを取得
+#         themes = InquiryTheme.query.filter_by(student_id=current_user.id).all()
+#         
+#         # テーマごとに関連する大テーマの情報を取得
+#         themes_with_main = []
+#         for theme in themes:
+#             main_theme = None
+#             if theme.main_theme_id:
+#                 main_theme = MainTheme.query.get(theme.main_theme_id)
+#             
+#             themes_with_main.append({
+#                 'theme': theme,
+#                 'main_theme': main_theme
+#             })
+#         
+#         # 学生が所属するクラスの大テーマを取得（新規作成用）
+#         enrolled_classes = current_user.enrolled_classes.all()
+#         class_ids = [c.id for c in enrolled_classes]
+#         available_main_themes = MainTheme.query.filter(MainTheme.class_id.in_(class_ids)).all()
+#         
+#         return render_template('view_themes.html', 
+#                              themes_with_main=themes_with_main, 
+#                              available_main_themes=available_main_themes)
+#     
+#     elif current_user.role == 'teacher':
+#         # 教師の場合、担当クラスと各クラスの大テーマを表示
+#         classes = Class.query.filter_by(teacher_id=current_user.id).all()
+#         
+#         classes_with_themes = []
+#         for class_obj in classes:
+#             main_themes = MainTheme.query.filter_by(class_id=class_obj.id).all()
+#             classes_with_themes.append({
+#                 'class': class_obj,
+#                 'main_themes': main_themes
+#             })
+#         
+#         return render_template('teacher_themes.html', classes_with_themes=classes_with_themes)
+#     
+#     elif current_user.role == 'admin':
+#         # 管理者の場合は管理画面にリダイレクト
+#         return redirect(url_for('admin_schools'))
+#     
+#     # その他のロールの場合
+#     return redirect(url_for('index'))
 
-@app.route('/select_theme/<int:theme_id>', methods=['POST'])
-@login_required
-def select_theme(theme_id):
-    # 既に選択中のテーマがあれば解除
-    InquiryTheme.query.filter_by(student_id=current_user.id, is_selected=True).update({'is_selected': False})
-    # 選択されたテーマを取得して更新
-    theme = InquiryTheme.query.filter_by(id=theme_id, student_id=current_user.id).first_or_404()
-    theme.is_selected = True
-    db.session.commit()
-    flash('テーマを選択しました。')
-    return redirect(url_for('view_themes'))
-
+# @app.route('/select_theme/<int:theme_id>', methods=['POST'])
+# @login_required
+# def select_theme(theme_id):
+#     # 既に選択中のテーマがあれば解除
+#     InquiryTheme.query.filter_by(student_id=current_user.id, is_selected=True).update({'is_selected': False})
+#     # 選択されたテーマを取得して更新
+#     theme = InquiryTheme.query.filter_by(id=theme_id, student_id=current_user.id).first_or_404()
+#     theme.is_selected = True
+#     db.session.commit()
+#     flash('テーマを選択しました。')
+#     return redirect(url_for('view_themes'))
+# 
 @app.route('/regenerate_themes', methods=['POST'])
 @login_required
-def regenerate_themes():
-    # 既存のテーマを削除
-    InquiryTheme.query.filter_by(student_id=current_user.id).delete()
-    db.session.commit()
 
-    # 学生がアンケートに回答済みか確認
-    if not current_user.has_completed_surveys():
-        flash('テーマを生成するには、まずすべてのアンケートに回答してください。')
-        return redirect(url_for('surveys'))
-    
-    # 興味関心アンケートと思考特性アンケートの回答を取得
-    interest_survey = InterestSurvey.query.filter_by(student_id=current_user.id).first()
-    personality_survey = PersonalitySurvey.query.filter_by(student_id=current_user.id).first()
-    
-    if not interest_survey or not personality_survey:
-        flash('テーマを生成するには、まずすべてのアンケートに回答してください。')
-        return redirect(url_for('surveys'))
-    
-    # アンケート回答からJSONを解析
-    interest_responses = json.loads(interest_survey.responses)
-    personality_responses = json.loads(personality_survey.responses)
-    
-    # 実際の実装ではここでOpenAI APIを使ってテーマを生成
-    # 今回はサンプルとして3つのテーマを生成
-    themes = [
-        {
-            "title": "持続可能なコミュニティ開発",
-            "question": "地域の文化や自然環境を保全しながら、どうすれば持続可能な地域社会を構築できるか？",
-            "description": "地域社会の課題と資源を調査し、持続可能なコミュニティ開発のモデルを提案する。",
-            "rationale": "あなたは地域社会や文化保全に関心があり、コミュニケーション能力を活かして社会課題の解決に取り組みたいようです。",
-            "approach": "地域の人々へのインタビュー、成功事例の調査、協働プロジェクトの計画と実施などを通じて探究を進めるとよいでしょう。",
-            "potential": "地域活性化プロジェクトの立案や、持続可能な地域開発モデルの提案につながる可能性があります。"
-        },
-        {
-            "title": "デジタル技術を活用した学習格差の解消",
-            "question": "デジタル技術をどのように活用すれば、教育機会の格差を効果的に減らすことができるか？",
-            "description": "デジタル技術を用いた教育アクセス改善の方法を調査し、実践的なソリューションを開発する。",
-            "rationale": "あなたは教育問題や技術革新に関心があり、分析的思考を活かして社会課題の解決に取り組みたいようです。",
-            "approach": "既存の教育テクノロジーの効果分析、アクセス格差の要因調査、プロトタイプの開発とテストなどを通じて探究を進めるとよいでしょう。",
-            "potential": "教育アプリの開発や、デジタル教育プログラムの提案につながる可能性があります。"
-        },
-        {
-            "title": "気候変動への若者の意識と行動",
-            "question": "若者の間で気候変動への意識を高め、具体的な行動を促すにはどのような方法が有効か？",
-            "description": "若者の環境意識と行動の関係を調査し、効果的な啓発・行動変容プログラムを提案する。",
-            "rationale": "あなたは環境問題や社会活動に関心があり、創造的思考を活かして社会課題の解決に取り組みたいようです。",
-            "approach": "若者の環境意識調査、既存のキャンペーン分析、プロトタイププログラムの開発と効果測定などを通じて探究を進めるとよいでしょう。",
-            "potential": "環境教育プログラムの開発や、若者主導の環境活動モデルの提案につながる可能性があります。"
-        }
-    ]
-    
-    # データベースに新しいテーマを追加
-    for theme in themes:
-        new_theme = InquiryTheme(
-            student_id=current_user.id,
-            title=theme["title"],
-            question=theme["question"],
-            description=theme["description"],
-            rationale=theme["rationale"],
-            approach=theme["approach"],
-            potential=theme["potential"]
-        )
-        db.session.add(new_theme)
-    
-    db.session.commit()
-    flash('新しい探究テーマが生成されました。')
-    return redirect(url_for('view_themes'))
-
+# ===== Blueprint版に移行済み =====
+# @app.route('/regenerate_themes', methods=['POST'])
+# @login_required
+# def regenerate_themes():
+#     # 既存のテーマを削除
+#     InquiryTheme.query.filter_by(student_id=current_user.id).delete()
+#     db.session.commit()
+# 
+#     # 学生がアンケートに回答済みか確認
+#     if not current_user.has_completed_surveys():
+#         flash('テーマを生成するには、まずすべてのアンケートに回答してください。')
+#         return redirect(url_for('surveys'))
+#     
+#     # 興味関心アンケートと思考特性アンケートの回答を取得
+#     interest_survey = InterestSurvey.query.filter_by(student_id=current_user.id).first()
+#     personality_survey = PersonalitySurvey.query.filter_by(student_id=current_user.id).first()
+#     
+#     if not interest_survey or not personality_survey:
+#         flash('テーマを生成するには、まずすべてのアンケートに回答してください。')
+#         return redirect(url_for('surveys'))
+#     
+#     # アンケート回答からJSONを解析
+#     interest_responses = json.loads(interest_survey.responses)
+#     personality_responses = json.loads(personality_survey.responses)
+#     
+#     # 実際の実装ではここでOpenAI APIを使ってテーマを生成
+#     # 今回はサンプルとして3つのテーマを生成
+#     themes = [
+#         {
+#             "title": "持続可能なコミュニティ開発",
+#             "question": "地域の文化や自然環境を保全しながら、どうすれば持続可能な地域社会を構築できるか？",
+#             "description": "地域社会の課題と資源を調査し、持続可能なコミュニティ開発のモデルを提案する。",
+#             "rationale": "あなたは地域社会や文化保全に関心があり、コミュニケーション能力を活かして社会課題の解決に取り組みたいようです。",
+#             "approach": "地域の人々へのインタビュー、成功事例の調査、協働プロジェクトの計画と実施などを通じて探究を進めるとよいでしょう。",
+#             "potential": "地域活性化プロジェクトの立案や、持続可能な地域開発モデルの提案につながる可能性があります。"
+#         },
+#         {
+#             "title": "デジタル技術を活用した学習格差の解消",
+#             "question": "デジタル技術をどのように活用すれば、教育機会の格差を効果的に減らすことができるか？",
+#             "description": "デジタル技術を用いた教育アクセス改善の方法を調査し、実践的なソリューションを開発する。",
+#             "rationale": "あなたは教育問題や技術革新に関心があり、分析的思考を活かして社会課題の解決に取り組みたいようです。",
+#             "approach": "既存の教育テクノロジーの効果分析、アクセス格差の要因調査、プロトタイプの開発とテストなどを通じて探究を進めるとよいでしょう。",
+#             "potential": "教育アプリの開発や、デジタル教育プログラムの提案につながる可能性があります。"
+#         },
+#         {
+#             "title": "気候変動への若者の意識と行動",
+#             "question": "若者の間で気候変動への意識を高め、具体的な行動を促すにはどのような方法が有効か？",
+#             "description": "若者の環境意識と行動の関係を調査し、効果的な啓発・行動変容プログラムを提案する。",
+#             "rationale": "あなたは環境問題や社会活動に関心があり、創造的思考を活かして社会課題の解決に取り組みたいようです。",
+#             "approach": "若者の環境意識調査、既存のキャンペーン分析、プロトタイププログラムの開発と効果測定などを通じて探究を進めるとよいでしょう。",
+#             "potential": "環境教育プログラムの開発や、若者主導の環境活動モデルの提案につながる可能性があります。"
+#         }
+#     ]
+#     
+#     # データベースに新しいテーマを追加
+#     for theme in themes:
+#         new_theme = InquiryTheme(
+#             student_id=current_user.id,
+#             title=theme["title"],
+#             question=theme["question"],
+#             description=theme["description"],
+#             rationale=theme["rationale"],
+#             approach=theme["approach"],
+#             potential=theme["potential"]
+#         )
+#         db.session.add(new_theme)
+#     
+#     db.session.commit()
+#     flash('新しい探究テーマが生成されました。')
+#     return redirect(url_for('view_themes'))
+# 
 # 既存の register ルートを以下の内容で置き換える
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -2804,205 +2809,229 @@ def delete_class(class_id):
 # 大テーマ一覧を表示するルート
 @app.route('/class/<int:class_id>/main_themes')
 @login_required
-def view_main_themes(class_id):
-    # 教師のみアクセス可能
-    if current_user.role != 'teacher':
-        flash('この機能は教師のみ利用可能です。')
-        return redirect(url_for('index'))
-    
-    # クラスオブジェクトを取得
-    class_obj = Class.query.get_or_404(class_id)
-    
-    # 教師がクラスの所有者でない場合はアクセス制限
-    if class_obj.teacher_id != current_user.id:
-        flash('このクラスの大テーマを管理する権限がありません。')
-        return redirect(url_for('teacher_dashboard'))
-    
-    # クラスに関連する大テーマを取得
-    main_themes = MainTheme.query.filter_by(class_id=class_id).all()
-    
-    return render_template('main_themes.html', class_obj=class_obj, main_themes=main_themes)
 
+# ===== Blueprint版に移行済み =====
+# @app.route('/class/<int:class_id>/main_themes')
+# @login_required
+# def view_main_themes(class_id):
+#     # 教師のみアクセス可能
+#     if current_user.role != 'teacher':
+#         flash('この機能は教師のみ利用可能です。')
+#         return redirect(url_for('index'))
+#     
+#     # クラスオブジェクトを取得
+#     class_obj = Class.query.get_or_404(class_id)
+#     
+#     # 教師がクラスの所有者でない場合はアクセス制限
+#     if class_obj.teacher_id != current_user.id:
+#         flash('このクラスの大テーマを管理する権限がありません。')
+#         return redirect(url_for('teacher_dashboard'))
+#     
+#     # クラスに関連する大テーマを取得
+#     main_themes = MainTheme.query.filter_by(class_id=class_id).all()
+#     
+#     return render_template('main_themes.html', class_obj=class_obj, main_themes=main_themes)
+# 
 # 大テーマを作成するルート
 @app.route('/class/<int:class_id>/main_themes/create', methods=['GET', 'POST'])
 @login_required
-def create_main_theme(class_id):
-    # 教師のみアクセス可能
-    if current_user.role != 'teacher':
-        flash('この機能は教師のみ利用可能です。')
-        return redirect(url_for('index'))
-    
-    # クラスオブジェクトを取得
-    class_obj = Class.query.get_or_404(class_id)
-    
-    # 教師がクラスの所有者でない場合はアクセス制限
-    if class_obj.teacher_id != current_user.id:
-        flash('このクラスの大テーマを作成する権限がありません。')
-        return redirect(url_for('teacher_dashboard'))
-    
-    if request.method == 'POST':
-        title = request.form.get('title')
-        description = request.form.get('description', '')
-        
-        if not title:
-            flash('タイトルは必須項目です。')
-            return render_template('create_main_theme.html', class_obj=class_obj)
-        
-        # 新しい大テーマを作成
-        new_theme = MainTheme(
-            teacher_id=current_user.id,
-            class_id=class_id,
-            title=title,
-            description=description
-        )
-        
-        db.session.add(new_theme)
-        db.session.commit()
-        
-        flash('新しい大テーマが作成されました。')
-        return redirect(url_for('view_main_themes', class_id=class_id))
-    
-    return render_template('create_main_theme.html', class_obj=class_obj)
 
+# ===== Blueprint版に移行済み =====
+# @app.route('/class/<int:class_id>/main_themes/create', methods=['GET', 'POST'])
+# @login_required
+# def create_main_theme(class_id):
+#     # 教師のみアクセス可能
+#     if current_user.role != 'teacher':
+#         flash('この機能は教師のみ利用可能です。')
+#         return redirect(url_for('index'))
+#     
+#     # クラスオブジェクトを取得
+#     class_obj = Class.query.get_or_404(class_id)
+#     
+#     # 教師がクラスの所有者でない場合はアクセス制限
+#     if class_obj.teacher_id != current_user.id:
+#         flash('このクラスの大テーマを作成する権限がありません。')
+#         return redirect(url_for('teacher_dashboard'))
+#     
+#     if request.method == 'POST':
+#         title = request.form.get('title')
+#         description = request.form.get('description', '')
+#         
+#         if not title:
+#             flash('タイトルは必須項目です。')
+#             return render_template('create_main_theme.html', class_obj=class_obj)
+#         
+#         # 新しい大テーマを作成
+#         new_theme = MainTheme(
+#             teacher_id=current_user.id,
+#             class_id=class_id,
+#             title=title,
+#             description=description
+#         )
+#         
+#         db.session.add(new_theme)
+#         db.session.commit()
+#         
+#         flash('新しい大テーマが作成されました。')
+#         return redirect(url_for('view_main_themes', class_id=class_id))
+#     
+#     return render_template('create_main_theme.html', class_obj=class_obj)
+# 
 # 大テーマを編集するルート
 @app.route('/main_theme/<int:theme_id>/edit', methods=['GET', 'POST'])
 @login_required
-def edit_main_theme(theme_id):
-    # 教師のみアクセス可能
-    if current_user.role != 'teacher':
-        flash('この機能は教師のみ利用可能です。')
-        return redirect(url_for('index'))
-    
-    # 大テーマを取得
-    main_theme = MainTheme.query.get_or_404(theme_id)
-    
-    # 教師がテーマの所有者でない場合はアクセス制限
-    if main_theme.teacher_id != current_user.id:
-        flash('この大テーマを編集する権限がありません。')
-        return redirect(url_for('teacher_dashboard'))
-    
-    if request.method == 'POST':
-        title = request.form.get('title')
-        description = request.form.get('description', '')
-        
-        if not title:
-            flash('タイトルは必須項目です。')
-            return render_template('edit_main_theme.html', main_theme=main_theme)
-        
-        # 大テーマを更新
-        main_theme.title = title
-        main_theme.description = description
-        main_theme.updated_at = datetime.utcnow()
-        
-        db.session.commit()
-        
-        flash('大テーマが更新されました。')
-        return redirect(url_for('view_main_themes', class_id=main_theme.class_id))
-    
-    return render_template('edit_main_theme.html', main_theme=main_theme)
 
+# ===== Blueprint版に移行済み =====
+# @app.route('/main_theme/<int:theme_id>/edit', methods=['GET', 'POST'])
+# @login_required
+# def edit_main_theme(theme_id):
+#     # 教師のみアクセス可能
+#     if current_user.role != 'teacher':
+#         flash('この機能は教師のみ利用可能です。')
+#         return redirect(url_for('index'))
+#     
+#     # 大テーマを取得
+#     main_theme = MainTheme.query.get_or_404(theme_id)
+#     
+#     # 教師がテーマの所有者でない場合はアクセス制限
+#     if main_theme.teacher_id != current_user.id:
+#         flash('この大テーマを編集する権限がありません。')
+#         return redirect(url_for('teacher_dashboard'))
+#     
+#     if request.method == 'POST':
+#         title = request.form.get('title')
+#         description = request.form.get('description', '')
+#         
+#         if not title:
+#             flash('タイトルは必須項目です。')
+#             return render_template('edit_main_theme.html', main_theme=main_theme)
+#         
+#         # 大テーマを更新
+#         main_theme.title = title
+#         main_theme.description = description
+#         main_theme.updated_at = datetime.utcnow()
+#         
+#         db.session.commit()
+#         
+#         flash('大テーマが更新されました。')
+#         return redirect(url_for('view_main_themes', class_id=main_theme.class_id))
+#     
+#     return render_template('edit_main_theme.html', main_theme=main_theme)
+# 
 # 大テーマを削除するルート
 @app.route('/main_theme/<int:theme_id>/delete')
 @login_required
-def delete_main_theme(theme_id):
-    # 教師のみアクセス可能
-    if current_user.role != 'teacher':
-        flash('この機能は教師のみ利用可能です。')
-        return redirect(url_for('index'))
-    
-    # 大テーマを取得
-    main_theme = MainTheme.query.get_or_404(theme_id)
-    
-    # 教師がテーマの所有者でない場合はアクセス制限
-    if main_theme.teacher_id != current_user.id:
-        flash('この大テーマを削除する権限がありません。')
-        return redirect(url_for('teacher_dashboard'))
-    
-    # 関連する個人テーマの main_theme_id を NULL に設定
-    InquiryTheme.query.filter_by(main_theme_id=theme_id).update({'main_theme_id': None})
-    
-    # 大テーマを削除
-    class_id = main_theme.class_id
-    db.session.delete(main_theme)
-    db.session.commit()
-    
-    flash('大テーマが削除されました。')
-    return redirect(url_for('view_main_themes', class_id=class_id))
 
+# ===== Blueprint版に移行済み =====
+# @app.route('/main_theme/<int:theme_id>/delete')
+# @login_required
+# def delete_main_theme(theme_id):
+#     # 教師のみアクセス可能
+#     if current_user.role != 'teacher':
+#         flash('この機能は教師のみ利用可能です。')
+#         return redirect(url_for('index'))
+#     
+#     # 大テーマを取得
+#     main_theme = MainTheme.query.get_or_404(theme_id)
+#     
+#     # 教師がテーマの所有者でない場合はアクセス制限
+#     if main_theme.teacher_id != current_user.id:
+#         flash('この大テーマを削除する権限がありません。')
+#         return redirect(url_for('teacher_dashboard'))
+#     
+#     # 関連する個人テーマの main_theme_id を NULL に設定
+#     InquiryTheme.query.filter_by(main_theme_id=theme_id).update({'main_theme_id': None})
+#     
+#     # 大テーマを削除
+#     class_id = main_theme.class_id
+#     db.session.delete(main_theme)
+#     db.session.commit()
+#     
+#     flash('大テーマが削除されました。')
+#     return redirect(url_for('view_main_themes', class_id=class_id))
+# 
 # 大テーマ一覧を表示するルート（学生向け）
 @app.route('/main_themes')
 @login_required
-def student_view_main_themes():
-    if current_user.role != 'student':
-        flash('この機能は学生のみ利用可能です。')
-        return redirect(url_for('index'))
-    
-    # 学生が所属するクラスを取得
-    enrolled_classes = current_user.enrolled_classes.all()
-    class_ids = [c.id for c in enrolled_classes]
-    
-    # 所属クラスに関連する大テーマを取得
-    main_themes = MainTheme.query.filter(MainTheme.class_id.in_(class_ids)).all()
-    
-    # 各大テーマに関連するクラス名を取得
-    themes_with_classes = []
-    for theme in main_themes:
-        class_name = Class.query.get(theme.class_id).name
-        themes_with_classes.append({
-            'theme': theme,
-            'class_name': class_name
-        })
-    
-    return render_template('student_main_themes.html', themes_with_classes=themes_with_classes)
 
+# ===== Blueprint版に移行済み =====
+# @app.route('/main_themes')
+# @login_required
+# def student_view_main_themes():
+#     if current_user.role != 'student':
+#         flash('この機能は学生のみ利用可能です。')
+#         return redirect(url_for('index'))
+#     
+#     # 学生が所属するクラスを取得
+#     enrolled_classes = current_user.enrolled_classes.all()
+#     class_ids = [c.id for c in enrolled_classes]
+#     
+#     # 所属クラスに関連する大テーマを取得
+#     main_themes = MainTheme.query.filter(MainTheme.class_id.in_(class_ids)).all()
+#     
+#     # 各大テーマに関連するクラス名を取得
+#     themes_with_classes = []
+#     for theme in main_themes:
+#         class_name = Class.query.get(theme.class_id).name
+#         themes_with_classes.append({
+#             'theme': theme,
+#             'class_name': class_name
+#         })
+#     
+#     return render_template('student_main_themes.html', themes_with_classes=themes_with_classes)
+# 
 # 大テーマに基づいて自分で個人テーマを作成するルート
 @app.route('/main_theme/<int:theme_id>/create_personal', methods=['GET', 'POST'])
 @login_required
-def create_personal_theme(theme_id):
-    if current_user.role != 'student':
-        flash('この機能は学生のみ利用可能です。')
-        return redirect(url_for('index'))
-    
-    # 大テーマを取得
-    main_theme = MainTheme.query.get_or_404(theme_id)
-    
-    # 学生がそのクラスに所属しているか確認
-    enrolled_class_ids = [c.id for c in current_user.enrolled_classes]
-    if main_theme.class_id not in enrolled_class_ids:
-        flash('このテーマにアクセスする権限がありません。')
-        return redirect(url_for('student_dashboard'))
-    
-    if request.method == 'POST':
-        title = request.form.get('title')
-        question = request.form.get('question')
-        description = request.form.get('description', '')
-        
-        if not title or not question:
-            flash('タイトルと探究の問いは必須項目です。')
-            return render_template('create_personal_theme.html', main_theme=main_theme)
-        
-        # 既存の選択中テーマを解除
-        InquiryTheme.query.filter_by(student_id=current_user.id, is_selected=True).update({'is_selected': False})
-        
-        # 新しい個人テーマを作成
-        new_theme = InquiryTheme(
-            student_id=current_user.id,
-            main_theme_id=theme_id,
-            title=title,
-            question=question,
-            description=description,
-            is_selected=True,
-            is_ai_generated=False
-        )
-        
-        db.session.add(new_theme)
-        db.session.commit()
-        
-        flash('個人テーマが作成されました。')
-        return redirect(url_for('view_themes'))
-    
-    return render_template('create_personal_theme.html', main_theme=main_theme)
 
+# ===== Blueprint版に移行済み =====
+# @app.route('/main_theme/<int:theme_id>/create_personal', methods=['GET', 'POST'])
+# @login_required
+# def create_personal_theme(theme_id):
+#     if current_user.role != 'student':
+#         flash('この機能は学生のみ利用可能です。')
+#         return redirect(url_for('index'))
+#     
+#     # 大テーマを取得
+#     main_theme = MainTheme.query.get_or_404(theme_id)
+#     
+#     # 学生がそのクラスに所属しているか確認
+#     enrolled_class_ids = [c.id for c in current_user.enrolled_classes]
+#     if main_theme.class_id not in enrolled_class_ids:
+#         flash('このテーマにアクセスする権限がありません。')
+#         return redirect(url_for('student_dashboard'))
+#     
+#     if request.method == 'POST':
+#         title = request.form.get('title')
+#         question = request.form.get('question')
+#         description = request.form.get('description', '')
+#         
+#         if not title or not question:
+#             flash('タイトルと探究の問いは必須項目です。')
+#             return render_template('create_personal_theme.html', main_theme=main_theme)
+#         
+#         # 既存の選択中テーマを解除
+#         InquiryTheme.query.filter_by(student_id=current_user.id, is_selected=True).update({'is_selected': False})
+#         
+#         # 新しい個人テーマを作成
+#         new_theme = InquiryTheme(
+#             student_id=current_user.id,
+#             main_theme_id=theme_id,
+#             title=title,
+#             question=question,
+#             description=description,
+#             is_selected=True,
+#             is_ai_generated=False
+#         )
+#         
+#         db.session.add(new_theme)
+#         db.session.commit()
+#         
+#         flash('個人テーマが作成されました。')
+#         return redirect(url_for('view_themes'))
+#     
+#     return render_template('create_personal_theme.html', main_theme=main_theme)
+# 
 # AIに個人テーマを提案してもらうルート
 @app.route('/main_theme/<int:theme_id>/generate_theme', methods=['GET', 'POST'])
 @login_required
