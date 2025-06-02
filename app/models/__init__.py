@@ -163,6 +163,7 @@ class InquiryTheme(db.Model):
     __tablename__ = 'inquiry_themes'
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    class_id = db.Column(db.Integer, db.ForeignKey('classes.id'), nullable=True)  # 追加
     main_theme_id = db.Column(db.Integer, db.ForeignKey('main_themes.id'), nullable=True)
     is_ai_generated = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -173,6 +174,9 @@ class InquiryTheme(db.Model):
     approach = db.Column(db.Text)
     potential = db.Column(db.Text)
     is_selected = db.Column(db.Boolean, default=False)
+    
+    # リレーションシップを追加
+    class_obj = db.relationship('Class', backref=db.backref('inquiry_themes', lazy=True))
 
 class InterestSurvey(db.Model):
     __tablename__ = 'interest_surveys'
@@ -194,6 +198,7 @@ class ActivityLog(db.Model):
     __tablename__ = 'activity_logs'
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    class_id = db.Column(db.Integer, db.ForeignKey('classes.id'), nullable=True)  # 追加
     title = db.Column(db.String(200))
     date = db.Column(db.Date, default=datetime.utcnow().date())
     content = db.Column(db.Text)
@@ -202,6 +207,9 @@ class ActivityLog(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     activity = db.Column(db.Text)  # 既存のフィールドを残す
     tags = db.Column(db.String(255))  # 新しいタグフィールドを追加
+    
+    # リレーションシップを追加
+    class_obj = db.relationship('Class', backref=db.backref('activity_logs', lazy=True))
 
 class Todo(db.Model):
     __tablename__ = 'todos'

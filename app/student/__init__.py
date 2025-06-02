@@ -339,9 +339,15 @@ def new_activity():
             flash('日付の形式が正しくありません。')
             return render_template('new_activity.html', theme=theme)
         
+        # 生徒の現在のクラスを取得
+        enrollment = ClassEnrollment.query.filter_by(
+            student_id=current_user.id
+        ).order_by(ClassEnrollment.enrolled_at.desc()).first()
+        
         # 新しい活動記録を作成
         new_log = ActivityLog(
             student_id=current_user.id,
+            class_id=enrollment.class_id if enrollment else None,
             title=title,
             date=activity_date,
             content=content,
@@ -871,9 +877,27 @@ def select_theme(theme_id):
         flash('このテーマを選択する権限がありません。')
         return redirect(url_for('student.view_themes'))
     
-    # 既存の選択を解除
-    InquiryTheme.query.filter_by(student_id=current_user.id, is_selected=True)\
-        .update({'is_selected': False})
+    # 生徒の現在のクラスを取得
+    enrollment = ClassEnrollment.query.filter_by(
+        student_id=current_user.id
+    ).order_by(ClassEnrollment.enrolled_at.desc()).first()
+    
+    if enrollment:
+        # 既存の選択を解除（同じクラス内）
+        InquiryTheme.query.filter_by(
+            student_id=current_user.id,
+            class_id=enrollment.class_id,
+            is_selected=True
+        ).update({'is_selected': False})
+        
+        # class_idを設定
+        theme.class_id = enrollment.class_id
+    else:
+        # 既存の選択を解除（後方互換性）
+        InquiryTheme.query.filter_by(
+            student_id=current_user.id,
+            is_selected=True
+        ).update({'is_selected': False})
     
     # 新しいテーマを選択
     theme.is_selected = True
@@ -950,9 +974,10 @@ def create_personal_theme(theme_id):
             flash('タイトルと問いは必須項目です。')
             return render_template('create_personal_theme.html', main_theme=main_theme)
         
-        # 新しい個人テーマを作成
+        # 新しい個人テーマを作成（メインテーマからclass_idを継承）
         new_theme = InquiryTheme(
             student_id=current_user.id,
+            class_id=main_theme.class_id,  # メインテーマのclass_idを設定
             main_theme_id=main_theme.id,
             is_ai_generated=False,
             title=title,
@@ -1013,6 +1038,7 @@ def generate_theme(theme_id):
             for theme_data in generated_themes:
                 new_theme = InquiryTheme(
                     student_id=current_user.id,
+                    class_id=main_theme.class_id,  # メインテーマのclass_idを設定
                     main_theme_id=main_theme.id,
                     is_ai_generated=True,
                     title=theme_data['title'],
