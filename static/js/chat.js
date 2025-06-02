@@ -100,6 +100,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // ローディングインジケータを表示
         const loadingId = addLoadingMessage();
         
+        // URLからclass_idを取得
+        const urlParams = new URLSearchParams(window.location.search);
+        const classId = urlParams.get('class_id');
+        
         // APIリクエストを送信
         fetch('/api/chat', {
             method: 'POST',
@@ -111,7 +115,8 @@ document.addEventListener('DOMContentLoaded', function() {
             body: JSON.stringify({
                 message: message,
                 step: selectedStepField.value,
-                function: selectedFunctionField.value
+                function: selectedFunctionField.value,
+                class_id: classId ? parseInt(classId) : null
             })
         })
         .then(response => {

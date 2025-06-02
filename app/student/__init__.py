@@ -310,29 +310,102 @@ def personality_survey_edit():
 @login_required
 @student_required
 def activities():
-    """活動記録一覧"""
+    """クラス選択または活動記録一覧"""
+    class_id = request.args.get('class_id', type=int)
+    
+    if not class_id:
+        # 生徒が所属するクラス一覧を取得
+        enrollments = db.session.query(ClassEnrollment, Class)\
+            .join(Class, ClassEnrollment.class_id == Class.id)\
+            .filter(ClassEnrollment.student_id == current_user.id)\
+            .all()
+        
+        classes = [{'id': c.id, 'name': c.name, 'description': c.description, 
+                   'enrolled_at': e.enrolled_at} for e, c in enrollments]
+        
+        # クラスに紐付かない活動記録の件数も取得
+        unassigned_count = ActivityLog.query.filter_by(
+            student_id=current_user.id,
+            class_id=None
+        ).count()
+        
+        return render_template('select_class_for_activities.html', 
+                             classes=classes,
+                             unassigned_count=unassigned_count)
+    
+    # クラスへの所属確認（class_id=0は「すべての活動」）
+    if class_id != 0:
+        enrollment = ClassEnrollment.query.filter_by(
+            student_id=current_user.id,
+            class_id=class_id
+        ).first()
+        
+        if not enrollment:
+            flash('このクラスにアクセスする権限がありません。')
+            return redirect(url_for('student.activities'))
+    
     # 活動記録を取得
-    activity_logs = ActivityLog.query.filter_by(student_id=current_user.id)\
-        .order_by(ActivityLog.date.desc())\
-        .all()
+    if class_id == 0:
+        # すべての活動記録
+        activity_logs = ActivityLog.query.filter_by(
+            student_id=current_user.id
+        ).order_by(ActivityLog.date.desc()).all()
+        selected_class = None
+        theme = None
+    else:
+        # 特定クラスの活動記録
+        activity_logs = ActivityLog.query.filter_by(
+            student_id=current_user.id,
+            class_id=class_id
+        ).order_by(ActivityLog.date.desc()).all()
+        
+        selected_class = Class.query.get_or_404(class_id)
+        theme = InquiryTheme.query.filter_by(
+            student_id=current_user.id,
+            class_id=class_id,
+            is_selected=True
+        ).first()
     
-    # 選択中のテーマを取得
-    theme = InquiryTheme.query.filter_by(
-        student_id=current_user.id,
-        is_selected=True
-    ).first()
-    
-    return render_template('activities.html', 
+    return render_template('activities.html',
                          activity_logs=activity_logs,
-                         theme=theme)  # themeを追加
+                         theme=theme,
+                         selected_class=selected_class,
+                         class_id=class_id)
 
 @student_bp.route('/new_activity', methods=['GET', 'POST'])
 @login_required
 @student_required
 def new_activity():
     """新規活動記録"""
+    # URLパラメータからclass_idを取得
+    class_id = request.args.get('class_id', type=int)
+    
+    # クラスの存在確認と権限チェック
+    selected_class = None
+    if class_id:
+        enrollment = ClassEnrollment.query.filter_by(
+            student_id=current_user.id,
+            class_id=class_id
+        ).first()
+        
+        if not enrollment:
+            flash('このクラスにアクセスする権限がありません。')
+            return redirect(url_for('student.activities'))
+        
+        selected_class = Class.query.get_or_404(class_id)
+    
     # 選択中のテーマを取得（表示用）
-    theme = InquiryTheme.query.filter_by(student_id=current_user.id, is_selected=True).first()
+    if class_id:
+        theme = InquiryTheme.query.filter_by(
+            student_id=current_user.id,
+            class_id=class_id,
+            is_selected=True
+        ).first()
+    else:
+        theme = InquiryTheme.query.filter_by(
+            student_id=current_user.id,
+            is_selected=True
+        ).first()
     
     if request.method == 'POST':
         title = request.form.get('title')
@@ -346,17 +419,12 @@ def new_activity():
             activity_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         except ValueError:
             flash('日付の形式が正しくありません。')
-            return render_template('new_activity.html', theme=theme)
-        
-        # 生徒の現在のクラスを取得
-        enrollment = ClassEnrollment.query.filter_by(
-            student_id=current_user.id
-        ).order_by(ClassEnrollment.enrolled_at.desc()).first()
+            return render_template('new_activity.html', theme=theme, class_id=class_id, selected_class=selected_class)
         
         # 新しい活動記録を作成
         new_log = ActivityLog(
             student_id=current_user.id,
-            class_id=enrollment.class_id if enrollment else None,
+            class_id=class_id,  # URLパラメータから取得したclass_idを使用
             title=title,
             date=activity_date,
             content=content,
@@ -390,9 +458,12 @@ def new_activity():
         db.session.commit()
         
         flash('活動記録を追加しました。')
-        return redirect(url_for('student.activities'))
+        if class_id:
+            return redirect(url_for('student.activities', class_id=class_id))
+        else:
+            return redirect(url_for('student.activities'))
     
-    return render_template('new_activity.html', theme=theme)
+    return render_template('new_activity.html', theme=theme, class_id=class_id, selected_class=selected_class)
 
 @student_bp.route('/activity/<int:log_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -1241,14 +1312,34 @@ def leave_group(group_id):
 @student_bp.route('/chat')
 @login_required
 def chat_page():
-    """チャットページ"""
-    # デバッグ用ログ
-    current_app.logger.info(f"Student chat access by user: {current_user.username}, role: {current_user.role}")
+    """チャットページ（クラス別）"""
+    class_id = request.args.get('class_id', type=int)
     
-    # ユーザーの役割に応じて適切なチャット履歴を取得
-    chat_history = ChatHistory.query.filter_by(user_id=current_user.id)\
-        .order_by(ChatHistory.timestamp)\
-        .all()
+    # クラスが指定されている場合は所属確認
+    if class_id:
+        enrollment = ClassEnrollment.query.filter_by(
+            student_id=current_user.id,
+            class_id=class_id
+        ).first()
+        
+        if not enrollment:
+            flash('このクラスのチャットにアクセスする権限がありません。')
+            return redirect(url_for('student.dashboard'))
+    
+    # デバッグ用ログ
+    current_app.logger.info(f"Student chat access by user: {current_user.username}, role: {current_user.role}, class_id: {class_id}")
+    
+    # チャット履歴を取得
+    if class_id:
+        chat_history = ChatHistory.query.filter_by(
+            user_id=current_user.id,
+            class_id=class_id
+        ).order_by(ChatHistory.timestamp.asc()).all()
+    else:
+        chat_history = ChatHistory.query.filter_by(
+            user_id=current_user.id,
+            class_id=None
+        ).order_by(ChatHistory.timestamp.asc()).all()
     
     # 学習ステップの定義
     learning_steps = [
@@ -1302,13 +1393,24 @@ def chat_page():
     
     # 選択中のテーマを取得（学生の場合）
     theme = None
+    selected_class = None
     if current_user.role == 'student':
-        theme = InquiryTheme.query.filter_by(
-            student_id=current_user.id,
-            is_selected=True
-        ).first()
+        if class_id:
+            theme = InquiryTheme.query.filter_by(
+                student_id=current_user.id,
+                class_id=class_id,
+                is_selected=True
+            ).first()
+            selected_class = Class.query.get(class_id)
+        else:
+            theme = InquiryTheme.query.filter_by(
+                student_id=current_user.id,
+                is_selected=True
+            ).first()
     
     return render_template('chat.html', 
                          chat_history=chat_history,
                          learning_steps=learning_steps,
-                         theme=theme)
+                         theme=theme,
+                         class_id=class_id,
+                         selected_class=selected_class)

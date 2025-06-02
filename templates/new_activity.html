@@ -4,7 +4,18 @@
 
 {% block content %}
 <div class="learning-record-container">
-    <h2>新しい学習記録</h2>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>新しい学習記録</h2>
+        <a href="{{ url_for('student.activities', class_id=class_id) }}" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i> 活動記録に戻る
+        </a>
+    </div>
+    
+    {% if selected_class %}
+        <div class="alert alert-info">
+            <i class="fas fa-chalkboard"></i> クラス: <strong>{{ selected_class.name }}</strong>
+        </div>
+    {% endif %}
     
     {% if theme %}
     <div class="theme-info">
@@ -25,7 +36,7 @@
         </select>
     </div>
     
-    <form method="POST" action="{{ url_for('student.new_activity') }}" enctype="multipart/form-data" id="activity-form">
+    <form method="POST" action="{{ url_for('student.new_activity', class_id=class_id) }}" enctype="multipart/form-data" id="activity-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         
         <div class="form-row">

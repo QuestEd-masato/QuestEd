@@ -134,6 +134,7 @@ class ClassEnrollment(db.Model):
     class_id = db.Column(db.Integer, db.ForeignKey('classes.id'), nullable=False)
     student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     enrolled_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True)
     
     # リレーションシップ
     student = db.relationship('User', foreign_keys=[student_id], backref='class_enrollments')
@@ -315,12 +316,14 @@ class ChatHistory(db.Model):
     __tablename__ = 'chat_history'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    class_id = db.Column(db.Integer, db.ForeignKey('classes.id'), nullable=True)
     message = db.Column(db.Text, nullable=False)
     is_user = db.Column(db.Boolean, default=True)  # True=ユーザー, False=AI
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     
     # userリレーションシップは1つだけにする
     user = db.relationship('User', backref=db.backref('chat_histories', lazy=True))
+    class_obj = db.relationship('Class', backref=db.backref('chat_histories', lazy=True))
 
 class Milestone(db.Model):
     __tablename__ = 'milestones'

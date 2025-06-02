@@ -5,7 +5,23 @@
 {% block content %}
 <div class="learning-records-container">
     <div class="learning-records-header">
-        <h2>学習記録</h2>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2>学習記録</h2>
+            <a href="{{ url_for('student.activities') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-arrow-left"></i> クラス選択に戻る
+            </a>
+        </div>
+        
+        {% if selected_class %}
+            <div class="alert alert-info">
+                <i class="fas fa-chalkboard"></i> クラス: <strong>{{ selected_class.name }}</strong>
+            </div>
+        {% elif class_id == 0 %}
+            <div class="alert alert-info">
+                <i class="fas fa-folder-open"></i> すべての活動記録を表示しています
+            </div>
+        {% endif %}
+        
         <div class="theme-info">
             {% if theme %}
                 <h3>選択中のテーマ: {{ theme.title }}</h3>
@@ -16,8 +32,8 @@
                 <a href="{{ url_for('student.view_themes') }}" class="btn btn-outline-primary">テーマを選択する</a>
             {% endif %}
         </div>
-        {% if theme %}
-            <a href="{{ url_for('student.new_activity') }}" class="btn btn-primary">新しい学習を記録</a>
+        {% if theme or class_id == 0 %}
+            <a href="{{ url_for('student.new_activity', class_id=class_id) }}" class="btn btn-primary">新しい学習を記録</a>
         {% endif %}
     </div>
     
@@ -134,10 +150,10 @@
     <div class="export-options">
         <h4>学習記録をエクスポート</h4>
         <div class="export-buttons">
-            <a href="{{ url_for('student.export_activities', format='pdf') }}" class="btn btn-secondary">
+            <a href="{{ url_for('student.export_activities', format='pdf', class_id=class_id) }}" class="btn btn-secondary">
                 <i class="fas fa-file-pdf"></i> PDFでダウンロード
             </a>
-            <a href="{{ url_for('student.export_activities', format='csv') }}" class="btn btn-secondary">
+            <a href="{{ url_for('student.export_activities', format='csv', class_id=class_id) }}" class="btn btn-secondary">
                 <i class="fas fa-file-csv"></i> CSVでダウンロード
             </a>
         </div>

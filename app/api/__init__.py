@@ -24,11 +24,13 @@ def chat():
             message = data.get('message', '')
             step_id = data.get('step', '')
             function_id = data.get('function', '')
+            class_id = data.get('class_id')
         else:
             # フォームデータの場合
             message = request.form.get('message', '')
             step_id = request.form.get('step', '')
             function_id = request.form.get('function', '')
+            class_id = request.form.get('class_id', type=int)
         
         # 教師ロールの場合は常に teacher_free ステップを使用
         if current_user.role == 'teacher':
@@ -43,9 +45,16 @@ def chat():
         context_data = []
         
         # チャット履歴の取得（新しい順に10件）
-        chat_history = ChatHistory.query.filter_by(user_id=current_user.id)\
-            .order_by(ChatHistory.timestamp.desc())\
-            .limit(10).all()
+        if class_id:
+            chat_history = ChatHistory.query.filter_by(
+                user_id=current_user.id,
+                class_id=class_id
+            ).order_by(ChatHistory.timestamp.desc()).limit(10).all()
+        else:
+            chat_history = ChatHistory.query.filter_by(
+                user_id=current_user.id,
+                class_id=None
+            ).order_by(ChatHistory.timestamp.desc()).limit(10).all()
         
         # 古い順に並べ直してコンテキストに追加
         for chat in reversed(chat_history):
@@ -57,10 +66,17 @@ def chat():
         # 選択中のテーマを取得（学生の場合）
         theme_context = None
         if current_user.role == 'student':
-            theme = InquiryTheme.query.filter_by(
-                student_id=current_user.id, 
-                is_selected=True
-            ).first()
+            if class_id:
+                theme = InquiryTheme.query.filter_by(
+                    student_id=current_user.id,
+                    class_id=class_id,
+                    is_selected=True
+                ).first()
+            else:
+                theme = InquiryTheme.query.filter_by(
+                    student_id=current_user.id, 
+                    is_selected=True
+                ).first()
             if theme:
                 theme_context = f"現在の探究テーマ: {theme.title}"
                 if theme.question:
@@ -77,7 +93,8 @@ def chat():
         # チャット履歴を保存
         # ユーザーのメッセージを保存
         user_chat = ChatHistory(
-            user_id=current_user.id, 
+            user_id=current_user.id,
+            class_id=class_id,
             message=message, 
             is_user=True
         )
@@ -85,7 +102,8 @@ def chat():
         
         # AIの返答を保存
         ai_chat = ChatHistory(
-            user_id=current_user.id, 
+            user_id=current_user.id,
+            class_id=class_id,
             message=ai_response, 
             is_user=False
         )
