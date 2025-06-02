@@ -449,18 +449,20 @@
             background-color: #4a6da7;
             color: white;
         }
-        /* カスタムカラーパレット - 柔らかい色調への変更 */
+        /* カスタムカラーパレット - 落ち着いた学習向けの色調 */
         :root {
-            --primary-color: #6c757d;
-            --primary-hover: #5a6268;
-            --secondary-color: #868e96;
-            --accent-color: #495057;
+            --primary-color: #5da8e8;  /* BaseBuilderの薄い青色 */
+            --primary-hover: #4a95d5;
+            --primary-soft: #e8f3fc;   /* 薄い青の背景用 */
+            --secondary-color: #7db8e8;
+            --accent-color: #4a6da7;
             --success-color: #5a8c5a;
             --danger-color: #975757;
             --warning-color: #997a5c;
             --info-color: #6c8fa6;
             --light-bg: #f8f9fa;
             --border-color: #dee2e6;
+            --text-muted: #6c757d;
         }
 
         /* Bootstrapボタンのオーバーライド */
@@ -570,13 +572,38 @@
             color: var(--primary-hover);
         }
         
-        /* ヘッダーの色を柔らかく */
+        /* ヘッダーの色を統一 */
         .front-header {
-            background-color: #7a8e9d;
+            background-color: var(--primary-color);
         }
         
         .admin-header {
-            background-color: #6b7a88;
+            background-color: var(--accent-color);
+        }
+        
+        /* カードやセクションの背景を柔らかく */
+        .card {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            border: 1px solid var(--border-color);
+        }
+        
+        .card-header {
+            background-color: var(--primary-soft);
+            border-bottom: 1px solid var(--border-color);
+            color: var(--accent-color);
+        }
+        
+        /* フォームコントロールを落ち着いた色に */
+        .form-control:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 0.2rem rgba(93, 168, 232, 0.25);
+        }
+        
+        /* テーブルヘッダーを落ち着いた色に */
+        .table thead th {
+            background-color: var(--primary-soft);
+            color: var(--accent-color);
+            border-color: var(--border-color);
         }
     </style>
     {% block extra_css %}{% endblock %}
