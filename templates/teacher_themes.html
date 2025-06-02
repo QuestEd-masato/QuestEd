@@ -40,7 +40,7 @@
                    aria-labelledby="heading{{ cls.class.id }}" data-bs-parent="#classAccordion">
                 <div class="accordion-body">
                   <div class="mb-3">
-                    <a href="{{ url_for('teacher.main_themes', class_id=cls.class.id) }}" class="btn btn-outline-primary">
+                    <a href="{{ url_for('teacher.view_main_themes', class_id=cls.class.id) }}" class="btn btn-outline-primary">
                       <i class="fas fa-cog"></i> 大テーマを管理
                     </a>
                     <a href="{{ url_for('teacher.create_main_theme', class_id=cls.class.id) }}" class="btn btn-outline-success">
