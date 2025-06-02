@@ -1814,117 +1814,117 @@ def surveys():
                           interest_survey=interest_survey,
                           personality_survey=personality_survey)
 
-@app.route('/activities')
-@login_required
-def activities():
-    # 学生ロールのみアクセス可能にする
-    if current_user.role != 'student':
-        flash('この機能は学生のみ利用可能です。')
-        return redirect(url_for('index'))
-    
-    # すべての活動ログを取得
-    activity_logs = ActivityLog.query.filter_by(student_id=current_user.id).order_by(ActivityLog.timestamp.desc()).all()
-    
-    # 選択中のテーマを取得
-    theme = InquiryTheme.query.filter_by(student_id=current_user.id, is_selected=True).first()
-    
-    return render_template('activities.html', activity_logs=activity_logs, theme=theme)
+# @app.route('/activities')
+# @login_required
+# def activities():
+#     # 学生ロールのみアクセス可能にする
+#     if current_user.role != 'student':
+#         flash('この機能は学生のみ利用可能です。')
+#         return redirect(url_for('index'))
+#     
+#     # すべての活動ログを取得
+#     activity_logs = ActivityLog.query.filter_by(student_id=current_user.id).order_by(ActivityLog.timestamp.desc()).all()
+#     
+#     # 選択中のテーマを取得
+#     theme = InquiryTheme.query.filter_by(student_id=current_user.id, is_selected=True).first()
+#     
+#     return render_template('activities.html', activity_logs=activity_logs, theme=theme)
 
-@app.route('/activity/<int:log_id>/delete')
-@login_required
-def delete_activity(log_id):
-    if current_user.role != 'student':
-        flash('この機能は学生のみ利用可能です。')
-        return redirect(url_for('index'))
-    
-    activity = ActivityLog.query.get_or_404(log_id)
-    
-    if activity.student_id != current_user.id:
-        flash('この学習記録を削除する権限がありません。')
-        return redirect(url_for('activities'))
-    
-    # 画像ファイルが存在する場合は削除
-    if activity.image_url:
-        try:
-            # 画像URLからファイルパスを取得
-            image_filename = activity.image_url.split('/')[-1]
-            image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
-            if os.path.exists(image_path):
-                os.remove(image_path)
-        except Exception as e:
-            print(f"画像ファイル削除エラー: {str(e)}")
-    
-    # 活動記録を削除
-    db.session.delete(activity)
-    db.session.commit()
-    
-    flash('学習記録が削除されました。')
-    return redirect(url_for('activities'))
+# @app.route('/activity/<int:log_id>/delete')
+# @login_required
+# def delete_activity(log_id):
+#     if current_user.role != 'student':
+#         flash('この機能は学生のみ利用可能です。')
+#         return redirect(url_for('index'))
+#     
+#     activity = ActivityLog.query.get_or_404(log_id)
+#     
+#     if activity.student_id != current_user.id:
+#         flash('この学習記録を削除する権限がありません。')
+#         return redirect(url_for('activities'))
+#     
+#     # 画像ファイルが存在する場合は削除
+#     if activity.image_url:
+#         try:
+#             # 画像URLからファイルパスを取得
+#             image_filename = activity.image_url.split('/')[-1]
+#             image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
+#             if os.path.exists(image_path):
+#                 os.remove(image_path)
+#         except Exception as e:
+#             print(f"画像ファイル削除エラー: {str(e)}")
+#     
+#     # 活動記録を削除
+#     db.session.delete(activity)
+#     db.session.commit()
+#     
+#     flash('学習記録が削除されました。')
+#     return redirect(url_for('activities'))
 
-@app.route('/activities/export/<format>')
-@login_required
-def export_activities(format):
-    if current_user.role != 'student':
-        flash('この機能は学生のみ利用可能です。')
-        return redirect(url_for('index'))
-    
-    # 選択中のテーマを取得
-    theme = InquiryTheme.query.filter_by(student_id=current_user.id, is_selected=True).first()
-    
-    if not theme:
-        flash('エクスポートするには選択中のテーマが必要です。')
-        return redirect(url_for('activities'))
-    
-    # テーマに関連する学習記録を取得
-    activities = ActivityLog.query.filter_by(student_id=current_user.id).order_by(ActivityLog.date.desc()).all()
-    
-    if not activities:
-        flash('エクスポートする学習記録がありません。')
-        return redirect(url_for('activities'))
-    
-    if format == 'csv':
-        # CSVフォーマットでエクスポート
-        csv_content = io.StringIO()
-        csv_writer = csv.writer(csv_content)
-        
-        # ヘッダー行
-        csv_writer.writerow(['日付', 'タイトル', 'タグ', '学習内容', '振り返り'])
-        
-        # データ行
-        for activity in activities:
-            csv_writer.writerow([
-                activity.date.strftime('%Y-%m-%d'),
-                activity.title,
-                activity.tags or '',
-                activity.content,
-                activity.reflection or ''
-            ])
-        
-        # BOMを追加して文字化けを防止
-        response_data = '\ufeff' + csv_content.getvalue()
-        
-        # レスポンスを作成
-        response = Response(
-            response_data,
-            mimetype='text/csv',
-            headers={
-                'Content-Disposition': f'attachment; filename=learning_records_{datetime.now().strftime("%Y%m%d")}.csv'
-            }
-        )
-        return response
-        
-    elif format == 'pdf':
-        # PDF出力のためのサードパーティライブラリが必要
-        # ここでは簡易的な実装として、テンプレートをレンダリングしてブラウザのPDF機能に任せる
-        return render_template(
-            'export_activities_pdf.html',
-            activities=activities,
-            theme=theme,
-            current_user=current_user,
-            now=datetime.now()
-        )
-    
-    flash('サポートされていないフォーマットです。')
+# @app.route('/activities/export/<format>')
+# @login_required
+# def export_activities(format):
+#     if current_user.role != 'student':
+#         flash('この機能は学生のみ利用可能です。')
+#         return redirect(url_for('index'))
+#     
+#     # 選択中のテーマを取得
+#     theme = InquiryTheme.query.filter_by(student_id=current_user.id, is_selected=True).first()
+#     
+#     if not theme:
+#         flash('エクスポートするには選択中のテーマが必要です。')
+#         return redirect(url_for('activities'))
+#     
+#     # テーマに関連する学習記録を取得
+#     activities = ActivityLog.query.filter_by(student_id=current_user.id).order_by(ActivityLog.date.desc()).all()
+#     
+#     if not activities:
+#         flash('エクスポートする学習記録がありません。')
+#         return redirect(url_for('activities'))
+#     
+#     if format == 'csv':
+#         # CSVフォーマットでエクスポート
+#         csv_content = io.StringIO()
+#         csv_writer = csv.writer(csv_content)
+#         
+#         # ヘッダー行
+#         csv_writer.writerow(['日付', 'タイトル', 'タグ', '学習内容', '振り返り'])
+#         
+#         # データ行
+#         for activity in activities:
+#             csv_writer.writerow([
+#                 activity.date.strftime('%Y-%m-%d'),
+#                 activity.title,
+#                 activity.tags or '',
+#                 activity.content,
+#                 activity.reflection or ''
+#             ])
+#         
+#         # BOMを追加して文字化けを防止
+#         response_data = '\ufeff' + csv_content.getvalue()
+#         
+#         # レスポンスを作成
+#         response = Response(
+#             response_data,
+#             mimetype='text/csv',
+#             headers={
+#                 'Content-Disposition': f'attachment; filename=learning_records_{datetime.now().strftime("%Y%m%d")}.csv'
+#             }
+#         )
+#         return response
+#         
+#     elif format == 'pdf':
+#         # PDF出力のためのサードパーティライブラリが必要
+#         # ここでは簡易的な実装として、テンプレートをレンダリングしてブラウザのPDF機能に任せる
+#         return render_template(
+#             'export_activities_pdf.html',
+#             activities=activities,
+#             theme=theme,
+#             current_user=current_user,
+#             now=datetime.now()
+#         )
+#     
+#     flash('サポートされていないフォーマットです。')
     return redirect(url_for('activities'))
 
 @app.route('/todos')

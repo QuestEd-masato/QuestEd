@@ -134,10 +134,10 @@
     <div class="export-options">
         <h4>学習記録をエクスポート</h4>
         <div class="export-buttons">
-            <a href="{{ url_for('api.export_activities', format='pdf') }}" class="btn btn-secondary">
+            <a href="{{ url_for('student.export_activities', format='pdf') }}" class="btn btn-secondary">
                 <i class="fas fa-file-pdf"></i> PDFでダウンロード
             </a>
-            <a href="{{ url_for('api.export_activities', format='csv') }}" class="btn btn-secondary">
+            <a href="{{ url_for('student.export_activities', format='csv') }}" class="btn btn-secondary">
                 <i class="fas fa-file-csv"></i> CSVでダウンロード
             </a>
         </div>
