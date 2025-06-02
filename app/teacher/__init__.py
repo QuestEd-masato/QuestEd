@@ -1016,15 +1016,15 @@ def teacher_themes():
     classes = Class.query.filter_by(teacher_id=current_user.id).all()
     
     # 各クラスのメインテーマを取得
-    class_themes = []
+    classes_with_themes = []  # 変数名をテンプレートに合わせて変更
     for class_obj in classes:
-        themes = MainTheme.query.filter_by(class_id=class_obj.id).all()
-        class_themes.append({
+        main_themes = MainTheme.query.filter_by(class_id=class_obj.id).all()  # themesをmain_themesに変更
+        classes_with_themes.append({
             'class': class_obj,
-            'themes': themes
+            'main_themes': main_themes  # キー名をmain_themesに変更
         })
     
-    return render_template('teacher_themes.html', class_themes=class_themes)
+    return render_template('teacher_themes.html', classes_with_themes=classes_with_themes)  # 変数名を変更
 
 # 最初のクラスを取得するAPI
 @teacher_bp.route('/api/teacher/first_class')
