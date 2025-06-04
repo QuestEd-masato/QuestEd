@@ -1304,6 +1304,11 @@ def create_personal_theme_new():
     main_theme_id = request.form.get('main_theme_id', type=int)
     theme_title = request.form.get('theme_title', '').strip()
     theme_description = request.form.get('theme_description', '').strip()
+    question = request.form.get('question', '').strip()
+    rationale = request.form.get('rationale', '').strip()
+    approach = request.form.get('approach', '').strip()
+    
+    current_app.logger.info(f"Creating new theme - Title: {theme_title}, Class: {class_id}")
     
     if not class_id or not theme_title:
         flash('必要な情報が入力されていません。')
@@ -1335,7 +1340,9 @@ def create_personal_theme_new():
             main_theme_id=main_theme_id,
             title=theme_title,
             description=theme_description,
-            question=theme_title,  # 質問フィールドにもタイトルを設定
+            question=question if question else theme_title,  # 質問フィールドが空の場合はタイトルを使用
+            rationale=rationale,
+            approach=approach,
             is_selected=True,
             is_ai_generated=False
         )
@@ -1384,16 +1391,23 @@ def generate_theme_ai():
         # 大テーマを取得
         main_theme = MainTheme.query.get(main_theme_id) if main_theme_id else None
         
-        # アンケート回答を取得
-        interest_survey = InterestSurvey.query.filter_by(student_id=current_user.id).first()
-        personality_survey = PersonalitySurvey.query.filter_by(student_id=current_user.id).first()
+        # アンケート回答を取得（正しい引数名で）
+        surveys = {
+            'personality_survey': PersonalitySurvey.query.filter_by(student_id=current_user.id).first(),
+            'interest_survey_responses': InterestSurvey.query.filter_by(student_id=current_user.id).first(),
+            'learning_survey': None,  # 学習アンケートがある場合は実装
+            'goal_survey': None  # 目標アンケートがある場合は実装
+        }
         
         # 既存のgenerate_personal_themes_with_ai関数を使用
         if main_theme:
+            current_app.logger.info(f"Generating AI themes for main_theme: {main_theme.title}")
             themes = generate_personal_themes_with_ai(
                 main_theme=main_theme,
-                interest_survey=interest_survey,
-                personality_survey=personality_survey,
+                personality_survey=surveys['personality_survey'],
+                interest_survey_responses=surveys['interest_survey_responses'],
+                learning_survey=surveys['learning_survey'],
+                goal_survey=surveys['goal_survey'],
                 additional_interests=interests
             )
             
@@ -1606,25 +1620,24 @@ def leave_group(group_id):
 @login_required
 def chat_page():
     """チャットページ（クラス別）"""
-    # 教師の場合は別の処理
-    if current_user.role == 'teacher':
-        current_app.logger.info(f"Teacher chat access by user: {current_user.username}, role: {current_user.role}")
-        # 教師は直接チャットページへ
-        chat_history = ChatHistory.query.filter_by(
-            user_id=current_user.id
-        ).order_by(ChatHistory.timestamp.asc()).all()
-        selected_class = None
-        theme = None
-        learning_steps = []
-        return render_template('chat.html', 
-                             chat_history=chat_history,
-                             learning_steps=learning_steps,
-                             theme=theme,
-                             class_id=None,
-                             selected_class=selected_class)
+    current_app.logger.info(f"Chat page access - User: {current_user.username}, Role: {current_user.role}, ID: {current_user.id}")
     
     # 学生の場合はクラス選択が必要
-    class_id = request.args.get('class_id', type=int)
+    if current_user.role == 'student':  # 明示的に'student'をチェック
+        class_id = request.args.get('class_id', type=int)
+        
+        if not class_id:
+            # クラス選択画面
+            enrollments = ClassEnrollment.query.filter_by(
+                student_id=current_user.id,
+                is_active=True
+            ).all()
+            classes = [e.class_obj for e in enrollments]
+            current_app.logger.info(f"Student {current_user.username} - showing class selection, {len(classes)} classes found")
+            return render_template('select_class_for_chat.html', classes=classes)
+        
+        # クラスが指定されている場合の処理
+        class_id = request.args.get('class_id', type=int)
     
     if not class_id:
         # クラス選択画面
@@ -1735,3 +1748,22 @@ def chat_page():
                          theme=theme,
                          class_id=class_id,
                          selected_class=selected_class)
+    
+    elif current_user.role == 'teacher':
+        # 教師の処理
+        current_app.logger.info(f"Teacher {current_user.username} - direct chat access")
+        chat_history = ChatHistory.query.filter_by(
+            user_id=current_user.id
+        ).order_by(ChatHistory.timestamp.asc()).all()
+        
+        return render_template('chat.html',
+                             chat_history=chat_history,
+                             learning_steps=[],
+                             theme=None,
+                             class_id=None,
+                             selected_class=None)
+    else:
+        # 予期しないロール
+        current_app.logger.error(f"Unknown role: {current_user.role} for user {current_user.username}")
+        flash('アクセス権限がありません。')
+        return redirect(url_for('index'))
