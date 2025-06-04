@@ -127,9 +127,17 @@
                                 </td>
                                 {% if current_user.role == 'teacher' and current_user.id == class_obj.teacher_id %}
                                 <td>
+                                    <!-- PDF生成ボタン -->
+                                    <form method="POST" action="{{ url_for('teacher.generate_student_report', class_id=class_obj.id, student_id=info.student.id) }}" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-info" title="活動報告PDFを生成">
+                                            <i class="fas fa-file-pdf"></i> PDF
+                                        </button>
+                                    </form>
+                                    <!-- 削除ボタン -->
                                     <form method="POST" action="{{ url_for('teacher.remove_student', class_id=class_obj.id, student_id=info.student.id) }}" 
                                           onsubmit="return confirm('{{ info.student.username }}さんをクラスから削除してもよろしいですか？');" 
-                                          class="d-inline">
+                                          class="d-inline ml-1">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn btn-sm btn-outline-danger">
                                             <i class="fas fa-user-times"></i>

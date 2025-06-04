@@ -36,7 +36,7 @@
     
     {% if themes_with_main %}
         <div class="themes-list">
-            {% for item in themes_with_main if item.theme.is_ai_generated %}
+            {% for item in themes_with_main %}
                 <div class="theme-card {% if item.theme.is_selected %}selected{% endif %}">
                     {% if item.theme.is_selected %}
                         <div class="selected-badge">選択中</div>

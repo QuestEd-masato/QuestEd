@@ -1402,13 +1402,29 @@ def generate_theme_ai():
             'goal_survey': None  # 目標アンケートがある場合は実装
         }
         
+        # オブジェクトを辞書に変換
+        interest_data = {}
+        interest_survey = surveys.get('interest_survey_responses')
+        if interest_survey and hasattr(interest_survey, '__dict__'):
+            # SQLAlchemyモデルの属性を辞書に変換
+            for column in interest_survey.__table__.columns:
+                if column.name not in ['id', 'student_id', 'created_at', 'updated_at']:
+                    interest_data[column.name] = getattr(interest_survey, column.name)
+
+        personality_data = {}
+        personality_survey = surveys.get('personality_survey')
+        if personality_survey and hasattr(personality_survey, '__dict__'):
+            for column in personality_survey.__table__.columns:
+                if column.name not in ['id', 'student_id', 'created_at', 'updated_at']:
+                    personality_data[column.name] = getattr(personality_survey, column.name)
+
         # 既存のgenerate_personal_themes_with_ai関数を使用
         if main_theme:
             current_app.logger.info(f"Generating AI themes for main_theme: {main_theme.title}")
             themes = generate_personal_themes_with_ai(
                 main_theme=main_theme,
-                interest_responses=surveys.get('interest_survey_responses', {}),
-                personality_responses=surveys.get('personality_survey', {})
+                interest_responses=interest_data,
+                personality_responses=personality_data
             )
             
             # 既存のテーマの選択を解除

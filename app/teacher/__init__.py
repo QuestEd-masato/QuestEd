@@ -16,6 +16,9 @@ from app.models import (
     ActivityLog, Goal, Todo
 )
 from app.ai import generate_student_evaluation, generate_curriculum_with_ai
+from app.ai.helpers import generate_activity_summary
+from app.models import ChatHistory
+from .pdf_generator import generate_student_report_pdf
 
 teacher_bp = Blueprint('teacher', __name__)
 
@@ -1053,3 +1056,72 @@ def chat_page():
         .all()
     
     return render_template('chat.html', chat_history=chat_history)
+
+@teacher_bp.route('/class/<int:class_id>/student/<int:student_id>/generate_report', methods=['POST'])
+@login_required
+@teacher_required
+def generate_student_report(class_id, student_id):
+    """学生の活動報告PDFを生成"""
+    # 権限確認
+    class_obj = Class.query.get_or_404(class_id)
+    if class_obj.teacher_id != current_user.id:
+        flash('このクラスにアクセスする権限がありません。')
+        return redirect(url_for('teacher.dashboard'))
+    
+    # 学生情報取得
+    student = User.query.get_or_404(student_id)
+    enrollment = ClassEnrollment.query.filter_by(
+        student_id=student_id,
+        class_id=class_id,
+        is_active=True
+    ).first()
+    
+    if not enrollment:
+        flash('この学生はクラスに所属していません。')
+        return redirect(url_for('teacher.class_details', class_id=class_id))
+    
+    try:
+        # 探究テーマを取得
+        theme = InquiryTheme.query.filter_by(
+            student_id=student_id,
+            class_id=class_id,
+            is_selected=True
+        ).first()
+        
+        # 活動記録を取得（最新50件）
+        activities = ActivityLog.query.filter_by(
+            student_id=student_id,
+            class_id=class_id
+        ).order_by(ActivityLog.created_at.desc()).limit(50).all()
+        
+        # チャット履歴を取得（最新100件）
+        chat_histories = ChatHistory.query.filter_by(
+            user_id=student_id,
+            class_id=class_id
+        ).order_by(ChatHistory.timestamp.desc()).limit(100).all()
+        
+        # AI要約を生成
+        activity_texts = [a.content for a in activities if a.content]
+        chat_texts = [c.message for c in chat_histories if c.is_user and c.message]
+        ai_summary = generate_activity_summary(activity_texts, chat_texts)
+        
+        # PDF生成
+        pdf_buffer = generate_student_report_pdf(
+            student, class_obj, activities, chat_histories, theme, ai_summary
+        )
+        
+        # レスポンス作成（メモリから直接送信、保存しない）
+        from flask import make_response
+        response = make_response(pdf_buffer.getvalue())
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = f'attachment; filename=report_{student.username}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf'
+        
+        current_app.logger.info(f"PDF generated for student {student.username} in class {class_obj.name}")
+        return response
+        
+    except Exception as e:
+        current_app.logger.error(f"PDF generation error: {str(e)}")
+        import traceback
+        current_app.logger.error(traceback.format_exc())
+        flash('PDF生成中にエラーが発生しました。')
+        return redirect(url_for('teacher.class_details', class_id=class_id))

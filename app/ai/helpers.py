@@ -247,3 +247,36 @@ def call_openai_api(messages, api_key=None, model="gpt-4", temperature=0.7, max_
             return "APIキーが無効です。管理者に連絡してください。"
         else:
             return f"エラーが発生しました: {str(e)}"
+
+def generate_activity_summary(activities, chat_messages, max_length=500):
+    """活動記録とチャット履歴からAI要約を生成"""
+    try:
+        # 活動内容を結合
+        activity_text = "\n".join([f"- {a}" for a in activities[:10]])  # 最新10件
+        chat_text = "\n".join([f"- {m}" for m in chat_messages[:10]])  # 最新10件
+        
+        prompt = f"""
+        以下の生徒の活動記録とチャット履歴を基に、学習の進捗と成果を200文字程度で要約してください。
+
+        【活動記録】
+        {activity_text}
+
+        【チャット質問】
+        {chat_text}
+
+        要約には以下を含めてください：
+        - 主な学習内容
+        - 生徒の関心や理解度
+        - 今後の学習への提案
+        """
+        
+        messages = [
+            {"role": "system", "content": "あなたは教育専門のアシスタントです。生徒の学習活動を分析し、簡潔で建設的な要約を提供します。"},
+            {"role": "user", "content": prompt}
+        ]
+        
+        return call_openai_api(messages, model="gpt-3.5-turbo", max_tokens=max_length, temperature=0.7)
+        
+    except Exception as e:
+        print(f"AI summary generation error: {str(e)}")
+        return "活動記録の要約生成に失敗しました。手動で確認してください。"
