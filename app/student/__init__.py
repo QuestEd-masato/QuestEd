@@ -1007,11 +1007,26 @@ def view_themes():
         else:
             current_app.logger.info("No main theme found for this class")
         
+        # テンプレートが期待する形式でデータを準備
+        themes_with_main = []
+        for theme in themes:
+            themes_with_main.append({
+                'theme': theme,
+                'main_theme': main_theme  # このクラスの大テーマを関連付け
+            })
+        
+        # available_main_themesも準備（このクラスの大テーマのリスト）
+        available_main_themes = [main_theme] if main_theme else []
+        
+        current_app.logger.info(f"Prepared {len(themes_with_main)} themes_with_main items")
+        current_app.logger.info(f"Available main themes: {len(available_main_themes)}")
+        
         # テンプレートに渡す前に確認
         current_app.logger.info(f"=== END THEMES DEBUG ===")
         
         return render_template('view_themes.html',
-                             themes=themes,
+                             themes_with_main=themes_with_main,
+                             available_main_themes=available_main_themes,
                              selected_theme=selected_theme,
                              class_obj=class_obj,
                              main_theme=main_theme,
