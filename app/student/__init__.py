@@ -1636,47 +1636,27 @@ def chat_page():
             current_app.logger.info(f"Student {current_user.username} - showing class selection, {len(classes)} classes found")
             return render_template('select_class_for_chat.html', classes=classes)
         
-        # クラスが指定されている場合の処理
-        class_id = request.args.get('class_id', type=int)
-    
-    if not class_id:
-        # クラス選択画面
-        enrollments = ClassEnrollment.query.filter_by(
+        # クラスが指定されている場合は所属確認
+        enrollment = ClassEnrollment.query.filter_by(
             student_id=current_user.id,
-            is_active=True
-        ).all()
-        classes = [e.class_obj for e in enrollments]
-        return render_template('select_class_for_chat.html', classes=classes)
-    
-    # クラスが指定されている場合は所属確認
-    enrollment = ClassEnrollment.query.filter_by(
-        student_id=current_user.id,
-        class_id=class_id
-    ).first()
-    
-    if not enrollment:
-        flash('このクラスのチャットにアクセスする権限がありません。')
-        return redirect(url_for('student.chat_page'))
-    
-    # デバッグ用ログ
-    current_app.logger.info(f"Student chat access by user: {current_user.username}, role: {current_user.role}, class_id: {class_id}")
-    
-    # チャット履歴を取得
-    if class_id:
-        current_app.logger.info(f"Getting chat history for class_id: {class_id}")
+            class_id=class_id
+        ).first()
+        
+        if not enrollment:
+            flash('このクラスのチャットにアクセスする権限がありません。')
+            return redirect(url_for('student.chat_page'))
+        
+        # チャット履歴を取得
+        current_app.logger.info(f"Chat history query: user_id={current_user.id}, class_id={class_id}")
         chat_history = ChatHistory.query.filter_by(
             user_id=current_user.id,
             class_id=class_id
         ).order_by(ChatHistory.timestamp.asc()).all()
-        current_app.logger.info(f"Found {len(chat_history)} chat messages")
-    else:
-        chat_history = ChatHistory.query.filter_by(
-            user_id=current_user.id,
-            class_id=None
-        ).order_by(ChatHistory.timestamp.asc()).all()
-    
-    # 学習ステップの定義
-    learning_steps = [
+        
+        current_app.logger.info(f"Found {len(chat_history)} chat messages for user {current_user.id} in class {class_id}")
+        
+        # 学習ステップの定義
+        learning_steps = [
         {
             'id': 'theme_explore',
             'name': 'テーマを探す',
@@ -1724,34 +1704,28 @@ def chat_page():
             'functions': []
         }
     ]
+        
+        # 選択中のテーマを取得
+        theme = InquiryTheme.query.filter_by(
+            student_id=current_user.id,
+            class_id=class_id,
+            is_selected=True
+        ).first()
+        
+        selected_class = Class.query.get(class_id)
     
-    # 選択中のテーマを取得（学生の場合）
-    theme = None
-    selected_class = None
-    if current_user.role == 'student':
-        if class_id:
-            theme = InquiryTheme.query.filter_by(
-                student_id=current_user.id,
-                class_id=class_id,
-                is_selected=True
-            ).first()
-            selected_class = Class.query.get(class_id)
-        else:
-            theme = InquiryTheme.query.filter_by(
-                student_id=current_user.id,
-                is_selected=True
-            ).first()
+        return render_template('chat.html',
+                             chat_history=chat_history,
+                             learning_steps=learning_steps,
+                             theme=theme,
+                             class_id=class_id,
+                             selected_class=selected_class)
     
-    return render_template('chat.html', 
-                         chat_history=chat_history,
-                         learning_steps=learning_steps,
-                         theme=theme,
-                         class_id=class_id,
-                         selected_class=selected_class)
-    
+    # 教師の場合
     elif current_user.role == 'teacher':
-        # 教師の処理
         current_app.logger.info(f"Teacher {current_user.username} - direct chat access")
+        
+        # 教師のチャット履歴を取得（クラス指定なし）
         chat_history = ChatHistory.query.filter_by(
             user_id=current_user.id
         ).order_by(ChatHistory.timestamp.asc()).all()
@@ -1762,8 +1736,9 @@ def chat_page():
                              theme=None,
                              class_id=None,
                              selected_class=None)
+    
+    # その他のロール（エラー処理）
     else:
-        # 予期しないロール
         current_app.logger.error(f"Unknown role: {current_user.role} for user {current_user.username}")
         flash('アクセス権限がありません。')
         return redirect(url_for('index'))
