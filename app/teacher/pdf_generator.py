@@ -5,33 +5,18 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 import io
 from datetime import datetime
 import os
 
-# 日本語フォントの設定
-def setup_japanese_font():
-    """日本語フォントを設定"""
-    font_paths = [
-        "/usr/share/fonts/google-noto-cjk/NotoSansCJK-Regular.ttc",
-        "/usr/share/fonts/truetype/fonts-japanese-gothic.ttf",
-        "/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc",  # Mac
-    ]
-    
-    for font_path in font_paths:
-        if os.path.exists(font_path):
-            try:
-                pdfmetrics.registerFont(TTFont('JapaneseFont', font_path))
-                return 'JapaneseFont'
-            except:
-                continue
-    
-    # フォールバック
-    return 'Helvetica'
+# 日本語フォントの設定（CIDフォントを使用）
+pdfmetrics.registerFont(UnicodeCIDFont('HeiseiMin-W3'))
+pdfmetrics.registerFont(UnicodeCIDFont('HeiseiKakuGo-W5'))
 
-FONT_NAME = setup_japanese_font()
+FONT_NAME = 'HeiseiMin-W3'  # 明朝体
+FONT_NAME_BOLD = 'HeiseiKakuGo-W5'  # ゴシック体
 
 def generate_student_report_pdf(student, class_obj, activities, chat_histories, theme, ai_summary):
     """学生の活動報告PDFを生成"""
@@ -41,10 +26,12 @@ def generate_student_report_pdf(student, class_obj, activities, chat_histories, 
     
     # スタイルの設定
     styles = getSampleStyleSheet()
+    
+    # 日本語フォントを使用するスタイル
     title_style = ParagraphStyle(
         'CustomTitle',
         parent=styles['Heading1'],
-        fontName=FONT_NAME,
+        fontName=FONT_NAME_BOLD,
         fontSize=20,
         textColor=colors.HexColor('#0056b3'),
         alignment=TA_CENTER,
@@ -54,7 +41,7 @@ def generate_student_report_pdf(student, class_obj, activities, chat_histories, 
     heading_style = ParagraphStyle(
         'CustomHeading',
         parent=styles['Heading2'],
-        fontName=FONT_NAME,
+        fontName=FONT_NAME_BOLD,
         fontSize=14,
         textColor=colors.HexColor('#0056b3'),
         spaceBefore=12,
@@ -70,7 +57,7 @@ def generate_student_report_pdf(student, class_obj, activities, chat_histories, 
     )
     
     # タイトル
-    story.append(Paragraph(f"探究活動報告書", title_style))
+    story.append(Paragraph("探究活動報告書", title_style))
     story.append(Spacer(1, 0.3*inch))
     
     # 基本情報テーブル
@@ -104,8 +91,8 @@ def generate_student_report_pdf(student, class_obj, activities, chat_histories, 
     if activities:
         for i, activity in enumerate(activities[:20]):  # 最新20件
             date_str = activity.timestamp.strftime('%Y/%m/%d %H:%M')
-            story.append(Paragraph(f"<b>【{i+1}. {date_str}】</b>", normal_style))
-            story.append(Paragraph(activity.content, normal_style))
+            story.append(Paragraph(f"【{i+1}. {date_str}】", normal_style))
+            story.append(Paragraph(activity.content or "内容なし", normal_style))
             if activity.reflection:
                 story.append(Paragraph(f"振り返り: {activity.reflection}", normal_style))
             story.append(Spacer(1, 0.2*inch))
@@ -121,9 +108,11 @@ def generate_student_report_pdf(student, class_obj, activities, chat_histories, 
         chat_count = 0
         for chat in chat_histories[:30]:  # 最新30件
             if chat.is_user:
-                story.append(Paragraph(f"<b>生徒:</b> {chat.message}", normal_style))
+                story.append(Paragraph(f"生徒: {chat.message}", normal_style))
             else:
-                story.append(Paragraph(f"<b>AI:</b> {chat.message[:200]}...", normal_style))  # AI応答は200文字まで
+                # AI応答は200文字まで
+                message = chat.message[:200] + "..." if len(chat.message) > 200 else chat.message
+                story.append(Paragraph(f"AI: {message}", normal_style))
             story.append(Spacer(1, 0.1*inch))
             chat_count += 1
             if chat_count >= 15:  # 1ページに収まる量に制限
@@ -134,12 +123,6 @@ def generate_student_report_pdf(student, class_obj, activities, chat_histories, 
     story.append(Paragraph("※ このレポートは自動生成されたものです。", normal_style))
     
     # PDFを生成
-    try:
-        doc.build(story)
-    except Exception as e:
-        # エラー時は簡易版を生成
-        story = [Paragraph("PDF生成エラー: 日本語フォントの問題が発生しました。", styles['Normal'])]
-        doc.build(story)
-    
+    doc.build(story)
     buffer.seek(0)
     return buffer
