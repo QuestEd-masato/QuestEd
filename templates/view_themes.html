@@ -144,7 +144,7 @@
                     <h4><i class="fas fa-pencil-alt"></i> 自分でテーマを考える</h4>
                     <p>自分自身の興味関心に基づいて探究テーマを設定します。</p>
                     <form method="POST" action="{{ url_for('student.create_personal_theme_new') }}">
-                        {{ csrf_token() }}
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="class_id" value="{{ class_id }}">
                         {% if main_theme %}
                         <input type="hidden" name="main_theme_id" value="{{ main_theme.id }}">
@@ -169,7 +169,7 @@
                     <h4><i class="fas fa-robot"></i> AIにテーマを提案してもらう</h4>
                     <p>あなたのアンケート回答を基にAIがテーマを提案します。</p>
                     <form method="POST" action="{{ url_for('student.generate_theme_ai') }}">
-                        {{ csrf_token() }}
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="class_id" value="{{ class_id }}">
                         {% if main_theme %}
                         <input type="hidden" name="main_theme_id" value="{{ main_theme.id }}">

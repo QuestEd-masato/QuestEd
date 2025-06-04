@@ -1606,6 +1606,24 @@ def leave_group(group_id):
 @login_required
 def chat_page():
     """チャットページ（クラス別）"""
+    # 教師の場合は別の処理
+    if current_user.role == 'teacher':
+        current_app.logger.info(f"Teacher chat access by user: {current_user.username}, role: {current_user.role}")
+        # 教師は直接チャットページへ
+        chat_history = ChatHistory.query.filter_by(
+            user_id=current_user.id
+        ).order_by(ChatHistory.timestamp.asc()).all()
+        selected_class = None
+        theme = None
+        learning_steps = []
+        return render_template('chat.html', 
+                             chat_history=chat_history,
+                             learning_steps=learning_steps,
+                             theme=theme,
+                             class_id=None,
+                             selected_class=selected_class)
+    
+    # 学生の場合はクラス選択が必要
     class_id = request.args.get('class_id', type=int)
     
     if not class_id:
