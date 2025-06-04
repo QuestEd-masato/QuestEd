@@ -1295,6 +1295,144 @@ def generate_theme(theme_id):
     
     return render_template('generate_theme.html', main_theme=main_theme)
 
+@student_bp.route('/create_personal_theme_new', methods=['POST'])
+@login_required
+@student_required
+def create_personal_theme_new():
+    """シンプルな個人テーマ作成"""
+    class_id = request.form.get('class_id', type=int)
+    main_theme_id = request.form.get('main_theme_id', type=int)
+    theme_title = request.form.get('theme_title', '').strip()
+    theme_description = request.form.get('theme_description', '').strip()
+    
+    if not class_id or not theme_title:
+        flash('必要な情報が入力されていません。')
+        return redirect(url_for('student.view_themes', class_id=class_id))
+    
+    # 権限確認
+    enrollment = ClassEnrollment.query.filter_by(
+        student_id=current_user.id,
+        class_id=class_id,
+        is_active=True
+    ).first()
+    
+    if not enrollment:
+        flash('このクラスにアクセスする権限がありません。')
+        return redirect(url_for('student.view_themes'))
+    
+    try:
+        # 既存のテーマの選択を解除
+        InquiryTheme.query.filter_by(
+            student_id=current_user.id,
+            class_id=class_id,
+            is_selected=True
+        ).update({'is_selected': False})
+        
+        # 新しいテーマを作成
+        new_theme = InquiryTheme(
+            student_id=current_user.id,
+            class_id=class_id,
+            main_theme_id=main_theme_id,
+            title=theme_title,
+            description=theme_description,
+            question=theme_title,  # 質問フィールドにもタイトルを設定
+            is_selected=True,
+            is_ai_generated=False
+        )
+        db.session.add(new_theme)
+        db.session.commit()
+        
+        flash('新しいテーマを作成しました。')
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error creating theme: {str(e)}")
+        flash('テーマの作成中にエラーが発生しました。')
+    
+    return redirect(url_for('student.view_themes', class_id=class_id))
+
+@student_bp.route('/generate_theme_ai', methods=['POST'])
+@login_required
+@student_required
+def generate_theme_ai():
+    """AIを使用したテーマ生成（シンプル版）"""
+    class_id = request.form.get('class_id', type=int)
+    main_theme_id = request.form.get('main_theme_id', type=int)
+    interests = request.form.get('interests', '').strip()
+    
+    if not class_id:
+        flash('クラス情報が不足しています。')
+        return redirect(url_for('student.view_themes'))
+    
+    # 権限確認
+    enrollment = ClassEnrollment.query.filter_by(
+        student_id=current_user.id,
+        class_id=class_id,
+        is_active=True
+    ).first()
+    
+    if not enrollment:
+        flash('このクラスにアクセスする権限がありません。')
+        return redirect(url_for('student.view_themes'))
+    
+    # アンケート完了確認
+    if not current_user.has_completed_surveys():
+        flash('AIテーマ生成にはすべてのアンケートを完了する必要があります。')
+        return redirect(url_for('student.surveys'))
+    
+    try:
+        # 大テーマを取得
+        main_theme = MainTheme.query.get(main_theme_id) if main_theme_id else None
+        
+        # アンケート回答を取得
+        interest_survey = InterestSurvey.query.filter_by(student_id=current_user.id).first()
+        personality_survey = PersonalitySurvey.query.filter_by(student_id=current_user.id).first()
+        
+        # 既存のgenerate_personal_themes_with_ai関数を使用
+        if main_theme:
+            themes = generate_personal_themes_with_ai(
+                main_theme=main_theme,
+                interest_survey=interest_survey,
+                personality_survey=personality_survey,
+                additional_interests=interests
+            )
+            
+            # 既存のテーマの選択を解除
+            InquiryTheme.query.filter_by(
+                student_id=current_user.id,
+                class_id=class_id,
+                is_selected=True
+            ).update({'is_selected': False})
+            
+            # 生成されたテーマを保存
+            for i, theme_data in enumerate(themes):
+                theme = InquiryTheme(
+                    student_id=current_user.id,
+                    class_id=class_id,
+                    main_theme_id=main_theme.id,
+                    is_ai_generated=True,
+                    is_selected=(i == 0),  # 最初のテーマを選択
+                    title=theme_data['title'],
+                    question=theme_data['question'],
+                    description=theme_data.get('description', ''),
+                    rationale=theme_data.get('rationale', ''),
+                    approach=theme_data.get('approach', ''),
+                    potential=theme_data.get('potential', '')
+                )
+                db.session.add(theme)
+            
+            db.session.commit()
+            flash('AIがテーマを生成しました。生成されたテーマから選択してください。')
+        else:
+            flash('大テーマが見つかりません。')
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error generating theme with AI: {str(e)}")
+        flash('AIテーマ生成中にエラーが発生しました。')
+    
+    return redirect(url_for('student.view_themes', class_id=class_id))
+
 @student_bp.route('/theme/<int:theme_id>/edit', methods=['GET', 'POST'])
 @login_required
 @student_required

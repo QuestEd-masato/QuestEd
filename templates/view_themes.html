@@ -143,14 +143,21 @@
                 <div class="theme-option-card">
                     <h4><i class="fas fa-pencil-alt"></i> 自分でテーマを考える</h4>
                     <p>自分自身の興味関心に基づいて探究テーマを設定します。</p>
-                    <form method="GET" action="#" class="theme-select-form" onsubmit="return submitCreateThemeForm(this)">
-                        <div class="mb-3">
-                            <select name="theme_id" class="form-control" id="createThemeSelect" required>
-                                <option value="">大テーマを選択してください</option>
-                                {% for main_theme in available_main_themes %}
-                                <option value="{{ main_theme.id }}">{{ main_theme.title }}</option>
-                                {% endfor %}
-                            </select>
+                    <form method="POST" action="{{ url_for('student.create_personal_theme_new') }}">
+                        {{ csrf_token() }}
+                        <input type="hidden" name="class_id" value="{{ class_id }}">
+                        {% if main_theme %}
+                        <input type="hidden" name="main_theme_id" value="{{ main_theme.id }}">
+                        {% endif %}
+                        <div class="form-group mb-3">
+                            <label for="theme_title">テーマのタイトル <span class="text-danger">*</span></label>
+                            <input type="text" name="theme_title" id="theme_title" class="form-control" 
+                                   placeholder="例：地域の特産品を活用した新しい商品開発" required>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="theme_description">テーマの説明</label>
+                            <textarea name="theme_description" id="theme_description" class="form-control" rows="3"
+                                      placeholder="このテーマについて詳しく説明してください（任意）"></textarea>
                         </div>
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-pencil-alt"></i> テーマを作成
@@ -161,14 +168,16 @@
                 <div class="theme-option-card">
                     <h4><i class="fas fa-robot"></i> AIにテーマを提案してもらう</h4>
                     <p>あなたのアンケート回答を基にAIがテーマを提案します。</p>
-                    <form method="GET" action="#" class="theme-select-form" onsubmit="return submitGenerateThemeForm(this)">
-                        <div class="mb-3">
-                            <select name="theme_id" class="form-control" id="generateThemeSelect" required>
-                                <option value="">大テーマを選択してください</option>
-                                {% for main_theme in available_main_themes %}
-                                <option value="{{ main_theme.id }}">{{ main_theme.title }}</option>
-                                {% endfor %}
-                            </select>
+                    <form method="POST" action="{{ url_for('student.generate_theme_ai') }}">
+                        {{ csrf_token() }}
+                        <input type="hidden" name="class_id" value="{{ class_id }}">
+                        {% if main_theme %}
+                        <input type="hidden" name="main_theme_id" value="{{ main_theme.id }}">
+                        {% endif %}
+                        <div class="form-group mb-3">
+                            <label for="interests">興味のあることや考えてみたいこと</label>
+                            <textarea name="interests" id="interests" class="form-control" rows="3"
+                                      placeholder="例：地域の特産品について、環境問題について、テクノロジーの活用について など"></textarea>
                         </div>
                         <button type="submit" class="btn btn-success">
                             <i class="fas fa-robot"></i> AIにテーマを提案してもらう
@@ -451,25 +460,6 @@
 
 {% block extra_js %}
 <script>
-function submitCreateThemeForm(form) {
-    var themeId = form.theme_id.value;
-    if (themeId) {
-        var createUrl = "{{ url_for('student.create_personal_theme', theme_id='PLACEHOLDER') }}";
-        form.action = createUrl.replace('PLACEHOLDER', themeId);
-        return true;
-    }
-    return false;
-}
-
-function submitGenerateThemeForm(form) {
-    var themeId = form.theme_id.value;
-    if (themeId) {
-        var generateUrl = "{{ url_for('student.generate_theme', theme_id='PLACEHOLDER') }}";
-        form.action = generateUrl.replace('PLACEHOLDER', themeId);
-        return true;
-    }
-    return false;
-}
 
     document.addEventListener('DOMContentLoaded', function() {
         // Bootstrap 5のドロップダウンを手動で初期化
