@@ -484,7 +484,8 @@ def new_activity():
     return render_template('new_activity.html',
                          theme=theme,
                          selected_class=selected_class,
-                         class_id=class_id)
+                         class_id=class_id,
+                         now=datetime.now())
 
 @student_bp.route('/activity/<int:log_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -946,94 +947,99 @@ def update_goal_progress(goal_id):
 @login_required
 def view_themes():
     """個人テーマ一覧（クラス別）"""
-    if current_user.role == 'student':
-        class_id = request.args.get('class_id', type=int)
-        
-        # デバッグ: ユーザーとクラスIDを確認
-        current_app.logger.info(f"=== THEMES DEBUG ===")
-        current_app.logger.info(f"User ID: {current_user.id}, Username: {current_user.username}")
-        current_app.logger.info(f"Class ID: {class_id}")
-        
-        if not class_id:
-            # クラス選択画面
-            enrollments = ClassEnrollment.query.filter_by(
+    try:
+        if current_user.role == 'student':
+            class_id = request.args.get('class_id', type=int)
+            
+            # デバッグ: ユーザーとクラスIDを確認
+            current_app.logger.info(f"=== THEMES DEBUG ===")
+            current_app.logger.info(f"User ID: {current_user.id}, Username: {current_user.username}")
+            current_app.logger.info(f"Class ID: {class_id}")
+            
+            if not class_id:
+                # クラス選択画面
+                enrollments = ClassEnrollment.query.filter_by(
+                    student_id=current_user.id,
+                    is_active=True
+                ).all()
+                classes = [e.class_obj for e in enrollments]
+                return render_template('select_class_for_themes.html', 
+                                     classes=classes,
+                                     theme_type='personal')
+            
+            # 権限確認
+            enrollment = ClassEnrollment.query.filter_by(
                 student_id=current_user.id,
+                class_id=class_id,
                 is_active=True
+            ).first()
+            
+            if not enrollment:
+                flash('このクラスにアクセスする権限がありません。')
+                return redirect(url_for('student.view_themes'))
+            
+            # 個人テーマを取得
+            themes = InquiryTheme.query.filter_by(
+                student_id=current_user.id,
+                class_id=class_id
             ).all()
-            classes = [e.class_obj for e in enrollments]
-            return render_template('select_class_for_themes.html', 
-                                 classes=classes,
-                                 theme_type='personal')
-        
-        # 権限確認
-        enrollment = ClassEnrollment.query.filter_by(
-            student_id=current_user.id,
-            class_id=class_id,
-            is_active=True
-        ).first()
-        
-        if not enrollment:
-            flash('このクラスにアクセスする権限がありません。')
-            return redirect(url_for('student.view_themes'))
-        
-        # 個人テーマを取得
-        themes = InquiryTheme.query.filter_by(
-            student_id=current_user.id,
-            class_id=class_id
-        ).all()
-        
-        current_app.logger.info(f"Found {len(themes)} personal themes")
-        for theme in themes:
-            current_app.logger.info(f"Theme ID: {theme.id}, Title: {theme.title}, Is Selected: {theme.is_selected}")
-        
-        selected_theme = InquiryTheme.query.filter_by(
-            student_id=current_user.id,
-            class_id=class_id,
-            is_selected=True
-        ).first()
-        
-        if selected_theme:
-            current_app.logger.info(f"Selected theme: {selected_theme.title}")
+            
+            current_app.logger.info(f"Found {len(themes)} personal themes")
+            for theme in themes:
+                current_app.logger.info(f"Theme ID: {theme.id}, Title: {theme.title}, Is Selected: {theme.is_selected}")
+            
+            selected_theme = InquiryTheme.query.filter_by(
+                student_id=current_user.id,
+                class_id=class_id,
+                is_selected=True
+            ).first()
+            
+            if selected_theme:
+                current_app.logger.info(f"Selected theme: {selected_theme.title}")
+            else:
+                current_app.logger.info("No selected theme found")
+            
+            # クラスと大テーマを取得
+            class_obj = Class.query.get_or_404(class_id)
+            current_app.logger.info(f"Class: {class_obj.name}")
+            
+            main_theme = MainTheme.query.filter_by(class_id=class_id).first()
+            if main_theme:
+                current_app.logger.info(f"Main theme found: ID={main_theme.id}, Title={main_theme.title}")
+            else:
+                current_app.logger.info("No main theme found for this class")
+            
+            # テンプレートが期待する形式でデータを準備
+            themes_with_main = []
+            for theme in themes:
+                themes_with_main.append({
+                    'theme': theme,
+                    'main_theme': main_theme  # このクラスの大テーマを関連付け
+                })
+            
+            # available_main_themesも準備（このクラスの大テーマのリスト）
+            available_main_themes = [main_theme] if main_theme else []
+            
+            current_app.logger.info(f"Prepared {len(themes_with_main)} themes_with_main items")
+            current_app.logger.info(f"Available main themes: {len(available_main_themes)}")
+            
+            # テンプレートに渡す前に確認
+            current_app.logger.info(f"=== END THEMES DEBUG ===")
+            
+            return render_template('view_themes.html',
+                                 themes_with_main=themes_with_main,
+                                 available_main_themes=available_main_themes,
+                                 selected_theme=selected_theme,
+                                 class_obj=class_obj,
+                                 main_theme=main_theme,
+                                 class_id=class_id)
         else:
-            current_app.logger.info("No selected theme found")
-        
-        # クラスと大テーマを取得
-        class_obj = Class.query.get_or_404(class_id)
-        current_app.logger.info(f"Class: {class_obj.name}")
-        
-        main_theme = MainTheme.query.filter_by(class_id=class_id).first()
-        if main_theme:
-            current_app.logger.info(f"Main theme found: ID={main_theme.id}, Title={main_theme.title}")
-        else:
-            current_app.logger.info("No main theme found for this class")
-        
-        # テンプレートが期待する形式でデータを準備
-        themes_with_main = []
-        for theme in themes:
-            themes_with_main.append({
-                'theme': theme,
-                'main_theme': main_theme  # このクラスの大テーマを関連付け
-            })
-        
-        # available_main_themesも準備（このクラスの大テーマのリスト）
-        available_main_themes = [main_theme] if main_theme else []
-        
-        current_app.logger.info(f"Prepared {len(themes_with_main)} themes_with_main items")
-        current_app.logger.info(f"Available main themes: {len(available_main_themes)}")
-        
-        # テンプレートに渡す前に確認
-        current_app.logger.info(f"=== END THEMES DEBUG ===")
-        
-        return render_template('view_themes.html',
-                             themes_with_main=themes_with_main,
-                             available_main_themes=available_main_themes,
-                             selected_theme=selected_theme,
-                             class_obj=class_obj,
-                             main_theme=main_theme,
-                             class_id=class_id)
-    else:
-        flash('学生のみアクセス可能です。')
-        return redirect(url_for('index'))
+            flash('学生のみアクセス可能です。')
+            return redirect(url_for('index'))
+    except Exception as e:
+        current_app.logger.error(f"Error in view_themes: {str(e)}")
+        flash('テーマの表示中にエラーが発生しました。')
+        return redirect(url_for('student.dashboard'))
 
 @student_bp.route('/select_theme/<int:theme_id>', methods=['POST'])
 @login_required
@@ -1132,37 +1138,42 @@ def regenerate_themes():
 @student_required
 def student_view_main_themes():
     """大テーマ一覧（クラス別）"""
-    class_id = request.args.get('class_id', type=int)
-    
-    if not class_id:
-        # クラス選択画面
-        enrollments = ClassEnrollment.query.filter_by(
+    try:
+        class_id = request.args.get('class_id', type=int)
+        
+        if not class_id:
+            # クラス選択画面
+            enrollments = ClassEnrollment.query.filter_by(
+                student_id=current_user.id,
+                is_active=True
+            ).all()
+            classes = [e.class_obj for e in enrollments]
+            return render_template('select_class_for_themes.html', 
+                                 classes=classes,
+                                 theme_type='main')
+        
+        # 選択されたクラスの大テーマを表示
+        enrollment = ClassEnrollment.query.filter_by(
             student_id=current_user.id,
+            class_id=class_id,
             is_active=True
-        ).all()
-        classes = [e.class_obj for e in enrollments]
-        return render_template('select_class_for_themes.html', 
-                             classes=classes,
-                             theme_type='main')
-    
-    # 選択されたクラスの大テーマを表示
-    enrollment = ClassEnrollment.query.filter_by(
-        student_id=current_user.id,
-        class_id=class_id,
-        is_active=True
-    ).first()
-    
-    if not enrollment:
-        flash('このクラスにアクセスする権限がありません。')
-        return redirect(url_for('student.student_view_main_themes'))
-    
-    main_theme = MainTheme.query.filter_by(class_id=class_id).first()
-    class_obj = Class.query.get_or_404(class_id)
-    
-    return render_template('student_main_themes.html',
-                         main_theme=main_theme,
-                         class_obj=class_obj,
-                         class_id=class_id)
+        ).first()
+        
+        if not enrollment:
+            flash('このクラスにアクセスする権限がありません。')
+            return redirect(url_for('student.student_view_main_themes'))
+        
+        main_theme = MainTheme.query.filter_by(class_id=class_id).first()
+        class_obj = Class.query.get_or_404(class_id)
+        
+        return render_template('student_main_themes.html',
+                             main_theme=main_theme,
+                             class_obj=class_obj,
+                             class_id=class_id)
+    except Exception as e:
+        current_app.logger.error(f"Error in student_view_main_themes: {str(e)}")
+        flash('大テーマの表示中にエラーが発生しました。')
+        return redirect(url_for('student.dashboard'))
 
 @student_bp.route('/main_theme/<int:theme_id>/create_personal', methods=['GET', 'POST'])
 @login_required

@@ -68,236 +68,264 @@
     
     <!-- クラス別探究テーマセクション（全幅） -->
     {% if class_themes %}
-    <div class="row">
+    <div class="row mb-4">
         <div class="col-12">
             <div class="dashboard-section class-themes-section">
                 <h3><i class="fas fa-graduation-cap"></i> クラス別探究テーマ</h3>
-                {% for item in class_themes %}
-                <div class="col-lg-6 col-md-12 mb-4">
-                    <div class="card h-100 class-theme-card">
-                    <div class="class-header">
-                        <h4><i class="fas fa-chalkboard"></i> {{ item.class.name }}</h4>
-                    </div>
-                    <div class="class-body">
-                        {% if item.main_theme %}
-                            <div class="main-theme-info">
-                                <h5>大テーマ</h5>
-                                <p>{{ item.main_theme.title }}</p>
-                                <a href="{{ url_for('student.student_view_main_themes', class_id=item.class.id) }}" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-book"></i> 詳細
-                                </a>
+                <div class="row">
+                    {% for item in class_themes %}
+                    <div class="col-lg-6 col-md-12 mb-4">
+                        <div class="card h-100 class-theme-card">
+                            <div class="class-header">
+                                <h4><i class="fas fa-chalkboard"></i> {{ item.class.name }}</h4>
                             </div>
-                        {% endif %}
-                        
-                        {% if item.personal_theme %}
-                            <div class="personal-theme-info">
-                                <h5>個人テーマ</h5>
-                                <p class="theme-title">{{ item.personal_theme.title }}</p>
-                                <p class="theme-question">{{ item.personal_theme.question }}</p>
-                                <div class="theme-actions">
-                                    <a href="{{ url_for('student.view_themes', class_id=item.class.id) }}" class="btn btn-sm btn-outline-info">
-                                        <i class="fas fa-lightbulb"></i> 管理
-                                    </a>
-                                    <a href="{{ url_for('student.activities', class_id=item.class.id) }}" class="btn btn-sm btn-primary">
-                                        <i class="fas fa-pen"></i> 記録
-                                    </a>
-                                </div>
+                            <div class="class-body">
+                                {% if item.main_theme %}
+                                    <div class="main-theme-info">
+                                        <h5>大テーマ</h5>
+                                        <p>{{ item.main_theme.title }}</p>
+                                        <a href="{{ url_for('student.student_view_main_themes', class_id=item.class.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-book"></i> 詳細
+                                        </a>
+                                    </div>
+                                {% endif %}
+                                
+                                {% if item.personal_theme %}
+                                    <div class="personal-theme-info">
+                                        <h5>個人テーマ</h5>
+                                        <p class="theme-title">{{ item.personal_theme.title }}</p>
+                                        <p class="theme-question">{{ item.personal_theme.question }}</p>
+                                        <div class="theme-actions">
+                                            <a href="{{ url_for('student.view_themes', class_id=item.class.id) }}" class="btn btn-sm btn-outline-info">
+                                                <i class="fas fa-lightbulb"></i> 管理
+                                            </a>
+                                            <a href="{{ url_for('student.activities', class_id=item.class.id) }}" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-pen"></i> 記録
+                                            </a>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <div class="no-personal-theme">
+                                        <p class="text-muted">個人テーマが未選択です</p>
+                                        <a href="{{ url_for('student.view_themes', class_id=item.class.id) }}" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-plus"></i> 選択する
+                                        </a>
+                                    </div>
+                                {% endif %}
                             </div>
-                        {% else %}
-                            <div class="no-personal-theme">
-                                <p class="text-muted">個人テーマが未選択です</p>
-                                <a href="{{ url_for('student.view_themes', class_id=item.class.id) }}" class="btn btn-sm btn-warning">
-                                    <i class="fas fa-plus"></i> 選択する
-                                </a>
-                            </div>
-                        {% endif %}
+                        </div>
                     </div>
-                    </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
             </div>
         </div>
     </div>
     {% endif %}
 
-        
-        <div class="dashboard-section recent-activities">
-            <h3>最近の学習記録</h3>
-            
-            {% if recent_activities %}
-                <div class="activity-list">
-                    {% for activity in recent_activities %}
-                        <div class="activity-item">
-                            <div class="activity-date">{{ activity.timestamp.strftime('%m/%d') }}</div>
-                            <div class="activity-info">
-                                <h4>{{ activity.title }}</h4>
-                                <p>{{ activity.content|truncate(80) }}</p>
-                            </div>
-                            <a href="{{ url_for('student.edit_activity', log_id=activity.id) }}" class="btn btn-sm">詳細/編集</a>
-                        </div>
-                    {% endfor %}
-                </div>
-                <div class="section-actions">
-                    <a href="{{ url_for('student.activities') }}" class="btn btn-sm">すべての学習記録を見る</a>
-                    <a href="{{ url_for('student.new_activity') }}" class="btn btn-sm btn-primary">新しい学習記録の作成</a>
-                </div>
-            {% else %}
-                <div class="no-activities">
-                    <p>まだ活動記録がありません</p>
-                    {% if selected_theme %}
-                        <a href="{{ url_for('student.new_activity') }}" class="btn btn-primary">学習内容を記録する</a>
-                    {% else %}
-                        <p class="help-text">学習記録にはテーマ選択が必要です</p>
-                    {% endif %}
-                </div>
-            {% endif %}
-        </div>
-        
-        <div class="dashboard-section upcoming-milestones">
-            <h3>今後のマイルストーン</h3>
-            
-            {% if upcoming_milestones %}
-                <div class="milestone-list">
-                    {% for milestone_data in upcoming_milestones %}
-                        <div class="milestone-item">
-                            <div class="milestone-class">{{ milestone_data.class_name }}</div>
-                            <div class="milestone-info">
-                                <h4>{{ milestone_data.title }}</h4>
-                                <div class="due-date {% if milestone_data.days_remaining <= 3 %}urgent{% endif %}">
-                                    期限: {{ milestone_data.due_date.strftime('%Y年%m月%d日') }}
-                                    (あと{{ milestone_data.days_remaining }}日)
+    <!-- 最近の学習記録セクション -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="dashboard-section recent-activities">
+                <h3>最近の学習記録</h3>
+                
+                {% if recent_activities %}
+                    <div class="activity-list">
+                        {% for activity in recent_activities %}
+                            <div class="activity-item">
+                                <div class="activity-date">{{ activity.timestamp.strftime('%m/%d') }}</div>
+                                <div class="activity-info">
+                                    <h4>{{ activity.title }}</h4>
+                                    <p>{{ activity.content|truncate(80) }}</p>
                                 </div>
+                                <a href="{{ url_for('student.edit_activity', log_id=activity.id) }}" class="btn btn-sm">詳細/編集</a>
                             </div>
-                            <a href="{{ url_for('teacher.view_milestone', milestone_id=milestone_data.id) }}" class="btn btn-sm">詳細</a>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="no-milestones">
-                    <p>現在期限の迫っているマイルストーンはありません</p>
-                </div>
-            {% endif %}
-        </div>
-
-        <!-- 新しく追加するアカウント設定セクション -->
-        <div class="dashboard-section account-settings">
-            <h3>アカウント設定</h3>
-            <div class="settings-actions">
-                <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-primary">
-                    <i class="fas fa-key"></i> パスワード変更
-                </a>
+                        {% endfor %}
+                    </div>
+                    <div class="section-actions">
+                        <a href="{{ url_for('student.activities') }}" class="btn btn-sm">すべての学習記録を見る</a>
+                        <a href="{{ url_for('student.new_activity') }}" class="btn btn-sm btn-primary">新しい学習記録の作成</a>
+                    </div>
+                {% else %}
+                    <div class="no-activities">
+                        <p>まだ活動記録がありません</p>
+                        {% if selected_theme %}
+                            <a href="{{ url_for('student.new_activity') }}" class="btn btn-primary">学習内容を記録する</a>
+                        {% else %}
+                            <p class="help-text">学習記録にはテーマ選択が必要です</p>
+                        {% endif %}
+                    </div>
+                {% endif %}
             </div>
         </div>
-
-        <div class="dashboard-section my-todos">
-            <div class="d-flex justify-content-between align-items-center">
-                <h3>To Doリスト</h3>
-                <a href="{{ url_for('student.todos') }}" class="btn btn-sm">すべて表示</a>
+    </div>
+    
+    <!-- 今後のマイルストーンセクション -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="dashboard-section upcoming-milestones">
+                <h3>今後のマイルストーン</h3>
+                
+                {% if upcoming_milestones %}
+                    <div class="milestone-list">
+                        {% for milestone_data in upcoming_milestones %}
+                            <div class="milestone-item">
+                                <div class="milestone-class">{{ milestone_data.class_name }}</div>
+                                <div class="milestone-info">
+                                    <h4>{{ milestone_data.title }}</h4>
+                                    <div class="due-date {% if milestone_data.days_remaining <= 3 %}urgent{% endif %}">
+                                        期限: {{ milestone_data.due_date.strftime('%Y年%m月%d日') }}
+                                        (あと{{ milestone_data.days_remaining }}日)
+                                    </div>
+                                </div>
+                                <a href="{{ url_for('teacher.view_milestone', milestone_id=milestone_data.id) }}" class="btn btn-sm">詳細</a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="no-milestones">
+                        <p>現在期限の迫っているマイルストーンはありません</p>
+                    </div>
+                {% endif %}
             </div>
-            
-            {% if todos %}
-                <div class="todo-list">
-                    {% for todo in todos[:3] %}
-                        <div class="todo-item {% if todo.is_completed %}completed{% endif %}">
-                            <div class="todo-status">
-                                {% if todo.is_completed %}
-                                    <span class="status-icon completed"><i class="fas fa-check-circle"></i></span>
-                                {% else %}
-                                    <span class="status-icon pending"><i class="far fa-circle"></i></span>
-                                {% endif %}
-                            </div>
-                            <div class="todo-info">
-                                <h4>{{ todo.title }}</h4>
-                                {% if todo.due_date %}
-                                    <span class="due-date {% if todo.due_date < today and not todo.is_completed %}urgent{% endif %}">
-                                        期限: {{ todo.due_date.strftime('%Y/%m/%d') }}
-                                    </span>
-                                {% endif %}
-                            </div>
-                            <a href="{{ url_for('student.edit_todo', todo_id=todo.id) }}" class="btn btn-sm">詳細/編集</a>
-                        </div>
-                    {% endfor %}
-                </div>
-                <div class="section-actions">
-                    <a href="{{ url_for('student.new_todo') }}" class="btn btn-sm btn-primary">新規作成</a>
-                </div>
-            {% else %}
-                <div class="no-todos">
-                    <p>To Doがまだありません</p>
-                    <a href="{{ url_for('student.new_todo') }}" class="btn btn-primary">To Doを作成する</a>
-                </div>
-            {% endif %}
         </div>
+    </div>
 
-        <div class="dashboard-section my-classes">
-            <h3>所属クラス</h3>
-            
-            {% if classes %}
-                <div class="class-list">
-                    {% for class in classes %}
-                        <div class="class-item">
-                            <h4>{{ class.name }}</h4>
-                            <p>{% if class.description is not none %}{{ class.description|truncate(50) }}{% else %}説明なし{% endif %}</p>
-                            <a href="{{ url_for('teacher.view_class', class_id=class.id) }}" class="btn btn-sm">詳細</a>
-                        </div>
-                    {% endfor %}
+    <!-- To Doリストとアカウント設定セクション -->
+    <div class="row mb-4">
+        <div class="col-lg-6 col-md-12 mb-4">
+            <div class="dashboard-section my-todos">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h3>To Doリスト</h3>
+                    <a href="{{ url_for('student.todos') }}" class="btn btn-sm">すべて表示</a>
                 </div>
-            {% else %}
-                <div class="no-classes">
-                    <p>まだクラスに所属していません</p>
-                </div>
-            {% endif %}
+                
+                {% if todos %}
+                    <div class="todo-list">
+                        {% for todo in todos[:3] %}
+                            <div class="todo-item {% if todo.is_completed %}completed{% endif %}">
+                                <div class="todo-status">
+                                    {% if todo.is_completed %}
+                                        <span class="status-icon completed"><i class="fas fa-check-circle"></i></span>
+                                    {% else %}
+                                        <span class="status-icon pending"><i class="far fa-circle"></i></span>
+                                    {% endif %}
+                                </div>
+                                <div class="todo-info">
+                                    <h4>{{ todo.title }}</h4>
+                                    {% if todo.due_date %}
+                                        <span class="due-date {% if todo.due_date < today and not todo.is_completed %}urgent{% endif %}">
+                                            期限: {{ todo.due_date.strftime('%Y/%m/%d') }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                <a href="{{ url_for('student.edit_todo', todo_id=todo.id) }}" class="btn btn-sm">詳細/編集</a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="section-actions">
+                        <a href="{{ url_for('student.new_todo') }}" class="btn btn-sm btn-primary">新規作成</a>
+                    </div>
+                {% else %}
+                    <div class="no-todos">
+                        <p>To Doがまだありません</p>
+                        <a href="{{ url_for('student.new_todo') }}" class="btn btn-primary">To Doを作成する</a>
+                    </div>
+                {% endif %}
+            </div>
         </div>
-        <div class="dashboard-section basebuilder-summary">
-            <h3>基礎学力トレーニング</h3>
-            {% if delivered_texts %}
-               <div class="delivered-texts mb-3">
-                   <h4>配信されたテキスト</h4>
-                   <div class="text-list">
-                       {% for item in delivered_texts[:3] %}
-                           <div class="text-item mb-2 p-2 bg-light rounded">
-                               <div class="d-flex justify-content-between align-items-center">
-                                   <div>
-                                       <h5 class="mb-1">{{ item.text_set.title }}</h5>
-                                       <small class="text-muted">
-                                           {{ item.delivery.delivered_at.strftime('%Y年%m月%d日') }} 配信
-                                           {% if item.delivery.due_date %}
-                                               | 期限: {{ item.delivery.due_date.strftime('%Y年%m月%d日') }}
+        
+        <div class="col-lg-6 col-md-12 mb-4">
+            <div class="dashboard-section my-classes">
+                <h3>所属クラス</h3>
+                
+                {% if classes %}
+                    <div class="class-list">
+                        {% for class in classes %}
+                            <div class="class-item">
+                                <h4>{{ class.name }}</h4>
+                                <p>{% if class.description is not none %}{{ class.description|truncate(50) }}{% else %}説明なし{% endif %}</p>
+                                <a href="{{ url_for('teacher.view_class', class_id=class.id) }}" class="btn btn-sm">詳細</a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="no-classes">
+                        <p>まだクラスに所属していません</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- アカウント設定セクション -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="dashboard-section account-settings">
+                <h3>アカウント設定</h3>
+                <div class="settings-actions">
+                    <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-key"></i> パスワード変更
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 基礎学力トレーニングセクション -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="dashboard-section basebuilder-summary">
+                <h3>基礎学力トレーニング</h3>
+                {% if delivered_texts %}
+                   <div class="delivered-texts mb-3">
+                       <h4>配信されたテキスト</h4>
+                       <div class="text-list">
+                           {% for item in delivered_texts[:3] %}
+                               <div class="text-item mb-2 p-2 bg-light rounded">
+                                   <div class="d-flex justify-content-between align-items-center">
+                                       <div>
+                                           <h5 class="mb-1">{{ item.text_set.title }}</h5>
+                                           <small class="text-muted">
+                                               {{ item.delivery.delivered_at.strftime('%Y年%m月%d日') }} 配信
+                                               {% if item.delivery.due_date %}
+                                                   | 期限: {{ item.delivery.due_date.strftime('%Y年%m月%d日') }}
+                                               {% endif %}
+                                           </small>
+                                       </div>
+                                       <div class="text-right">
+                                           {% if item.proficiency %}
+                                               <span class="badge 
+                                                   {% if item.proficiency.level >= 80 %}badge-success
+                                                   {% elif item.proficiency.level >= 50 %}badge-primary
+                                                   {% elif item.proficiency.level >= 30 %}badge-warning
+                                                   {% else %}badge-danger{% endif %}">
+                                                   進捗: {{ item.proficiency.level }}%
+                                               </span>
+                                           {% else %}
+                                               <span class="badge badge-secondary">未着手</span>
                                            {% endif %}
-                                       </small>
-                                   </div>
-                                   <div class="text-right">
-                                       {% if item.proficiency %}
-                                           <span class="badge 
-                                               {% if item.proficiency.level >= 80 %}badge-success
-                                               {% elif item.proficiency.level >= 50 %}badge-primary
-                                               {% elif item.proficiency.level >= 30 %}badge-warning
-                                               {% else %}badge-danger{% endif %}">
-                                               進捗: {{ item.proficiency.level }}%
-                                           </span>
-                                       {% else %}
-                                           <span class="badge badge-secondary">未着手</span>
-                                       {% endif %}
+                                       </div>
                                    </div>
                                </div>
-                           </div>
-                       {% endfor %}
+                           {% endfor %}
+                       </div>
+                       {% if delivered_texts|length > 3 %}
+                           <p class="text-muted text-center mt-2">他{{ delivered_texts|length - 3 }}件のテキストがあります</p>
+                       {% endif %}
                    </div>
-                   {% if delivered_texts|length > 3 %}
-                       <p class="text-muted text-center mt-2">他{{ delivered_texts|length - 3 }}件のテキストがあります</p>
-                   {% endif %}
+                {% else %}
+                   <div class="alert alert-info">
+                        配信されたテキストがまだありません。
+                   </div>
+                {% endif %}
+        
+                <div class="section-actions">
+                    <a href="{{ url_for('basebuilder_module.index') }}" class="btn btn-primary">基礎学力ホームへ</a>
+                    <a href="{{ url_for('basebuilder_module.my_texts') }}" class="btn btn-outline-primary">配信テキスト一覧</a>
                </div>
-            {% else %}
-               <div class="alert alert-info">
-                    配信されたテキストがまだありません。
-               </div>
-            {% endif %}
-    
-            <div class="section-actions">
-                <a href="{{ url_for('basebuilder_module.index') }}" class="btn btn-primary">基礎学力ホームへ</a>
-                <a href="{{ url_for('basebuilder_module.my_texts') }}" class="btn btn-outline-primary">配信テキスト一覧</a>
            </div>
-       </div>
+        </div>
+    </div>
     </div>
 </div>
 {% endblock %}
