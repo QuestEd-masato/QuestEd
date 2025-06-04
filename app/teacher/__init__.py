@@ -1092,7 +1092,7 @@ def generate_student_report(class_id, student_id):
         activities = ActivityLog.query.filter_by(
             student_id=student_id,
             class_id=class_id
-        ).order_by(ActivityLog.created_at.desc()).limit(50).all()
+        ).order_by(ActivityLog.timestamp.desc()).limit(50).all()
         
         # チャット履歴を取得（最新100件）
         chat_histories = ChatHistory.query.filter_by(
