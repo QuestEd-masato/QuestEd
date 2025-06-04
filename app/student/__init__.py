@@ -459,7 +459,6 @@ def new_activity():
                     filename = f"{timestamp}_{filename}"
                     
                     # 保存パスを作成
-                    from flask import current_app
                     upload_folder = current_app.config['UPLOAD_FOLDER']
                     if not os.path.exists(upload_folder):
                         os.makedirs(upload_folder)
@@ -1140,14 +1139,17 @@ def student_view_main_themes():
     """大テーマ一覧（クラス別）"""
     try:
         class_id = request.args.get('class_id', type=int)
+        current_app.logger.info(f"student_view_main_themes: user={current_user.id}, class_id={class_id}")
         
         if not class_id:
             # クラス選択画面
+            current_app.logger.info(f"No class_id provided, showing class selection")
             enrollments = ClassEnrollment.query.filter_by(
                 student_id=current_user.id,
                 is_active=True
             ).all()
             classes = [e.class_obj for e in enrollments]
+            current_app.logger.info(f"Found {len(classes)} enrolled classes")
             return render_template('select_class_for_themes.html', 
                                  classes=classes,
                                  theme_type='main')
@@ -1165,6 +1167,9 @@ def student_view_main_themes():
         
         main_theme = MainTheme.query.filter_by(class_id=class_id).first()
         class_obj = Class.query.get_or_404(class_id)
+        
+        current_app.logger.info(f"Main theme found: {main_theme.title if main_theme else 'None'}")
+        current_app.logger.info(f"Class: {class_obj.name}")
         
         return render_template('student_main_themes.html',
                              main_theme=main_theme,

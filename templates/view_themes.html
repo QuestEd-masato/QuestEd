@@ -143,7 +143,7 @@
                 <div class="theme-option-card">
                     <h4><i class="fas fa-pencil-alt"></i> 自分でテーマを考える</h4>
                     <p>自分自身の興味関心に基づいて探究テーマを設定します。</p>
-                    <form method="GET" action="{{ url_for('student.create_personal_theme') }}" class="theme-select-form">
+                    <form method="GET" action="#" class="theme-select-form" onsubmit="return submitCreateThemeForm(this)">
                         <div class="mb-3">
                             <select name="theme_id" class="form-control" id="createThemeSelect" required>
                                 <option value="">大テーマを選択してください</option>
@@ -451,6 +451,16 @@
 
 {% block extra_js %}
 <script>
+function submitCreateThemeForm(form) {
+    var themeId = form.theme_id.value;
+    if (themeId) {
+        var createUrl = "{{ url_for('student.create_personal_theme', theme_id='PLACEHOLDER') }}";
+        form.action = createUrl.replace('PLACEHOLDER', themeId);
+        return true;
+    }
+    return false;
+}
+
     document.addEventListener('DOMContentLoaded', function() {
         // Bootstrap 5のドロップダウンを手動で初期化
         var dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'));
