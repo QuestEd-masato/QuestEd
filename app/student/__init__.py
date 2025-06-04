@@ -949,8 +949,10 @@ def view_themes():
     if current_user.role == 'student':
         class_id = request.args.get('class_id', type=int)
         
-        # デバッグログを追加
-        current_app.logger.info(f"Themes page accessed - user_id: {current_user.id}, class_id: {class_id}")
+        # デバッグ: ユーザーとクラスIDを確認
+        current_app.logger.info(f"=== THEMES DEBUG ===")
+        current_app.logger.info(f"User ID: {current_user.id}, Username: {current_user.username}")
+        current_app.logger.info(f"Class ID: {class_id}")
         
         if not class_id:
             # クラス選択画面
@@ -980,8 +982,9 @@ def view_themes():
             class_id=class_id
         ).all()
         
-        # デバッグログ
-        current_app.logger.info(f"Found {len(themes)} themes for user {current_user.id} in class {class_id}")
+        current_app.logger.info(f"Found {len(themes)} personal themes")
+        for theme in themes:
+            current_app.logger.info(f"Theme ID: {theme.id}, Title: {theme.title}, Is Selected: {theme.is_selected}")
         
         selected_theme = InquiryTheme.query.filter_by(
             student_id=current_user.id,
@@ -989,11 +992,23 @@ def view_themes():
             is_selected=True
         ).first()
         
-        class_obj = Class.query.get_or_404(class_id)
-        main_theme = MainTheme.query.filter_by(class_id=class_id).first()
+        if selected_theme:
+            current_app.logger.info(f"Selected theme: {selected_theme.title}")
+        else:
+            current_app.logger.info("No selected theme found")
         
-        # デバッグログ
-        current_app.logger.info(f"Main theme found: {main_theme.title if main_theme else 'None'}")
+        # クラスと大テーマを取得
+        class_obj = Class.query.get_or_404(class_id)
+        current_app.logger.info(f"Class: {class_obj.name}")
+        
+        main_theme = MainTheme.query.filter_by(class_id=class_id).first()
+        if main_theme:
+            current_app.logger.info(f"Main theme found: ID={main_theme.id}, Title={main_theme.title}")
+        else:
+            current_app.logger.info("No main theme found for this class")
+        
+        # テンプレートに渡す前に確認
+        current_app.logger.info(f"=== END THEMES DEBUG ===")
         
         return render_template('view_themes.html',
                              themes=themes,
