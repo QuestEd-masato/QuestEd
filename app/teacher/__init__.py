@@ -1039,7 +1039,7 @@ def api_teacher_first_class():
         return jsonify({'class_id': None})
 
 # チャット機能
-@teacher_bp.route('/chat')
+@teacher_bp.route('/teacher_chat')
 @login_required
 def chat_page():
     """チャットページ"""

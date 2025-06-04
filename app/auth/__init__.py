@@ -336,3 +336,52 @@ def change_password():
             return redirect(url_for('index'))
     
     return render_template('change_password.html')
+
+@auth_bp.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    """ユーザープロフィール表示・編集"""
+    if request.method == 'POST':
+        # フォームデータ取得
+        username = request.form.get('username')
+        email = request.form.get('email')
+        
+        # 入力検証
+        if not username or not email:
+            flash('ユーザー名とメールアドレスは必須です。')
+            return render_template('profile.html', user=current_user)
+        
+        # 他のユーザーとの重複チェック（自分以外）
+        existing_user = User.query.filter(
+            User.username == username,
+            User.id != current_user.id
+        ).first()
+        if existing_user:
+            flash('そのユーザー名は既に使用されています。')
+            return render_template('profile.html', user=current_user)
+        
+        existing_email = User.query.filter(
+            User.email == email,
+            User.id != current_user.id
+        ).first()
+        if existing_email:
+            flash('そのメールアドレスは既に使用されています。')
+            return render_template('profile.html', user=current_user)
+        
+        try:
+            # ユーザー情報を更新
+            current_user.username = username
+            current_user.email = email
+            db.session.commit()
+            
+            flash('プロフィールが更新されました。')
+            return redirect(url_for('auth.profile'))
+            
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"プロフィール更新エラー: {e}")
+            flash('プロフィールの更新に失敗しました。')
+            return render_template('profile.html', user=current_user)
+    
+    # GETリクエスト: プロフィール表示
+    return render_template('profile.html', user=current_user)
