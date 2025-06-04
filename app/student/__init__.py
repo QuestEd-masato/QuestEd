@@ -204,9 +204,9 @@ def interest_survey():
     """興味関心アンケート"""
     existing_survey = InterestSurvey.query.filter_by(student_id=current_user.id).first()
     
+    # 既存のアンケートがある場合は編集画面にリダイレクト
     if existing_survey:
-        flash('既に興味関心アンケートを提出しています。編集する場合は編集ボタンを使用してください。')
-        return redirect(url_for('student.surveys'))
+        return redirect(url_for('student.interest_survey_edit'))
     
     if request.method == 'POST':
         responses = {
@@ -238,7 +238,7 @@ def interest_survey_edit():
     survey = InterestSurvey.query.filter_by(student_id=current_user.id).first()
     
     if not survey:
-        flash('編集するアンケートが見つかりません。')
+        flash('アンケートが見つかりません。新しく作成してください。')
         return redirect(url_for('student.interest_survey'))
     
     if request.method == 'POST':
@@ -269,9 +269,9 @@ def personality_survey():
     """性格・特性アンケート"""
     existing_survey = PersonalitySurvey.query.filter_by(student_id=current_user.id).first()
     
+    # 既存のアンケートがある場合は編集画面にリダイレクト
     if existing_survey:
-        flash('既に性格・特性アンケートを提出しています。編集する場合は編集ボタンを使用してください。')
-        return redirect(url_for('student.surveys'))
+        return redirect(url_for('student.personality_survey_edit'))
     
     if request.method == 'POST':
         responses = {
@@ -303,7 +303,7 @@ def personality_survey_edit():
     survey = PersonalitySurvey.query.filter_by(student_id=current_user.id).first()
     
     if not survey:
-        flash('編集するアンケートが見つかりません。')
+        flash('アンケートが見つかりません。新しく作成してください。')
         return redirect(url_for('student.personality_survey'))
     
     if request.method == 'POST':

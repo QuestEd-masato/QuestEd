@@ -19,7 +19,7 @@
             
             <div class="status-cards">
                 <div class="status-card {% if interest_survey %}completed{% else %}pending{% endif %}">
-                    <h4>興味・関心アンケート</h4>
+                    <h4>好きなこと・興味のあることアンケート</h4>
                     {% if interest_survey %}
                        <span class="status-badge">完了</span>
                     {% if interest_survey.submitted_at is defined and interest_survey.submitted_at is not none %}
@@ -27,17 +27,17 @@
                     {% else %}
                        <p>回答済み</p>
                     {% endif %}
-                       <a href="{{ url_for('student.interest_survey') }}" class="btn btn-sm">編集する</a>
+                       <a href="{{ url_for('student.interest_survey_edit') }}" class="btn btn-sm">編集する</a>
                     {% else %}
                            
                         <span class="status-badge">未回答</span>
-                        <p>あなたの興味・関心を教えてください</p>
+                        <p>あなたの好きなことや興味のあることを教えてください</p>
                         <a href="{{ url_for('student.interest_survey') }}" class="btn btn-sm btn-primary">回答する</a>
                     {% endif %}
                 </div>
                 
                 <div class="status-card {% if personality_survey %}completed{% else %}pending{% endif %}">
-                    <h4>性格診断アンケート</h4>
+                    <h4>学習スタイルアンケート</h4>
                     {% if personality_survey %}
                         <span class="status-badge">完了</span>
                     {% if personality_survey is defined and personality_survey.submitted_at is defined and personality_survey.submitted_at is not none %}
@@ -46,10 +46,10 @@
                         <p>回答済み</p>
                     {% endif %}
 
-                        <a href="{{ url_for('student.personality_survey') }}" class="btn btn-sm">編集する</a>
+                        <a href="{{ url_for('student.personality_survey_edit') }}" class="btn btn-sm">編集する</a>
                     {% else %}
                         <span class="status-badge">未回答</span>
-                        <p>あなたの学習スタイルを知るために回答してください</p>
+                        <p>あなたの学習の仕方を知るために回答してください</p>
                         <a href="{{ url_for('student.personality_survey') }}" class="btn btn-sm btn-primary">回答する</a>
                     {% endif %}
                 </div>

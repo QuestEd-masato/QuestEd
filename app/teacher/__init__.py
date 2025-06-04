@@ -16,9 +16,21 @@ from app.models import (
     ActivityLog, Goal, Todo
 )
 from app.ai import generate_student_evaluation, generate_curriculum_with_ai
-from app.ai.helpers import generate_activity_summary
+
+# Conditional import to avoid circular imports
+try:
+    from app.ai.helpers import generate_activity_summary
+except ImportError:
+    def generate_activity_summary(*args, **kwargs):
+        return "活動概要の生成に失敗しました。"
 from app.models import ChatHistory
-from .pdf_generator import generate_student_report_pdf
+
+# Conditional import for PDF generator
+try:
+    from .pdf_generator import generate_student_report_pdf
+except ImportError:
+    def generate_student_report_pdf(*args, **kwargs):
+        return None
 
 teacher_bp = Blueprint('teacher', __name__)
 
