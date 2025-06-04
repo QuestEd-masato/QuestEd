@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}テーマ{% if theme.id == 0 %}作成{% else %}編集{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>テーマ{% if theme.id == 0 %}作成{% else %}編集{% endif %}</h2>
+    
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% if theme.id == 0 %}
+        <input type="hidden" name="class_id" value="{{ class_id }}">
+        {% endif %}
+        
+        <div class="form-group">
+            <label>タイトル <span class="text-danger">*</span></label>
+            <input type="text" name="title" class="form-control" value="{{ theme.title }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label>探究したい問い</label>
+            <input type="text" name="question" class="form-control" value="{{ theme.question }}">
+        </div>
+        
+        <div class="form-group">
+            <label>説明</label>
+            <textarea name="description" class="form-control" rows="3">{{ theme.description }}</textarea>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">保存</button>
+        <a href="{{ url_for('student.view_themes', class_id=theme.class_id or class_id) }}" class="btn btn-secondary">キャンセル</a>
+    </form>
+</div>
+{% endblock %}

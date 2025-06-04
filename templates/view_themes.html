@@ -140,46 +140,9 @@
                 <div class="theme-option-card">
                     <h4><i class="fas fa-pencil-alt"></i> 自分でテーマを考える</h4>
                     <p>自分自身の興味関心に基づいて探究テーマを設定します。</p>
-                    <form method="POST" action="{{ url_for('student.create_personal_theme_new') }}">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <input type="hidden" name="class_id" value="{{ class_id }}">
-                        {% if main_theme %}
-                        <input type="hidden" name="main_theme_id" value="{{ main_theme.id }}">
-                        {% endif %}
-                        <div class="form-group mb-3">
-                            <label>テーマのタイトル <span class="text-danger">*</span></label>
-                            <input type="text" name="theme_title" class="form-control" 
-                                   placeholder="例：地域のお菓子文化について" required>
-                        </div>
-                        
-                        <div class="form-group mb-3">
-                            <label>探究したい問い</label>
-                            <input type="text" name="question" class="form-control" 
-                                   placeholder="例：なぜこの地域でこのお菓子が愛されているのか？">
-                        </div>
-                        
-                        <div class="form-group mb-3">
-                            <label>テーマの説明</label>
-                            <textarea name="theme_description" class="form-control" rows="3" 
-                                      placeholder="このテーマについて詳しく説明してください"></textarea>
-                        </div>
-                        
-                        <div class="form-group mb-3">
-                            <label>選んだ理由</label>
-                            <textarea name="rationale" class="form-control" rows="2" 
-                                      placeholder="なぜこのテーマを選んだのか"></textarea>
-                        </div>
-                        
-                        <div class="form-group mb-3">
-                            <label>探究の方法</label>
-                            <textarea name="approach" class="form-control" rows="2" 
-                                      placeholder="どのように探究を進めるか"></textarea>
-                        </div>
-                        
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> テーマを作成
-                        </button>
-                    </form>
+                    <a href="{{ url_for('student.edit_theme', theme_id=0) }}?class_id={{ class_id }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> 新しいテーマを作成
+                    </a>
                 </div>
                 
                 <div class="theme-option-card">

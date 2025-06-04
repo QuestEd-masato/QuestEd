@@ -1451,27 +1451,74 @@ def generate_theme_ai():
 @login_required
 @student_required
 def edit_theme(theme_id):
-    """テーマ編集"""
-    theme = InquiryTheme.query.get_or_404(theme_id)
+    """テーマ編集・作成"""
     
-    # 権限チェック
-    if theme.student_id != current_user.id:
-        flash('このテーマを編集する権限がありません。')
-        return redirect(url_for('student.view_themes'))
-    
-    if request.method == 'POST':
-        theme.title = request.form.get('title', theme.title)
-        theme.question = request.form.get('question', theme.question)
-        theme.description = request.form.get('description', theme.description)
-        theme.rationale = request.form.get('rationale', theme.rationale)
-        theme.approach = request.form.get('approach', theme.approach)
-        theme.potential = request.form.get('potential', theme.potential)
+    if theme_id == 0:
+        # New theme creation
+        class_id = request.args.get('class_id', type=int)
+        if not class_id:
+            flash('クラスIDが指定されていません。')
+            return redirect(url_for('student.view_themes'))
         
-        db.session.commit()
-        flash('テーマを更新しました。')
-        return redirect(url_for('student.view_themes'))
+        # Check enrollment
+        enrollment = ClassEnrollment.query.filter_by(
+            student_id=current_user.id,
+            class_id=class_id,
+            is_active=True
+        ).first()
+        
+        if not enrollment:
+            flash('このクラスにアクセスする権限がありません。')
+            return redirect(url_for('student.view_themes'))
+        
+        # Create empty theme
+        theme = InquiryTheme()
+        theme.id = 0
+        theme.class_id = class_id
+        theme.title = ''
+        theme.question = ''
+        theme.description = ''
+        
+        if request.method == 'GET':
+            return render_template('edit_theme_simple.html', theme=theme, class_id=class_id)
+        
+        if request.method == 'POST':
+            # Create new theme
+            theme = InquiryTheme(
+                student_id=current_user.id,
+                class_id=request.form.get('class_id', type=int),
+                title=request.form.get('title', ''),
+                question=request.form.get('question', ''),
+                description=request.form.get('description', ''),
+                is_selected=True
+            )
+            db.session.add(theme)
+            db.session.commit()
+            flash('新しいテーマを作成しました。')
+            return redirect(url_for('student.view_themes', class_id=theme.class_id))
     
-    return render_template('edit_theme.html', theme=theme)
+    else:
+        # Existing theme editing
+        theme = InquiryTheme.query.get_or_404(theme_id)
+        
+        # 権限チェック
+        if theme.student_id != current_user.id:
+            flash('このテーマを編集する権限がありません。')
+            return redirect(url_for('student.view_themes'))
+        
+        if request.method == 'POST':
+            theme.title = request.form.get('title', theme.title)
+            theme.question = request.form.get('question', theme.question)
+            theme.description = request.form.get('description', theme.description)
+            theme.rationale = request.form.get('rationale', theme.rationale)
+            theme.approach = request.form.get('approach', theme.approach)
+            theme.potential = request.form.get('potential', theme.potential)
+            
+            db.session.commit()
+            flash('テーマを更新しました。')
+            return redirect(url_for('student.view_themes'))
+        
+        return render_template('edit_theme_simple.html', theme=theme, class_id=getattr(theme, 'class_id', None))
 
 # マイルストーン関連
 @student_bp.route('/milestone/<int:milestone_id>')
@@ -1620,10 +1667,14 @@ def leave_group(group_id):
 @login_required
 def chat_page():
     """チャットページ（クラス別）"""
-    current_app.logger.info(f"Chat page access - User: {current_user.username}, Role: {current_user.role}, ID: {current_user.id}")
+    current_app.logger.error(f"CHAT DEBUG - User: {current_user.username}, Role: '{current_user.role}', Type: {type(current_user.role)}")
+
+    # Force string comparison
+    user_role = str(current_user.role).strip().lower()
+    current_app.logger.error(f"CHAT DEBUG - Normalized role: '{user_role}'")
     
-    # 学生の場合はクラス選択が必要
-    if current_user.role == 'student':  # 明示的に'student'をチェック
+    if user_role == 'student':
+        # Student logic
         class_id = request.args.get('class_id', type=int)
         
         if not class_id:
@@ -1722,7 +1773,7 @@ def chat_page():
                              selected_class=selected_class)
     
     # 教師の場合
-    elif current_user.role == 'teacher':
+    elif user_role == 'teacher':
         current_app.logger.info(f"Teacher {current_user.username} - direct chat access")
         
         # 教師のチャット履歴を取得（クラス指定なし）
@@ -1742,3 +1793,16 @@ def chat_page():
         current_app.logger.error(f"Unknown role: {current_user.role} for user {current_user.username}")
         flash('アクセス権限がありません。')
         return redirect(url_for('index'))
+
+# デバッグ用ルート
+@student_bp.route('/debug_role')
+@login_required
+def debug_role():
+    """ユーザー役割のデバッグ情報を返す"""
+    from flask import jsonify
+    return jsonify({
+        'username': current_user.username,
+        'role': current_user.role,
+        'role_type': str(type(current_user.role)),
+        'id': current_user.id
+    })
