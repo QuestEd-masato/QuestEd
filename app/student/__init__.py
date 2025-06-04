@@ -978,14 +978,17 @@ def view_themes():
                 return redirect(url_for('student.view_themes'))
             
             # 個人テーマを取得
+            current_app.logger.info(f"Fetching themes for user_id={current_user.id}, class_id={class_id}")
             themes = InquiryTheme.query.filter_by(
                 student_id=current_user.id,
                 class_id=class_id
-            ).all()
+            ).order_by(InquiryTheme.created_at.desc()).all()
             
             current_app.logger.info(f"Found {len(themes)} personal themes")
+            
+            # デバッグ用：各テーマの情報をログ出力
             for theme in themes:
-                current_app.logger.info(f"Theme ID: {theme.id}, Title: {theme.title}, Is Selected: {theme.is_selected}")
+                current_app.logger.info(f"Theme: id={theme.id}, title={theme.title}, is_selected={theme.is_selected}, class_id={theme.class_id}, created_at={theme.created_at}")
             
             selected_theme = InquiryTheme.query.filter_by(
                 student_id=current_user.id,
@@ -1667,14 +1670,15 @@ def leave_group(group_id):
 @login_required
 def chat_page():
     """チャットページ（クラス別）"""
-    current_app.logger.error(f"CHAT DEBUG - User: {current_user.username}, Role: '{current_user.role}', Type: {type(current_user.role)}")
+    current_app.logger.info(f"CHAT ACCESS - User: {current_user.username}, Role: '{current_user.role}', Type: {type(current_user.role)}")
 
-    # Force string comparison
+    # Force string comparison with more robust handling
     user_role = str(current_user.role).strip().lower()
-    current_app.logger.error(f"CHAT DEBUG - Normalized role: '{user_role}'")
+    current_app.logger.info(f"CHAT DEBUG - Normalized role: '{user_role}', Original role: '{current_user.role}'")
     
+    # 学生の場合（studentを先にチェック）
     if user_role == 'student':
-        # Student logic
+        current_app.logger.info(f"Student chat access - User: {current_user.username}")
         class_id = request.args.get('class_id', type=int)
         
         if not class_id:
@@ -1684,7 +1688,7 @@ def chat_page():
                 is_active=True
             ).all()
             classes = [e.class_obj for e in enrollments]
-            current_app.logger.info(f"Student {current_user.username} - showing class selection, {len(classes)} classes found")
+            current_app.logger.info(f"Showing class selection - {len(classes)} classes found")
             return render_template('select_class_for_chat.html', classes=classes)
         
         # クラスが指定されている場合は所属確認
@@ -1774,7 +1778,7 @@ def chat_page():
     
     # 教師の場合
     elif user_role == 'teacher':
-        current_app.logger.info(f"Teacher {current_user.username} - direct chat access")
+        current_app.logger.info(f"Teacher chat access - User: {current_user.username}")
         
         # 教師のチャット履歴を取得（クラス指定なし）
         chat_history = ChatHistory.query.filter_by(
