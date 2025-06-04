@@ -1407,11 +1407,8 @@ def generate_theme_ai():
             current_app.logger.info(f"Generating AI themes for main_theme: {main_theme.title}")
             themes = generate_personal_themes_with_ai(
                 main_theme=main_theme,
-                personality_survey=surveys['personality_survey'],
-                interest_survey_responses=surveys['interest_survey_responses'],
-                learning_survey=surveys['learning_survey'],
-                goal_survey=surveys['goal_survey'],
-                additional_interests=interests
+                interest_responses=surveys.get('interest_survey_responses', {}),
+                personality_responses=surveys.get('personality_survey', {})
             )
             
             # 既存のテーマの選択を解除

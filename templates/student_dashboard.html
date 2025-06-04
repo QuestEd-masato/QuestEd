@@ -102,14 +102,22 @@
                                             <a href="{{ url_for('student.activities', class_id=item.class.id) }}" class="btn btn-sm btn-primary">
                                                 <i class="fas fa-pen"></i> 記録
                                             </a>
+                                            <a href="{{ url_for('student.chat_page', class_id=item.class.id) }}" class="btn btn-sm btn-info">
+                                                <i class="fas fa-comments"></i> チャット
+                                            </a>
                                         </div>
                                     </div>
                                 {% else %}
                                     <div class="no-personal-theme">
                                         <p class="text-muted">個人テーマが未選択です</p>
-                                        <a href="{{ url_for('student.view_themes', class_id=item.class.id) }}" class="btn btn-sm btn-warning">
-                                            <i class="fas fa-plus"></i> 選択する
-                                        </a>
+                                        <div class="theme-actions">
+                                            <a href="{{ url_for('student.view_themes', class_id=item.class.id) }}" class="btn btn-sm btn-warning">
+                                                <i class="fas fa-plus"></i> 選択する
+                                            </a>
+                                            <a href="{{ url_for('student.chat_page', class_id=item.class.id) }}" class="btn btn-sm btn-info">
+                                                <i class="fas fa-comments"></i> チャット
+                                            </a>
+                                        </div>
                                     </div>
                                 {% endif %}
                             </div>

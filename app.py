@@ -2915,7 +2915,7 @@ def delete_class(class_id):
 # AIに個人テーマを提案してもらうルート
 @app.route('/main_theme/<int:theme_id>/generate_theme', methods=['GET', 'POST'])
 @login_required
-def generate_theme(theme_id):
+def OLD_generate_theme(theme_id):
     if current_user.role != 'student':
         flash('この機能は学生のみ利用可能です。')
         return redirect(url_for('index'))
@@ -2984,7 +2984,7 @@ def generate_theme(theme_id):
 # AIテーマを修正するルート
 @app.route('/theme/<int:theme_id>/edit', methods=['GET', 'POST'])
 @login_required
-def edit_theme(theme_id):
+def OLD_edit_theme(theme_id):
     if current_user.role != 'student':
         flash('この機能は学生のみ利用可能です。')
         return redirect(url_for('index'))
