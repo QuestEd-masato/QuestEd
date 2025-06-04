@@ -161,7 +161,7 @@
                 <div class="theme-option-card">
                     <h4><i class="fas fa-robot"></i> AIにテーマを提案してもらう</h4>
                     <p>あなたのアンケート回答を基にAIがテーマを提案します。</p>
-                    <form method="GET" action="{{ url_for('student.generate_theme') }}" class="theme-select-form">
+                    <form method="GET" action="#" class="theme-select-form" onsubmit="return submitGenerateThemeForm(this)">
                         <div class="mb-3">
                             <select name="theme_id" class="form-control" id="generateThemeSelect" required>
                                 <option value="">大テーマを選択してください</option>
@@ -456,6 +456,16 @@ function submitCreateThemeForm(form) {
     if (themeId) {
         var createUrl = "{{ url_for('student.create_personal_theme', theme_id='PLACEHOLDER') }}";
         form.action = createUrl.replace('PLACEHOLDER', themeId);
+        return true;
+    }
+    return false;
+}
+
+function submitGenerateThemeForm(form) {
+    var themeId = form.theme_id.value;
+    if (themeId) {
+        var generateUrl = "{{ url_for('student.generate_theme', theme_id='PLACEHOLDER') }}";
+        form.action = generateUrl.replace('PLACEHOLDER', themeId);
         return true;
     }
     return false;

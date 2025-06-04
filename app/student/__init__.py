@@ -1494,10 +1494,12 @@ def chat_page():
     
     # チャット履歴を取得
     if class_id:
+        current_app.logger.info(f"Getting chat history for class_id: {class_id}")
         chat_history = ChatHistory.query.filter_by(
             user_id=current_user.id,
             class_id=class_id
         ).order_by(ChatHistory.timestamp.asc()).all()
+        current_app.logger.info(f"Found {len(chat_history)} chat messages")
     else:
         chat_history = ChatHistory.query.filter_by(
             user_id=current_user.id,
