@@ -398,61 +398,55 @@ def activities():
 @login_required
 @student_required
 def new_activity():
-    """新規活動記録"""
-    # URLパラメータからclass_idを取得
+    """新規活動記録（クラスID必須）"""
     class_id = request.args.get('class_id', type=int)
     
-    # クラスの存在確認と権限チェック
-    selected_class = None
-    if class_id:
-        enrollment = ClassEnrollment.query.filter_by(
-            student_id=current_user.id,
-            class_id=class_id
-        ).first()
-        
-        if not enrollment:
-            flash('このクラスにアクセスする権限がありません。')
-            return redirect(url_for('student.activities'))
-        
-        selected_class = Class.query.get_or_404(class_id)
+    if not class_id:
+        flash('クラスを選択してください。')
+        return redirect(url_for('student.activities'))
     
-    # 選択中のテーマを取得（表示用）
-    if class_id:
-        theme = InquiryTheme.query.filter_by(
-            student_id=current_user.id,
-            class_id=class_id,
-            is_selected=True
-        ).first()
-    else:
-        theme = InquiryTheme.query.filter_by(
-            student_id=current_user.id,
-            is_selected=True
-        ).first()
+    # 権限確認
+    enrollment = ClassEnrollment.query.filter_by(
+        student_id=current_user.id,
+        class_id=class_id,
+        is_active=True
+    ).first()
+    
+    if not enrollment:
+        flash('このクラスにアクセスする権限がありません。')
+        return redirect(url_for('student.activities'))
+    
+    selected_class = Class.query.get_or_404(class_id)
+    theme = InquiryTheme.query.filter_by(
+        student_id=current_user.id,
+        class_id=class_id,
+        is_selected=True
+    ).first()
     
     if request.method == 'POST':
-        title = request.form.get('title')
-        date_str = request.form.get('date')
-        content = request.form.get('content', '')
-        reflection = request.form.get('reflection', '')
-        tags = request.form.get('tags', '')
-        
-        # 日付の変換
         try:
-            activity_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-        except ValueError:
-            flash('日付の形式が正しくありません。')
-            return render_template('new_activity.html', theme=theme, class_id=class_id, selected_class=selected_class)
-        
-        # 新しい活動記録を作成
-        new_log = ActivityLog(
-            student_id=current_user.id,
-            class_id=class_id,  # URLパラメータから取得したclass_idを使用
-            title=title,
-            date=activity_date,
-            content=content,
-            reflection=reflection,
-            tags=tags
-        )
+            # POSTデータの処理
+            title = request.form.get('title')
+            date_str = request.form.get('date')
+            activity = request.form.get('activity')
+            content = request.form.get('content')
+            reflection = request.form.get('reflection')
+            tags = request.form.get('tags')
+            
+            # デバッグログ
+            current_app.logger.info(f"Creating activity for user {current_user.id} in class {class_id}")
+            
+            new_log = ActivityLog(
+                student_id=current_user.id,
+                class_id=class_id,
+                title=title,
+                date=datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else datetime.now().date(),
+                activity=activity,
+                content=content,
+                reflection=reflection,
+                tags=tags,
+                timestamp=datetime.now()
+            )
         
         # 画像アップロード処理
         if 'image' in request.files:
@@ -476,16 +470,21 @@ def new_activity():
                 # URLパスを保存
                 new_log.image_url = f"/static/uploads/{filename}"
         
-        db.session.add(new_log)
-        db.session.commit()
-        
-        flash('活動記録を追加しました。')
-        if class_id:
+            db.session.add(new_log)
+            db.session.commit()
+            
+            flash('活動記録が作成されました。')
             return redirect(url_for('student.activities', class_id=class_id))
-        else:
-            return redirect(url_for('student.activities'))
+            
+        except Exception as e:
+            current_app.logger.error(f"Error creating activity: {str(e)}")
+            db.session.rollback()
+            flash('活動記録の作成中にエラーが発生しました。')
     
-    return render_template('new_activity.html', theme=theme, class_id=class_id, selected_class=selected_class)
+    return render_template('new_activity.html',
+                         theme=theme,
+                         selected_class=selected_class,
+                         class_id=class_id)
 
 @student_bp.route('/activity/<int:log_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -950,6 +949,9 @@ def view_themes():
     if current_user.role == 'student':
         class_id = request.args.get('class_id', type=int)
         
+        # デバッグログを追加
+        current_app.logger.info(f"Themes page accessed - user_id: {current_user.id}, class_id: {class_id}")
+        
         if not class_id:
             # クラス選択画面
             enrollments = ClassEnrollment.query.filter_by(
@@ -978,6 +980,9 @@ def view_themes():
             class_id=class_id
         ).all()
         
+        # デバッグログ
+        current_app.logger.info(f"Found {len(themes)} themes for user {current_user.id} in class {class_id}")
+        
         selected_theme = InquiryTheme.query.filter_by(
             student_id=current_user.id,
             class_id=class_id,
@@ -986,6 +991,9 @@ def view_themes():
         
         class_obj = Class.query.get_or_404(class_id)
         main_theme = MainTheme.query.filter_by(class_id=class_id).first()
+        
+        # デバッグログ
+        current_app.logger.info(f"Main theme found: {main_theme.title if main_theme else 'None'}")
         
         return render_template('view_themes.html',
                              themes=themes,

@@ -112,33 +112,6 @@
         </div>
         {% endif %}
 
-        <!-- 既存のテーマセクション（後方互換性のため保持） -->
-        <div class="dashboard-section current-theme">
-            <h3>探究テーマ</h3>
-            
-            {% if selected_theme %}
-                <div class="theme-card">
-                    <h4>{{ selected_theme.title }}</h4>
-                    <p class="theme-question">{{ selected_theme.question }}</p>
-                    <div class="theme-details">
-                        <p>{{ selected_theme.description }}</p>
-                    </div>
-                    <div class="theme-actions">
-                        <a href="{{ url_for('student.view_themes') }}" class="btn btn-sm">テーマ詳細</a>
-                        <a href="{{ url_for('student.activities') }}" class="btn btn-sm btn-primary">学習記録</a>
-                    </div>
-                </div>
-            {% else %}
-                <div class="no-theme">
-                    <p>まだテーマが選択されていません</p>
-                    {% if interest_survey and personality_survey %}
-                        <a href="{{ url_for('student.view_themes') }}" class="btn btn-primary">テーマを選択する</a>
-                    {% else %}
-                        <p class="help-text">テーマ生成にはアンケート回答が必要です</p>
-                    {% endif %}
-                </div>
-            {% endif %}
-        </div>
         
         <div class="dashboard-section recent-activities">
             <h3>最近の学習記録</h3>
@@ -620,9 +593,23 @@
     
     .class-themes-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        grid-template-columns: 1fr;
         gap: 20px;
         margin-top: 15px;
+    }
+    
+    /* タブレット: 2列 */
+    @media (min-width: 768px) {
+        .class-themes-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    
+    /* デスクトップ: 3列 */
+    @media (min-width: 1200px) {
+        .class-themes-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
     }
     
     .class-theme-card {

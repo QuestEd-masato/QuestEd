@@ -38,6 +38,7 @@
     
     <form method="POST" action="{{ url_for('student.new_activity', class_id=class_id) }}" enctype="multipart/form-data" id="activity-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="class_id" value="{{ class_id }}">
         
         <div class="form-row">
             <div class="form-group">
@@ -66,14 +67,19 @@
         </div>
         
         <div class="form-group">
-            <label for="content">学習内容 <span class="required">*</span></label>
+            <label for="activity">活動内容 <span class="required">*</span></label>
+            <textarea id="activity" name="activity" rows="4" required placeholder="どのような活動を行いましたか？"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="content">詳細な学習内容</label>
             <div class="editor-toolbar">
                 <button type="button" onclick="formatText('bold')"><i class="fas fa-bold"></i></button>
                 <button type="button" onclick="formatText('italic')"><i class="fas fa-italic"></i></button>
                 <button type="button" onclick="formatText('list')"><i class="fas fa-list"></i></button>
                 <button type="button" onclick="formatText('heading')"><i class="fas fa-heading"></i></button>
             </div>
-            <textarea id="content" name="content" rows="8" required placeholder="今日行った学習活動について詳しく記録してください"></textarea>
+            <textarea id="content" name="content" rows="6" placeholder="今日行った学習活動について詳しく記録してください"></textarea>
             <div class="word-count">文字数: <span id="content-count">0</span>文字</div>
         </div>
         
