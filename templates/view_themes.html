@@ -143,41 +143,37 @@
                 <div class="theme-option-card">
                     <h4><i class="fas fa-pencil-alt"></i> 自分でテーマを考える</h4>
                     <p>自分自身の興味関心に基づいて探究テーマを設定します。</p>
-                    <div class="dropdown">
-                        <button class="btn btn-primary dropdown-toggle" type="button" id="createThemeDropdown" 
-                                data-bs-toggle="dropdown" aria-expanded="false">
-                            大テーマを選択
+                    <form method="GET" action="{{ url_for('student.create_personal_theme') }}" class="theme-select-form">
+                        <div class="mb-3">
+                            <select name="theme_id" class="form-control" id="createThemeSelect" required>
+                                <option value="">大テーマを選択してください</option>
+                                {% for main_theme in available_main_themes %}
+                                <option value="{{ main_theme.id }}">{{ main_theme.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-pencil-alt"></i> テーマを作成
                         </button>
-                        <ul class="dropdown-menu" aria-labelledby="createThemeDropdown">
-                            {% for main_theme in available_main_themes %}
-                                <li>
-                                    <a class="dropdown-item" href="{{ url_for('student.create_personal_theme', theme_id=main_theme.id) }}">
-                                        {{ main_theme.title }}
-                                    </a>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
+                    </form>
                 </div>
                 
                 <div class="theme-option-card">
                     <h4><i class="fas fa-robot"></i> AIにテーマを提案してもらう</h4>
                     <p>あなたのアンケート回答を基にAIがテーマを提案します。</p>
-                    <div class="dropdown">
-                        <button class="btn btn-success dropdown-toggle" type="button" id="generateThemeDropdown" 
-                                data-bs-toggle="dropdown" aria-expanded="false">
-                            大テーマを選択
+                    <form method="GET" action="{{ url_for('student.generate_theme') }}" class="theme-select-form">
+                        <div class="mb-3">
+                            <select name="theme_id" class="form-control" id="generateThemeSelect" required>
+                                <option value="">大テーマを選択してください</option>
+                                {% for main_theme in available_main_themes %}
+                                <option value="{{ main_theme.id }}">{{ main_theme.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-robot"></i> AIにテーマを提案してもらう
                         </button>
-                        <ul class="dropdown-menu" aria-labelledby="generateThemeDropdown">
-                            {% for main_theme in available_main_themes %}
-                                <li>
-                                    <a class="dropdown-item" href="{{ url_for('student.generate_theme', theme_id=main_theme.id) }}">
-                                        {{ main_theme.title }}
-                                    </a>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
+                    </form>
                 </div>
             </div>
         {% else %}
@@ -465,11 +461,17 @@
         // ドロップダウンが機能しているかコンソールで確認
         console.log('ドロップダウン初期化完了:', dropdownList);
         
-        // 大テーマ選択の変更を監視
-        const mainThemeSelects = document.querySelectorAll('select[name="main_theme_id"]');
+        // 大テーマ選択の変更を監視（新しいフォーム用）
+        const mainThemeSelects = document.querySelectorAll('select[name="theme_id"]');
+        console.log('Found theme select elements:', mainThemeSelects.length);
+        
         mainThemeSelects.forEach(select => {
+            console.log('Setting up listener for:', select.id);
             select.addEventListener('change', function() {
-                console.log('Selected main theme:', this.value);
+                console.log('Theme selection changed:', this.value, 'in form:', this.id);
+                if (this.value) {
+                    console.log('Valid theme selected, form can be submitted');
+                }
             });
         });
         
