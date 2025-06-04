@@ -447,28 +447,28 @@ def new_activity():
                 tags=tags,
                 timestamp=datetime.now()
             )
-        
-        # 画像アップロード処理
-        if 'image' in request.files:
-            file = request.files['image']
-            if file and file.filename != '':
-                # ファイル名を安全にする
-                filename = secure_filename(file.filename)
-                # タイムスタンプを追加してユニークにする
-                timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-                filename = f"{timestamp}_{filename}"
-                
-                # 保存パスを作成
-                from flask import current_app
-                upload_folder = current_app.config['UPLOAD_FOLDER']
-                if not os.path.exists(upload_folder):
-                    os.makedirs(upload_folder)
-                
-                filepath = os.path.join(upload_folder, filename)
-                file.save(filepath)
-                
-                # URLパスを保存
-                new_log.image_url = f"/static/uploads/{filename}"
+            
+            # 画像アップロード処理
+            if 'image' in request.files:
+                file = request.files['image']
+                if file and file.filename != '':
+                    # ファイル名を安全にする
+                    filename = secure_filename(file.filename)
+                    # タイムスタンプを追加してユニークにする
+                    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+                    filename = f"{timestamp}_{filename}"
+                    
+                    # 保存パスを作成
+                    from flask import current_app
+                    upload_folder = current_app.config['UPLOAD_FOLDER']
+                    if not os.path.exists(upload_folder):
+                        os.makedirs(upload_folder)
+                    
+                    filepath = os.path.join(upload_folder, filename)
+                    file.save(filepath)
+                    
+                    # URLパスを保存
+                    new_log.image_url = f"/static/uploads/{filename}"
         
             db.session.add(new_log)
             db.session.commit()
