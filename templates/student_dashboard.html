@@ -594,21 +594,21 @@
     .class-themes-grid {
         display: grid;
         grid-template-columns: 1fr;
-        gap: 20px;
+        gap: 25px;
         margin-top: 15px;
     }
     
-    /* タブレット: 2列 */
+    /* タブレット以上: 1列（幅広表示） */
     @media (min-width: 768px) {
         .class-themes-grid {
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: 1fr;
         }
     }
     
-    /* デスクトップ: 3列 */
+    /* デスクトップ: 2列 */
     @media (min-width: 1200px) {
         .class-themes-grid {
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(2, 1fr);
         }
     }
     
@@ -638,21 +638,36 @@
     }
     
     .class-body {
-        padding: 15px;
+        padding: 20px;
+        display: flex;
+        gap: 20px;
+        align-items: flex-start;
+    }
+    
+    /* モバイルでは縦並び */
+    @media (max-width: 767px) {
+        .class-body {
+            flex-direction: column;
+            gap: 15px;
+        }
     }
     
     .main-theme-info,
     .personal-theme-info {
-        margin-bottom: 15px;
-        padding-bottom: 15px;
-        border-bottom: 1px solid #f0f0f0;
+        flex: 1;
+        margin-bottom: 0;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
     }
     
-    .main-theme-info:last-child,
-    .personal-theme-info:last-child {
-        margin-bottom: 0;
-        padding-bottom: 0;
-        border-bottom: none;
+    .main-theme-info {
+        border-left: 4px solid var(--primary-color);
+    }
+    
+    .personal-theme-info {
+        border-left: 4px solid #28a745;
     }
     
     .main-theme-info h5,

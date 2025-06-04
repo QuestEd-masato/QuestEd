@@ -1076,6 +1076,37 @@ def select_theme(theme_id):
     flash(f'テーマ「{theme.title}」を選択しました。')
     return redirect(url_for('student.view_themes'))
 
+@student_bp.route('/delete_theme/<int:theme_id>', methods=['POST'])
+@login_required
+@student_required
+def delete_theme(theme_id):
+    """個人テーマの削除"""
+    theme = InquiryTheme.query.get_or_404(theme_id)
+    
+    # 権限確認
+    if theme.student_id != current_user.id:
+        flash('このテーマを削除する権限がありません。')
+        return redirect(url_for('student.view_themes'))
+    
+    # 選択中のテーマは削除不可
+    if theme.is_selected:
+        flash('選択中のテーマは削除できません。')
+        return redirect(url_for('student.view_themes', class_id=theme.class_id))
+    
+    class_id = theme.class_id
+    theme_title = theme.title
+    
+    try:
+        db.session.delete(theme)
+        db.session.commit()
+        flash(f'テーマ「{theme_title}」を削除しました。')
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error deleting theme: {str(e)}")
+        flash('テーマの削除中にエラーが発生しました。')
+    
+    return redirect(url_for('student.view_themes', class_id=class_id))
+
 @student_bp.route('/regenerate_themes', methods=['POST'])
 @login_required
 @student_required

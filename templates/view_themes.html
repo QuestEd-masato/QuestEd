@@ -116,6 +116,16 @@
                         <a href="{{ url_for('student.edit_theme', theme_id=item.theme.id) }}" class="btn btn-outline">
                             <i class="fas fa-edit"></i> 編集する
                         </a>
+                        {% if not item.theme.is_selected %}
+                            <form method="POST" action="{{ url_for('student.delete_theme', theme_id=item.theme.id) }}" 
+                                  onsubmit="return confirm('このテーマを削除してもよろしいですか？');" 
+                                  class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-danger">
+                                    <i class="fas fa-trash"></i> 削除
+                                </button>
+                            </form>
+                        {% endif %}
                     </div>
                 </div>
             {% endfor %}
@@ -455,10 +465,27 @@
         // ドロップダウンが機能しているかコンソールで確認
         console.log('ドロップダウン初期化完了:', dropdownList);
         
+        // 大テーマ選択の変更を監視
+        const mainThemeSelects = document.querySelectorAll('select[name="main_theme_id"]');
+        mainThemeSelects.forEach(select => {
+            select.addEventListener('change', function() {
+                console.log('Selected main theme:', this.value);
+            });
+        });
+        
+        // ドロップダウンリンクのクリックを監視（デバッグ用）
+        document.querySelectorAll('.dropdown-item').forEach(function(item) {
+            item.addEventListener('click', function(e) {
+                console.log('Dropdown item clicked:', this.textContent.trim());
+                console.log('URL:', this.href);
+            });
+        });
+        
         // 念のため、クリックイベントも追加（Bootstrap JSが動作しない場合のフォールバック）
         document.querySelectorAll('.dropdown-toggle').forEach(function(dropdown) {
             dropdown.addEventListener('click', function(e) {
                 e.stopPropagation();
+                console.log('Dropdown toggle clicked:', this.textContent.trim());
                 var dropdownMenu = this.nextElementSibling;
                 if (dropdownMenu && dropdownMenu.classList.contains('dropdown-menu')) {
                     // すべてのドロップダウンメニューを閉じる
