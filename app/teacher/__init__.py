@@ -1137,3 +1137,223 @@ def generate_student_report(class_id, student_id):
         current_app.logger.error(traceback.format_exc())
         flash('PDF生成中にエラーが発生しました。')
         return redirect(url_for('teacher.class_details', class_id=class_id))
+
+# カリキュラム関連の追加ルート
+@teacher_bp.route('/class/<int:class_id>/curriculum/import', methods=['GET', 'POST'])
+@login_required
+@teacher_required
+def import_curriculum(class_id):
+    """カリキュラムのインポート"""
+    class_obj = Class.query.get_or_404(class_id)
+    
+    # 権限チェック
+    if class_obj.teacher_id != current_user.id:
+        flash('このクラスのカリキュラムをインポートする権限がありません。')
+        return redirect(url_for('teacher.dashboard'))
+    
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('ファイルが選択されていません。')
+            return redirect(request.url)
+        
+        file = request.files['file']
+        if file.filename == '':
+            flash('ファイルが選択されていません。')
+            return redirect(request.url)
+        
+        if file and file.filename.endswith('.csv'):
+            try:
+                # CSVファイルを読み込む
+                stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+                csv_reader = csv.DictReader(stream)
+                
+                # カリキュラムデータを解析
+                curriculum_data = []
+                for row in csv_reader:
+                    curriculum_data.append(row)
+                
+                # カリキュラムを作成
+                new_curriculum = Curriculum(
+                    class_id=class_id,
+                    teacher_id=current_user.id,
+                    title=request.form.get('title', f'{class_obj.name}のカリキュラム'),
+                    description=request.form.get('description', ''),
+                    total_hours=int(request.form.get('total_hours', 35)),
+                    has_fieldwork=request.form.get('has_fieldwork') == 'true',
+                    fieldwork_count=int(request.form.get('fieldwork_count', 0)),
+                    has_presentation=request.form.get('has_presentation') == 'true',
+                    presentation_format=request.form.get('presentation_format', 'プレゼンテーション'),
+                    group_work_level=request.form.get('group_work_level', 'ハイブリッド'),
+                    external_collaboration=request.form.get('external_collaboration') == 'true',
+                    content=json.dumps(curriculum_data, ensure_ascii=False)
+                )
+                
+                db.session.add(new_curriculum)
+                db.session.commit()
+                
+                flash('カリキュラムをインポートしました。')
+                return redirect(url_for('teacher.view_curriculums', class_id=class_id))
+                
+            except Exception as e:
+                flash(f'インポートエラー: {str(e)}')
+                return redirect(request.url)
+    
+    return render_template('upload_curriculum.html', class_obj=class_obj)
+
+@teacher_bp.route('/curriculum/<int:curriculum_id>')
+@login_required
+@teacher_required
+def view_curriculum(curriculum_id):
+    """カリキュラム詳細表示"""
+    curriculum = Curriculum.query.get_or_404(curriculum_id)
+    class_obj = Class.query.get_or_404(curriculum.class_id)
+    
+    # 権限チェック
+    if class_obj.teacher_id != current_user.id:
+        flash('このカリキュラムを閲覧する権限がありません。')
+        return redirect(url_for('teacher.dashboard'))
+    
+    # カリキュラム内容をJSONから解析
+    try:
+        curriculum_content = json.loads(curriculum.content) if curriculum.content else {}
+    except:
+        curriculum_content = {}
+    
+    return render_template('view_curriculum.html', 
+                         curriculum=curriculum,
+                         class_obj=class_obj,
+                         curriculum_content=curriculum_content)
+
+@teacher_bp.route('/curriculum/<int:curriculum_id>/edit', methods=['GET', 'POST'])
+@login_required
+@teacher_required
+def edit_curriculum(curriculum_id):
+    """カリキュラム編集"""
+    curriculum = Curriculum.query.get_or_404(curriculum_id)
+    class_obj = Class.query.get_or_404(curriculum.class_id)
+    
+    # 権限チェック
+    if class_obj.teacher_id != current_user.id:
+        flash('このカリキュラムを編集する権限がありません。')
+        return redirect(url_for('teacher.dashboard'))
+    
+    if request.method == 'POST':
+        curriculum.title = request.form.get('title', curriculum.title)
+        curriculum.description = request.form.get('description', curriculum.description)
+        curriculum.total_hours = int(request.form.get('total_hours', curriculum.total_hours))
+        curriculum.has_fieldwork = 'has_fieldwork' in request.form
+        curriculum.fieldwork_count = int(request.form.get('fieldwork_count', 0)) if curriculum.has_fieldwork else 0
+        curriculum.has_presentation = 'has_presentation' in request.form
+        curriculum.presentation_format = request.form.get('presentation_format', curriculum.presentation_format)
+        curriculum.group_work_level = request.form.get('group_work_level', curriculum.group_work_level)
+        curriculum.external_collaboration = 'external_collaboration' in request.form
+        
+        # カリキュラム内容の更新
+        content_data = request.form.get('content')
+        if content_data:
+            try:
+                curriculum.content = json.dumps(json.loads(content_data), ensure_ascii=False)
+            except:
+                flash('カリキュラム内容の形式が正しくありません。')
+                return render_template('edit_curriculum.html',
+                                     curriculum=curriculum,
+                                     class_obj=class_obj)
+        
+        db.session.commit()
+        flash('カリキュラムを更新しました。')
+        return redirect(url_for('teacher.view_curriculum', curriculum_id=curriculum_id))
+    
+    return render_template('edit_curriculum.html',
+                         curriculum=curriculum,
+                         class_obj=class_obj)
+
+@teacher_bp.route('/curriculum/<int:curriculum_id>/delete', methods=['POST'])
+@login_required
+@teacher_required
+def delete_curriculum(curriculum_id):
+    """カリキュラム削除"""
+    curriculum = Curriculum.query.get_or_404(curriculum_id)
+    class_obj = Class.query.get_or_404(curriculum.class_id)
+    
+    # 権限チェック
+    if class_obj.teacher_id != current_user.id:
+        flash('このカリキュラムを削除する権限がありません。')
+        return redirect(url_for('teacher.dashboard'))
+    
+    db.session.delete(curriculum)
+    db.session.commit()
+    
+    flash('カリキュラムを削除しました。')
+    return redirect(url_for('teacher.view_curriculums', class_id=class_obj.id))
+
+@teacher_bp.route('/curriculum/<int:curriculum_id>/export')
+@login_required
+@teacher_required
+def export_curriculum(curriculum_id):
+    """カリキュラムエクスポート"""
+    curriculum = Curriculum.query.get_or_404(curriculum_id)
+    class_obj = Class.query.get_or_404(curriculum.class_id)
+    
+    # 権限チェック
+    if class_obj.teacher_id != current_user.id:
+        flash('このカリキュラムをエクスポートする権限がありません。')
+        return redirect(url_for('teacher.dashboard'))
+    
+    # カリキュラム内容をCSV形式でエクスポート
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # ヘッダー行
+    writer.writerow(['週', '時限', 'テーマ', '活動内容', '評価方法'])
+    
+    # カリキュラム内容を解析
+    try:
+        content = json.loads(curriculum.content) if curriculum.content else []
+        for item in content:
+            writer.writerow([
+                item.get('week', ''),
+                item.get('hour', ''),
+                item.get('theme', ''),
+                item.get('activity', ''),
+                item.get('evaluation', '')
+            ])
+    except:
+        pass
+    
+    # レスポンスを作成
+    output.seek(0)
+    response = Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={
+            'Content-Disposition': f'attachment; filename=curriculum_{curriculum.id}.csv'
+        }
+    )
+    
+    return response
+
+@teacher_bp.route('/curriculum/download_template')
+@login_required
+@teacher_required
+def download_curriculum_template():
+    """カリキュラムテンプレートダウンロード"""
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # テンプレートヘッダー
+    writer.writerow(['週', '時限', 'テーマ', '活動内容', '評価方法'])
+    
+    # サンプルデータ
+    writer.writerow(['1', '1-2', 'オリエンテーション', '探究学習の概要説明', '参加態度'])
+    writer.writerow(['2', '1-2', 'テーマ設定', '興味関心の探索', 'ワークシート'])
+    
+    output.seek(0)
+    response = Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={
+            'Content-Disposition': 'attachment; filename=curriculum_template.csv'
+        }
+    )
+    
+    return response

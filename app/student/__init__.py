@@ -1678,6 +1678,107 @@ def leave_group(group_id):
     
     return redirect(url_for('teacher.view_groups', class_id=group.class_id))
 
+@student_bp.route('/group/<int:group_id>/edit', methods=['GET', 'POST'])
+@login_required
+@student_required
+def edit_group(group_id):
+    """グループ編集（作成者のみ）"""
+    group = Group.query.get_or_404(group_id)
+    
+    # 権限チェック（グループ作成者のみ編集可能）
+    if group.created_by != current_user.id:
+        flash('このグループを編集する権限がありません。')
+        return redirect(url_for('student.view_group', group_id=group_id))
+    
+    if request.method == 'POST':
+        name = request.form.get('name')
+        description = request.form.get('description', '')
+        
+        if not name:
+            flash('グループ名は必須です。')
+            return render_template('edit_group.html', group=group)
+        
+        # グループを更新
+        group.name = name
+        group.description = description
+        
+        db.session.commit()
+        
+        flash('グループが更新されました。')
+        return redirect(url_for('student.view_group', group_id=group_id))
+    
+    return render_template('edit_group.html', group=group)
+
+@student_bp.route('/group/<int:group_id>/delete')
+@login_required
+@student_required
+def delete_group(group_id):
+    """グループ削除（作成者のみ）"""
+    group = Group.query.get_or_404(group_id)
+    
+    # 権限チェック（グループ作成者のみ削除可能）
+    if group.created_by != current_user.id:
+        flash('このグループを削除する権限がありません。')
+        return redirect(url_for('student.view_group', group_id=group_id))
+    
+    # クラスIDを保存（削除後にリダイレクトするため）
+    class_id = group.class_id
+    
+    # グループメンバーシップを削除
+    GroupMembership.query.filter_by(group_id=group_id).delete()
+    
+    # グループを削除
+    db.session.delete(group)
+    db.session.commit()
+    
+    flash('グループが削除されました。')
+    
+    # クラスの詳細ページにリダイレクト
+    class_obj = Class.query.get(class_id)
+    if class_obj:
+        # 学生が所属するクラスの一覧を取得
+        enrollments = ClassEnrollment.query.filter_by(
+            student_id=current_user.id,
+            is_active=True
+        ).all()
+        enrolled_class_ids = [e.class_id for e in enrollments]
+        
+        if class_id in enrolled_class_ids:
+            return redirect(url_for('student.class_details', class_id=class_id))
+    
+    return redirect(url_for('student.classes'))
+
+@student_bp.route('/group/<int:group_id>/remove_member/<int:student_id>')
+@login_required
+@student_required
+def remove_group_member(group_id, student_id):
+    """グループメンバー削除（作成者のみ）"""
+    group = Group.query.get_or_404(group_id)
+    
+    # 権限チェック（グループ作成者のみ削除可能）
+    if group.created_by != current_user.id:
+        flash('このグループから学生を削除する権限がありません。')
+        return redirect(url_for('student.view_group', group_id=group_id))
+    
+    # グループ作成者は削除できない
+    if student_id == group.created_by:
+        flash('グループ作成者をグループから削除することはできません。')
+        return redirect(url_for('student.view_group', group_id=group_id))
+    
+    # メンバーシップを取得
+    membership = GroupMembership.query.filter_by(
+        group_id=group_id, student_id=student_id).first_or_404()
+    
+    # グループからメンバーを削除
+    db.session.delete(membership)
+    db.session.commit()
+    
+    # 削除されたユーザーの名前を取得
+    removed_user = User.query.get(student_id)
+    flash(f'{removed_user.username}をグループから削除しました。')
+    
+    return redirect(url_for('student.view_group', group_id=group_id))
+
 # チャット機能
 @student_bp.route('/chat')
 @login_required

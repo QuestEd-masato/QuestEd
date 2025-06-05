@@ -1,0 +1,456 @@
+{% extends 'base.html' %}
+
+{% block title %}興味・関心アンケート編集 | QuestEd{% endblock %}
+
+{% block content %}
+<div class="survey-container">
+    <h2>興味・関心アンケートの編集</h2>
+    <p class="survey-intro">あなたの興味・関心に合った探究テーマを提案するため、以下の質問に答えてください。</p>
+    
+    <form method="POST" action="{{ url_for('student.interest_survey_edit') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div class="survey-section">
+            <h3>興味のある学習分野</h3>
+            
+            <div class="form-group checkbox-group">
+                <label class="section-label">好きな教科・分野（複数選択可）</label>
+                <div class="checkbox-options">
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="subjects" value="国語" {% if survey and '国語' in survey.subjects.split(',') %}checked{% endif %}>
+                        <span>国語</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="subjects" value="数学" {% if survey and '数学' in survey.subjects.split(',') %}checked{% endif %}>
+                        <span>数学</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="subjects" value="英語" {% if survey and '英語' in survey.subjects.split(',') %}checked{% endif %}>
+                        <span>英語</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="subjects" value="理科" {% if survey and '理科' in survey.subjects.split(',') %}checked{% endif %}>
+                        <span>理科</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="subjects" value="社会" {% if survey and '社会' in survey.subjects.split(',') %}checked{% endif %}>
+                        <span>社会</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="subjects" value="音楽" {% if survey and '音楽' in survey.subjects.split(',') %}checked{% endif %}>
+                        <span>音楽</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="subjects" value="美術" {% if survey and '美術' in survey.subjects.split(',') %}checked{% endif %}>
+                        <span>美術</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="subjects" value="保健体育" {% if survey and '保健体育' in survey.subjects.split(',') %}checked{% endif %}>
+                        <span>保健体育</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="subjects" value="技術・家庭" {% if survey and '技術・家庭' in survey.subjects.split(',') %}checked{% endif %}>
+                        <span>技術・家庭</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="subjects" value="情報" {% if survey and '情報' in survey.subjects.split(',') %}checked{% endif %}>
+                        <span>情報</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="form-group checkbox-group">
+                <label class="section-label">興味のある理科分野（複数選択可）</label>
+                <div class="checkbox-options">
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="science_interests" value="物理" {% if survey and '物理' in survey.science_interests.split(',') %}checked{% endif %}>
+                        <span>物理</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="science_interests" value="化学" {% if survey and '化学' in survey.science_interests.split(',') %}checked{% endif %}>
+                        <span>化学</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="science_interests" value="生物" {% if survey and '生物' in survey.science_interests.split(',') %}checked{% endif %}>
+                        <span>生物</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="science_interests" value="地学" {% if survey and '地学' in survey.science_interests.split(',') %}checked{% endif %}>
+                        <span>地学</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="science_interests" value="環境科学" {% if survey and '環境科学' in survey.science_interests.split(',') %}checked{% endif %}>
+                        <span>環境科学</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="science_interests" value="宇宙科学" {% if survey and '宇宙科学' in survey.science_interests.split(',') %}checked{% endif %}>
+                        <span>宇宙科学</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="science_interests" value="医学・健康" {% if survey and '医学・健康' in survey.science_interests.split(',') %}checked{% endif %}>
+                        <span>医学・健康</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="science_interests" value="工学" {% if survey and '工学' in survey.science_interests.split(',') %}checked{% endif %}>
+                        <span>工学</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="form-group checkbox-group">
+                <label class="section-label">興味のある社会分野（複数選択可）</label>
+                <div class="checkbox-options">
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="social_interests" value="歴史" {% if survey and '歴史' in survey.social_interests.split(',') %}checked{% endif %}>
+                        <span>歴史</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="social_interests" value="地理" {% if survey and '地理' in survey.social_interests.split(',') %}checked{% endif %}>
+                        <span>地理</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="social_interests" value="政治" {% if survey and '政治' in survey.social_interests.split(',') %}checked{% endif %}>
+                        <span>政治</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="social_interests" value="経済" {% if survey and '経済' in survey.social_interests.split(',') %}checked{% endif %}>
+                        <span>経済</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="social_interests" value="文化" {% if survey and '文化' in survey.social_interests.split(',') %}checked{% endif %}>
+                        <span>文化</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="social_interests" value="国際関係" {% if survey and '国際関係' in survey.social_interests.split(',') %}checked{% endif %}>
+                        <span>国際関係</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="social_interests" value="法律" {% if survey and '法律' in survey.social_interests.split(',') %}checked{% endif %}>
+                        <span>法律</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="social_interests" value="社会学" {% if survey and '社会学' in survey.social_interests.split(',') %}checked{% endif %}>
+                        <span>社会学</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="survey-section">
+            <h3>社会・地域への関心</h3>
+            
+            <div class="form-group checkbox-group">
+                <label class="section-label">関心のある社会問題（複数選択可）</label>
+                <div class="checkbox-options">
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="social_issues" value="環境問題" {% if survey and '環境問題' in survey.social_issues.split(',') %}checked{% endif %}>
+                        <span>環境問題</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="social_issues" value="貧困・格差" {% if survey and '貧困・格差' in survey.social_issues.split(',') %}checked{% endif %}>
+                        <span>貧困・格差</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="social_issues" value="高齢化社会" {% if survey and '高齢化社会' in survey.social_issues.split(',') %}checked{% endif %}>
+                        <span>高齢化社会</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="social_issues" value="教育" {% if survey and '教育' in survey.social_issues.split(',') %}checked{% endif %}>
+                        <span>教育</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="social_issues" value="食糧問題" {% if survey and '食糧問題' in survey.social_issues.split(',') %}checked{% endif %}>
+                        <span>食糧問題</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="social_issues" value="エネルギー" {% if survey and 'エネルギー' in survey.social_issues.split(',') %}checked{% endif %}>
+                        <span>エネルギー</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="social_issues" value="人権問題" {% if survey and '人権問題' in survey.social_issues.split(',') %}checked{% endif %}>
+                        <span>人権問題</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="social_issues" value="情報社会" {% if survey and '情報社会' in survey.social_issues.split(',') %}checked{% endif %}>
+                        <span>情報社会</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="form-group checkbox-group">
+                <label class="section-label">身近に感じる地域課題（複数選択可）</label>
+                <div class="checkbox-options">
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="local_issues" value="過疎化" {% if survey and '過疎化' in survey.local_issues.split(',') %}checked{% endif %}>
+                        <span>過疎化</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="local_issues" value="商店街の衰退" {% if survey and '商店街の衰退' in survey.local_issues.split(',') %}checked{% endif %}>
+                        <span>商店街の衰退</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="local_issues" value="交通問題" {% if survey and '交通問題' in survey.local_issues.split(',') %}checked{% endif %}>
+                        <span>交通問題</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="local_issues" value="自然環境" {% if survey and '自然環境' in survey.local_issues.split(',') %}checked{% endif %}>
+                        <span>自然環境</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="local_issues" value="伝統文化の継承" {% if survey and '伝統文化の継承' in survey.local_issues.split(',') %}checked{% endif %}>
+                        <span>伝統文化の継承</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="local_issues" value="地域防災" {% if survey and '地域防災' in survey.local_issues.split(',') %}checked{% endif %}>
+                        <span>地域防災</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="local_issues" value="観光振興" {% if survey and '観光振興' in survey.local_issues.split(',') %}checked{% endif %}>
+                        <span>観光振興</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="local_issues" value="子育て環境" {% if survey and '子育て環境' in survey.local_issues.split(',') %}checked{% endif %}>
+                        <span>子育て環境</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="survey-section">
+            <h3>将来・自己理解</h3>
+            
+            <div class="form-group checkbox-group">
+                <label class="section-label">興味のある職業分野（複数選択可）</label>
+                <div class="checkbox-options">
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="career_interests" value="IT・技術" {% if survey and 'IT・技術' in survey.career_interests.split(',') %}checked{% endif %}>
+                        <span>IT・技術</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="career_interests" value="医療・福祉" {% if survey and '医療・福祉' in survey.career_interests.split(',') %}checked{% endif %}>
+                        <span>医療・福祉</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="career_interests" value="教育" {% if survey and '教育' in survey.career_interests.split(',') %}checked{% endif %}>
+                        <span>教育</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="career_interests" value="ビジネス・経営" {% if survey and 'ビジネス・経営' in survey.career_interests.split(',') %}checked{% endif %}>
+                        <span>ビジネス・経営</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="career_interests" value="クリエイティブ" {% if survey and 'クリエイティブ' in survey.career_interests.split(',') %}checked{% endif %}>
+                        <span>クリエイティブ</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="career_interests" value="研究・開発" {% if survey and '研究・開発' in survey.career_interests.split(',') %}checked{% endif %}>
+                        <span>研究・開発</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="career_interests" value="公務員" {% if survey and '公務員' in survey.career_interests.split(',') %}checked{% endif %}>
+                        <span>公務員</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="career_interests" value="サービス業" {% if survey and 'サービス業' in survey.career_interests.split(',') %}checked{% endif %}>
+                        <span>サービス業</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="form-group checkbox-group">
+                <label class="section-label">自分の強み・得意なこと（複数選択可）</label>
+                <div class="checkbox-options">
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="strengths" value="コミュニケーション" {% if survey and 'コミュニケーション' in survey.strengths.split(',') %}checked{% endif %}>
+                        <span>コミュニケーション</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="strengths" value="論理的思考" {% if survey and '論理的思考' in survey.strengths.split(',') %}checked{% endif %}>
+                        <span>論理的思考</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="strengths" value="創造性" {% if survey and '創造性' in survey.strengths.split(',') %}checked{% endif %}>
+                        <span>創造性</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="strengths" value="リーダーシップ" {% if survey and 'リーダーシップ' in survey.strengths.split(',') %}checked{% endif %}>
+                        <span>リーダーシップ</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="strengths" value="協調性" {% if survey and '協調性' in survey.strengths.split(',') %}checked{% endif %}>
+                        <span>協調性</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="strengths" value="情報収集" {% if survey and '情報収集' in survey.strengths.split(',') %}checked{% endif %}>
+                        <span>情報収集</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="strengths" value="計画性" {% if survey and '計画性' in survey.strengths.split(',') %}checked{% endif %}>
+                        <span>計画性</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="strengths" value="実行力" {% if survey and '実行力' in survey.strengths.split(',') %}checked{% endif %}>
+                        <span>実行力</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="form-group checkbox-group">
+                <label class="section-label">好きな学習・活動スタイル（複数選択可）</label>
+                <div class="checkbox-options">
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="learning_styles" value="個人で集中" {% if survey and '個人で集中' in survey.learning_styles.split(',') %}checked{% endif %}>
+                        <span>個人で集中</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="learning_styles" value="グループ活動" {% if survey and 'グループ活動' in survey.learning_styles.split(',') %}checked{% endif %}>
+                        <span>グループ活動</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="learning_styles" value="実験・実習" {% if survey and '実験・実習' in survey.learning_styles.split(',') %}checked{% endif %}>
+                        <span>実験・実習</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="learning_styles" value="フィールドワーク" {% if survey and 'フィールドワーク' in survey.learning_styles.split(',') %}checked{% endif %}>
+                        <span>フィールドワーク</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="learning_styles" value="ディスカッション" {% if survey and 'ディスカッション' in survey.learning_styles.split(',') %}checked{% endif %}>
+                        <span>ディスカッション</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="learning_styles" value="読書・調査" {% if survey and '読書・調査' in survey.learning_styles.split(',') %}checked{% endif %}>
+                        <span>読書・調査</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="learning_styles" value="ものづくり" {% if survey and 'ものづくり' in survey.learning_styles.split(',') %}checked{% endif %}>
+                        <span>ものづくり</span>
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="learning_styles" value="プレゼンテーション" {% if survey and 'プレゼンテーション' in survey.learning_styles.split(',') %}checked{% endif %}>
+                        <span>プレゼンテーション</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="survey-section">
+            <h3>自由記述</h3>
+            
+            <div class="form-group">
+                <label for="recent_interests">最近興味を持ったこと・気になっていること</label>
+                <textarea id="recent_interests" name="recent_interests" rows="3">{{ survey.recent_interests if survey else '' }}</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="want_to_know">もっと知りたいこと・学びたいこと</label>
+                <textarea id="want_to_know" name="want_to_know" rows="3">{{ survey.want_to_know if survey else '' }}</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="improvements">あなたの地域や学校で改善したいと思うこと</label>
+                <textarea id="improvements" name="improvements" rows="3">{{ survey.improvements if survey else '' }}</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="exploration_interests">探究学習でやってみたいこと・テーマになりそうなこと</label>
+                <textarea id="exploration_interests" name="exploration_interests" rows="3">{{ survey.exploration_interests if survey else '' }}</textarea>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">更新する</button>
+            <a href="{{ url_for('student.surveys') }}" class="btn btn-secondary">キャンセル</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .survey-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+    
+    .survey-intro {
+        margin-bottom: 2rem;
+        color: #6c757d;
+    }
+    
+    .survey-section {
+        background-color: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .survey-section h3 {
+        margin-top: 0;
+        margin-bottom: 1.5rem;
+        color: #0056b3;
+        border-bottom: 1px solid #dee2e6;
+        padding-bottom: 0.5rem;
+    }
+    
+    .checkbox-group {
+        margin-bottom: 2rem;
+    }
+    
+    .section-label {
+        display: block;
+        margin-bottom: 1rem;
+        font-weight: 500;
+    }
+    
+    .checkbox-options {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 0.5rem 1rem;
+    }
+    
+    .checkbox-option {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+    }
+    
+    .checkbox-option input {
+        margin-right: 0.5rem;
+    }
+    
+    textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+        resize: vertical;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        margin-top: 2rem;
+    }
+    
+    @media (max-width: 768px) {
+        .checkbox-options {
+            grid-template-columns: 1fr;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+        }
+        
+        .form-actions button,
+        .form-actions a {
+            width: 100%;
+            text-align: center;
+        }
+    }
+</style>
+{% endblock %}
