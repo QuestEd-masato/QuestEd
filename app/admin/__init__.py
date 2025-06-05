@@ -47,8 +47,19 @@ def dashboard():
 @login_required
 @admin_required
 def users():
-    """ユーザー一覧"""
-    users = User.query.all()
+    """ユーザー一覧（学校情報含む）"""
+    # ユーザーと学校情報をJOINして取得
+    users = User.query.outerjoin(School, User.school_id == School.id).add_columns(
+        User.id,
+        User.username,
+        User.email,
+        User.role,
+        User.created_at,
+        User.is_approved,
+        School.name.label('school_name'),
+        School.code.label('school_code')
+    ).all()
+    
     return render_template('admin/users.html', users=users)
 
 @admin_bp.route('/users/<int:user_id>/delete', methods=['POST'])

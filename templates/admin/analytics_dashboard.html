@@ -1,0 +1,408 @@
+{% extends 'base.html' %}
+
+{% block title %}使用状況ダッシュボード{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-md-4 mt-4">
+    <!-- ヘッダー -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-3 mb-md-0">
+            <i class="fas fa-chart-line me-2"></i>使用状況ダッシュボード
+        </h1>
+        <div class="d-flex flex-wrap gap-2">
+            <button class="btn btn-outline-primary btn-sm" onclick="refreshData()">
+                <i class="fas fa-sync-alt"></i> 更新
+            </button>
+            <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary active" data-period="7">7日</button>
+                <button class="btn btn-outline-secondary" data-period="30">30日</button>
+                <button class="btn btn-outline-secondary" data-period="90">90日</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 基本統計カード -->
+    <div class="status-cards">
+        <div class="status-card">
+            <h3><i class="fas fa-users text-primary"></i> 総ユーザー数</h3>
+            <div class="stat-number">{{ stats.total_users }}</div>
+            <div class="small text-muted">
+                今月新規: +{{ stats.new_users_this_month }}
+            </div>
+        </div>
+        
+        <div class="status-card">
+            <h3><i class="fas fa-user-check text-success"></i> アクティブユーザー</h3>
+            <div class="stat-number">{{ stats.active_users_week }}</div>
+            <div class="small text-muted">
+                過去7日間
+            </div>
+        </div>
+        
+        <div class="status-card">
+            <h3><i class="fas fa-school text-info"></i> 学校数</h3>
+            <div class="stat-number">{{ stats.total_schools }}</div>
+            <div class="small text-muted">
+                クラス数: {{ stats.total_classes }}
+            </div>
+        </div>
+        
+        <div class="status-card">
+            <h3><i class="fas fa-clipboard-list text-warning"></i> 活動記録</h3>
+            <div class="stat-number">{{ stats.total_activities }}</div>
+            <div class="small text-muted">
+                今月の記録数
+            </div>
+        </div>
+        
+        <div class="status-card">
+            <h3><i class="fas fa-robot text-purple"></i> AI使用回数</h3>
+            <div class="stat-number">{{ stats.ai_usage_count }}</div>
+            <div class="small text-muted">
+                今月のチャット数
+            </div>
+        </div>
+    </div>
+
+    <!-- チャートとテーブルのグリッド -->
+    <div class="dashboard-grid">
+        <!-- 日別アクティブユーザーチャート -->
+        <div class="dashboard-item">
+            <h4 class="mb-3">
+                <i class="fas fa-chart-area text-primary"></i> 
+                日別アクティブユーザー
+            </h4>
+            <canvas id="dailyUsersChart" width="400" height="200"></canvas>
+        </div>
+
+        <!-- API使用状況 -->
+        <div class="dashboard-item">
+            <h4 class="mb-3">
+                <i class="fas fa-cloud text-info"></i> 
+                API使用状況（今月）
+            </h4>
+            <div class="row g-3">
+                <div class="col-6">
+                    <div class="text-center p-2 border rounded">
+                        <div class="h5 text-primary">{{ api_usage.chat_usage }}</div>
+                        <div class="small text-muted">チャット</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="text-center p-2 border rounded">
+                        <div class="h5 text-success">{{ api_usage.theme_generation }}</div>
+                        <div class="small text-muted">テーマ生成</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="text-center p-2 border rounded">
+                        <div class="h5 text-warning">{{ api_usage.evaluation_usage }}</div>
+                        <div class="small text-muted">評価生成</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="text-center p-2 border rounded">
+                        <div class="h5 text-info">{{ api_usage.curriculum_usage }}</div>
+                        <div class="small text-muted">カリキュラム</div>
+                    </div>
+                </div>
+            </div>
+            <hr>
+            <div class="row text-center">
+                <div class="col">
+                    <div class="h6 text-muted">推定コスト</div>
+                    <div class="text-danger">
+                        ${{ api_usage.estimated_cost_usd }}
+                        <small class="text-muted">(≈{{ api_usage.estimated_cost_jpy }}円)</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 機能別使用統計 -->
+        <div class="dashboard-item">
+            <h4 class="mb-3">
+                <i class="fas fa-tasks text-success"></i> 
+                機能別使用統計（今月）
+            </h4>
+            <div class="progress-list">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small">活動記録</span>
+                    <span class="badge bg-primary">{{ feature_usage.activity_logs }}</span>
+                </div>
+                <div class="progress mb-3" style="height: 8px;">
+                    <div class="progress-bar bg-primary" style="width: {{ (feature_usage.activity_logs / (feature_usage.activity_logs + feature_usage.chat_sessions + feature_usage.todos_created + feature_usage.goals_created + feature_usage.themes_generated + 1) * 100) | round }}%"></div>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small">AIチャット</span>
+                    <span class="badge bg-info">{{ feature_usage.chat_sessions }}</span>
+                </div>
+                <div class="progress mb-3" style="height: 8px;">
+                    <div class="progress-bar bg-info" style="width: {{ (feature_usage.chat_sessions / (feature_usage.activity_logs + feature_usage.chat_sessions + feature_usage.todos_created + feature_usage.goals_created + feature_usage.themes_generated + 1) * 100) | round }}%"></div>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small">TODO作成</span>
+                    <span class="badge bg-warning">{{ feature_usage.todos_created }}</span>
+                </div>
+                <div class="progress mb-3" style="height: 8px;">
+                    <div class="progress-bar bg-warning" style="width: {{ (feature_usage.todos_created / (feature_usage.activity_logs + feature_usage.chat_sessions + feature_usage.todos_created + feature_usage.goals_created + feature_usage.themes_generated + 1) * 100) | round }}%"></div>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small">目標設定</span>
+                    <span class="badge bg-success">{{ feature_usage.goals_created }}</span>
+                </div>
+                <div class="progress mb-3" style="height: 8px;">
+                    <div class="progress-bar bg-success" style="width: {{ (feature_usage.goals_created / (feature_usage.activity_logs + feature_usage.chat_sessions + feature_usage.todos_created + feature_usage.goals_created + feature_usage.themes_generated + 1) * 100) | round }}%"></div>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small">テーマ生成</span>
+                    <span class="badge bg-purple">{{ feature_usage.themes_generated }}</span>
+                </div>
+                <div class="progress mb-3" style="height: 8px;">
+                    <div class="progress-bar" style="background-color: #6f42c1; width: {{ (feature_usage.themes_generated / (feature_usage.activity_logs + feature_usage.chat_sessions + feature_usage.todos_created + feature_usage.goals_created + feature_usage.themes_generated + 1) * 100) | round }}%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 学校別統計 -->
+        <div class="dashboard-item" style="grid-column: 1 / -1;">
+            <h4 class="mb-3">
+                <i class="fas fa-school text-warning"></i> 
+                学校別統計
+            </h4>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>学校名</th>
+                            <th>学校コード</th>
+                            <th class="text-center">総ユーザー</th>
+                            <th class="text-center">教師</th>
+                            <th class="text-center">生徒</th>
+                            <th class="text-center">クラス数</th>
+                            <th class="text-center">活動記録数</th>
+                            <th class="text-center">活動率</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for school in school_stats %}
+                        <tr>
+                            <td class="fw-bold">{{ school.school_name }}</td>
+                            <td><code>{{ school.school_code }}</code></td>
+                            <td class="text-center">
+                                <span class="badge bg-secondary">{{ school.user_count }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-success">{{ school.teacher_count }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-primary">{{ school.student_count }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-info">{{ school.class_count }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-warning">{{ school.activity_count }}</span>
+                            </td>
+                            <td class="text-center">
+                                {% set activity_rate = (school.activity_count / (school.student_count or 1)) %}
+                                {% if activity_rate > 10 %}
+                                    <span class="badge bg-success">高い</span>
+                                {% elif activity_rate > 5 %}
+                                    <span class="badge bg-warning">普通</span>
+                                {% else %}
+                                    <span class="badge bg-danger">低い</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-4">
+                                データがありません
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 最近のアクティビティ -->
+        <div class="dashboard-item">
+            <h4 class="mb-3">
+                <i class="fas fa-clock text-info"></i> 
+                最近の新規ユーザー
+            </h4>
+            <div class="list-group list-group-flush">
+                {% for user in recent_activities.recent_users %}
+                <div class="list-group-item px-0 py-2 border-0">
+                    <div class="d-flex align-items-center">
+                        <div class="me-2">
+                            {% if user.role == 'admin' %}
+                                <i class="fas fa-user-shield text-danger"></i>
+                            {% elif user.role == 'teacher' %}
+                                <i class="fas fa-chalkboard-teacher text-success"></i>
+                            {% else %}
+                                <i class="fas fa-user-graduate text-primary"></i>
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">{{ user.username }}</div>
+                            <div class="small text-muted">
+                                {{ user.school_name }} • 
+                                {{ user.created_at.strftime('%m/%d %H:%M') if user.created_at }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-3">
+                    新規ユーザーなし
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 最近のアクティビティ -->
+        <div class="dashboard-item">
+            <h4 class="mb-3">
+                <i class="fas fa-history text-secondary"></i> 
+                最近の活動記録
+            </h4>
+            <div class="list-group list-group-flush">
+                {% for activity in recent_activities.recent_activities %}
+                <div class="list-group-item px-0 py-2 border-0">
+                    <div class="d-flex align-items-center">
+                        <div class="me-2">
+                            {% if activity.has_image %}
+                                <i class="fas fa-image text-primary"></i>
+                            {% else %}
+                                <i class="fas fa-edit text-secondary"></i>
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold text-truncate" style="max-width: 200px;" title="{{ activity.title }}">
+                                {{ activity.title or '無題' }}
+                            </div>
+                            <div class="small text-muted">
+                                {{ activity.student_name }} • 
+                                {{ activity.timestamp.strftime('%m/%d %H:%M') if activity.timestamp }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-3">
+                    活動記録なし
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// 日別アクティブユーザーチャート
+const ctx = document.getElementById('dailyUsersChart').getContext('2d');
+const dailyUsersChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: {{ daily_active_users.dates | tojson }},
+        datasets: [{
+            label: 'アクティブユーザー数',
+            data: {{ daily_active_users.values | tojson }},
+            borderColor: '#0056b3',
+            backgroundColor: 'rgba(0, 86, 179, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+
+// データ更新機能
+function refreshData() {
+    location.reload();
+}
+
+// 期間選択ボタン
+document.querySelectorAll('[data-period]').forEach(button => {
+    button.addEventListener('click', function() {
+        // アクティブ状態を切り替え
+        document.querySelectorAll('[data-period]').forEach(btn => btn.classList.remove('active'));
+        this.classList.add('active');
+        
+        // 期間に応じてデータを更新（実装例）
+        const period = this.dataset.period;
+        console.log('Period changed to:', period);
+        // ここで Ajax でデータを更新する処理を追加可能
+    });
+});
+
+// 定期更新（5分毎）
+setInterval(function() {
+    console.log('Auto refresh data...');
+    // 自動更新が必要な場合はここに実装
+}, 300000); // 5分
+</script>
+
+<style>
+.bg-purple {
+    background-color: #6f42c1 !important;
+}
+
+.text-purple {
+    color: #6f42c1 !important;
+}
+
+.progress-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.chart-container {
+    position: relative;
+    height: 200px;
+}
+
+.status-card .stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #0056b3;
+    margin-bottom: 0.5rem;
+}
+
+@media (max-width: 768px) {
+    .status-card .stat-number {
+        font-size: 1.5rem;
+    }
+    
+    .dashboard-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+</style>
+{% endblock %}

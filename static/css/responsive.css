@@ -7,7 +7,9 @@
     
     /* コンテナの幅を調整 */
     .container {
-        padding: 0 0.75rem;
+        padding: 0.5rem;
+        width: 100%;
+        max-width: 100%;
     }
     
     /* カードとフォームの余白を縮小 */
@@ -22,10 +24,32 @@
         -webkit-overflow-scrolling: touch;
     }
     
-    /* ボタンのサイズを調整 */
+    /* ボタンのサイズを調整（文字折り返し対応） */
     .btn {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+        font-size: 14px;
+        white-space: normal;
+        word-wrap: break-word;
+        min-height: 44px; /* タップしやすい最小サイズ */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* ボタングループはスタック表示 */
+    .btn-group {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .btn-group .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .btn-toolbar {
+        flex-direction: column;
+        gap: 0.5rem;
     }
     
     /* フォーム要素をタップしやすく */
@@ -49,11 +73,29 @@
     /* ダッシュボードのグリッドを1列に */
     .dashboard-grid {
         grid-template-columns: 1fr !important;
+        gap: 1rem;
     }
     
-    /* 2列のレイアウトを1列に */
-    .col-2 {
-        grid-template-columns: 1fr !important;
+    /* ステータスカードを1列に */
+    .status-cards {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .status-card {
+        flex: 1 1 auto;
+        min-width: 100%;
+    }
+    
+    /* グリッドレイアウトを1列に */
+    .row {
+        flex-direction: column;
+        margin: 0;
+    }
+    
+    .col, .col-auto {
+        padding: 0.5rem 0;
+        width: 100%;
     }
     
     /* ヘッダーをコンパクトに */
@@ -166,5 +208,45 @@
 @media (min-width: 1200px) {
     .container {
         max-width: 1140px;
+    }
+}
+
+/* 極小画面（480px以下、iPhone SE等）のスタイル */
+@media (max-width: 480px) {
+    body {
+        font-size: 13px;
+    }
+    
+    .container {
+        padding: 0.25rem;
+    }
+    
+    .card {
+        padding: 0.75rem;
+    }
+    
+    .btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 13px;
+        min-height: 40px;
+    }
+    
+    .status-card {
+        padding: 1rem;
+    }
+    
+    .dashboard-item {
+        padding: 1rem;
+    }
+    
+    .status-card .stat-number {
+        font-size: 1.5rem;
+    }
+    
+    /* テーブルのセル幅をさらに縮小 */
+    .table th,
+    .table td {
+        padding: 0.25rem;
+        font-size: 12px;
     }
 }

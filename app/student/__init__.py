@@ -8,6 +8,8 @@ import json
 import io
 import csv
 import logging
+import imghdr
+import uuid
 
 # ReportLabを条件付きでインポート（PDF生成用）
 try:
@@ -29,8 +31,26 @@ from app.models import (
     Milestone, Group, GroupMembership, ChatHistory
 )
 from app.ai import generate_personal_themes_with_ai
+from app.utils.rate_limiting import upload_limit, api_limit
 
 student_bp = Blueprint('student', __name__)
+
+# ファイルアップロード設定
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+
+def allowed_file(filename):
+    """ファイル拡張子が許可されているか確認"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def validate_image(stream):
+    """画像ファイルのヘッダーを検証"""
+    header = stream.read(512)
+    stream.seek(0)
+    format = imghdr.what(None, header)
+    if not format:
+        return None
+    return '.' + format if format in ALLOWED_EXTENSIONS else None
 
 def student_required(f):
     """学生権限を要求するデコレータ"""
@@ -397,6 +417,7 @@ def activities():
 @student_bp.route('/new_activity', methods=['GET', 'POST'])
 @login_required
 @student_required
+@upload_limit()
 def new_activity():
     """新規活動記録（クラスID必須）"""
     class_id = request.args.get('class_id', type=int)
@@ -452,22 +473,40 @@ def new_activity():
             if 'image' in request.files:
                 file = request.files['image']
                 if file and file.filename != '':
+                    # ファイルサイズチェック
+                    file.seek(0, 2)
+                    file_length = file.tell()
+                    file.seek(0)
+                    
+                    if file_length > MAX_FILE_SIZE:
+                        flash('ファイルサイズが大きすぎます（最大5MB）')
+                        return redirect(url_for('student.new_activity', class_id=class_id))
+                    
+                    # ファイル拡張子チェック
+                    if not allowed_file(file.filename):
+                        flash('許可されていないファイル形式です。PNG、JPG、JPEG、GIFのみアップロード可能です。')
+                        return redirect(url_for('student.new_activity', class_id=class_id))
+                    
+                    # ファイル内容の検証
+                    if not validate_image(file.stream):
+                        flash('無効な画像ファイルです。')
+                        return redirect(url_for('student.new_activity', class_id=class_id))
+                    
                     # ファイル名を安全にする
-                    filename = secure_filename(file.filename)
-                    # タイムスタンプを追加してユニークにする
-                    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-                    filename = f"{timestamp}_{filename}"
+                    original_filename = secure_filename(file.filename)
+                    # ユニークなファイル名生成
+                    unique_filename = f"{uuid.uuid4().hex}_{original_filename}"
                     
-                    # 保存パスを作成
-                    upload_folder = current_app.config['UPLOAD_FOLDER']
+                    # 保存パスを作成（セキュアなアップロードディレクトリ）
+                    upload_folder = current_app.config.get('SECURE_UPLOAD_FOLDER', current_app.config['UPLOAD_FOLDER'])
                     if not os.path.exists(upload_folder):
-                        os.makedirs(upload_folder)
+                        os.makedirs(upload_folder, mode=0o755)
                     
-                    filepath = os.path.join(upload_folder, filename)
+                    filepath = os.path.join(upload_folder, unique_filename)
                     file.save(filepath)
                     
-                    # URLパスを保存
-                    new_log.image_url = f"/static/uploads/{filename}"
+                    # URLパスを保存（後でセキュアなエンドポイント経由で提供）
+                    new_log.image_url = f"/uploads/{unique_filename}"
         
             db.session.add(new_log)
             db.session.commit()
@@ -515,22 +554,41 @@ def edit_activity(log_id):
         if 'image' in request.files:
             file = request.files['image']
             if file and file.filename != '':
+                # ファイルサイズチェック
+                file.seek(0, 2)
+                file_length = file.tell()
+                file.seek(0)
+                
+                if file_length > MAX_FILE_SIZE:
+                    flash('ファイルサイズが大きすぎます（最大5MB）')
+                    return redirect(url_for('student.edit_activity', log_id=log_id))
+                
+                # ファイル拡張子チェック
+                if not allowed_file(file.filename):
+                    flash('許可されていないファイル形式です。PNG、JPG、JPEG、GIFのみアップロード可能です。')
+                    return redirect(url_for('student.edit_activity', log_id=log_id))
+                
+                # ファイル内容の検証
+                if not validate_image(file.stream):
+                    flash('無効な画像ファイルです。')
+                    return redirect(url_for('student.edit_activity', log_id=log_id))
+                
                 # 既存の画像を削除
                 if log.image_url:
-                    old_path = os.path.join('static', log.image_url.lstrip('/'))
+                    old_filename = log.image_url.split('/')[-1]
+                    old_path = os.path.join(current_app.config.get('SECURE_UPLOAD_FOLDER', current_app.config['UPLOAD_FOLDER']), old_filename)
                     if os.path.exists(old_path):
                         os.remove(old_path)
                 
                 # 新しい画像を保存
-                filename = secure_filename(file.filename)
-                timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-                filename = f"{timestamp}_{filename}"
+                original_filename = secure_filename(file.filename)
+                unique_filename = f"{uuid.uuid4().hex}_{original_filename}"
                 
-                upload_folder = current_app.config['UPLOAD_FOLDER']
-                filepath = os.path.join(upload_folder, filename)
+                upload_folder = current_app.config.get('SECURE_UPLOAD_FOLDER', current_app.config['UPLOAD_FOLDER'])
+                filepath = os.path.join(upload_folder, unique_filename)
                 file.save(filepath)
                 
-                log.image_url = f"/static/uploads/{filename}"
+                log.image_url = f"/uploads/{unique_filename}"
         
         log.timestamp = datetime.utcnow()
         db.session.commit()

@@ -1,10 +1,10 @@
 # app/__init__.py
-from flask import Flask, redirect, url_for
-from flask_login import current_user
+from flask import Flask, redirect, url_for, send_from_directory, abort, make_response
+from flask_login import current_user, login_required
 import os
 
 from config import get_config
-from extensions import db, migrate, login_manager, admin, csrf
+from extensions import db, migrate, login_manager, admin, csrf, limiter
 
 # Flask-Admin関連のインポートを条件付きに
 if admin:
@@ -58,6 +58,7 @@ def create_app(config_object=None):
         admin.init_app(app)
     
     csrf.init_app(app)
+    limiter.init_app(app)
     
     # テンプレートフィルターを登録
     register_template_filters(app)
@@ -103,12 +104,20 @@ def register_template_filters(app):
     
     @app.template_filter('nl2br')
     def nl2br(value):
-        """改行をHTMLのbrタグに変換するフィルター"""
+        """改行をHTMLのbrタグに変換するフィルター（XSS対策付き）"""
         if not value:
             return value
-        # エスケープしてから改行を<br>に変換
+        
+        # bleachでサニタイズ（HTMLタグを除去）
+        import bleach
         import markupsafe
-        escaped = markupsafe.escape(value)
+        
+        # 許可するタグを制限（brタグのみ）
+        allowed_tags = ['br']
+        cleaned = bleach.clean(str(value), tags=allowed_tags, strip=True)
+        
+        # エスケープしてから改行を<br>に変換
+        escaped = markupsafe.escape(cleaned)
         return markupsafe.Markup(str(escaped).replace('\n', '<br>\n'))
     
     @app.template_filter('fromjson')

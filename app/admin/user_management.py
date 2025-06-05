@@ -8,18 +8,27 @@ from werkzeug.security import generate_password_hash
 import csv
 import io
 import string
-import random
+import secrets
 from app.models import User, db
 from app.admin import admin_bp, admin_required
+from app.auth.password_validator import generate_secure_password
 
 # CSVファイルの拡張子チェック用関数
 def allowed_csv_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() == 'csv'
 
-# ランダムなパスワード生成関数
-def generate_random_password(length=10):
-    characters = string.ascii_letters + string.digits + '!@#$%^&*()'
-    return ''.join(random.choice(characters) for _ in range(length))
+# ランダムなパスワード生成関数（セキュア版）
+def generate_random_password(length=16):
+    """
+    セキュアなランダムパスワードを生成
+    
+    Args:
+        length (int): パスワードの長さ（最小12文字）
+        
+    Returns:
+        str: 生成されたパスワード
+    """
+    return generate_secure_password(max(12, length))
 
 # ユーザー一括インポート
 @admin_bp.route('/import_users', methods=['GET', 'POST'])

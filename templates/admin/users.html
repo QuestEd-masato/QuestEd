@@ -25,10 +25,11 @@
                     <thead class="table-light">
                         <tr>
                             <th style="width: 50px;">ID</th>
-                            <th style="min-width: 150px;">ユーザー名</th>
-                            <th class="d-none d-sm-table-cell" style="min-width: 180px;">メールアドレス</th>
+                            <th style="min-width: 120px;">ユーザー名</th>
+                            <th class="d-none d-sm-table-cell" style="min-width: 150px;">メールアドレス</th>
+                            <th class="d-none d-md-table-cell" style="min-width: 120px;">所属学校</th>
                             <th style="width: 80px;">ロール</th>
-                            <th class="d-none d-lg-table-cell" style="width: 120px;">作成日時</th>
+                            <th class="d-none d-lg-table-cell" style="width: 100px;">作成日時</th>
                             <th class="text-end" style="width: 130px;">操作</th>
                         </tr>
                     </thead>
@@ -50,10 +51,29 @@
                                     <div>
                                         <div>{{ user.username }}</div>
                                         <div class="small text-muted d-sm-none">{{ user.email }}</div>
+                                        <div class="small text-muted d-md-none">
+                                            {% if user.school_name %}
+                                                <i class="fas fa-school"></i> {{ user.school_name }}
+                                            {% else %}
+                                                <i class="fas fa-exclamation-triangle text-warning"></i> 未設定
+                                            {% endif %}
+                                        </div>
                                     </div>
                                 </div>
                             </td>
-                            <td class="d-none d-sm-table-cell text-truncate" style="max-width: 200px;" title="{{ user.email }}">{{ user.email }}</td>
+                            <td class="d-none d-sm-table-cell text-truncate" style="max-width: 150px;" title="{{ user.email }}">{{ user.email }}</td>
+                            <td class="d-none d-md-table-cell">
+                                {% if user.school_name %}
+                                    <div class="text-truncate" style="max-width: 120px;" title="{{ user.school_name }} ({{ user.school_code }})">
+                                        <div class="fw-bold">{{ user.school_name }}</div>
+                                        <div class="small text-muted">{{ user.school_code }}</div>
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted">
+                                        <i class="fas fa-exclamation-triangle text-warning"></i> 未設定
+                                    </span>
+                                {% endif %}
+                            </td>
                             <td>
                                 {% if user.role == 'admin' %}
                                     <span class="badge bg-danger">管理者</span>
@@ -62,8 +82,13 @@
                                 {% else %}
                                     <span class="badge bg-primary">生徒</span>
                                 {% endif %}
+                                {% if user.role == 'student' and not user.is_approved %}
+                                    <div class="small mt-1">
+                                        <span class="badge bg-warning text-dark">未承認</span>
+                                    </div>
+                                {% endif %}
                             </td>
-                            <td class="d-none d-lg-table-cell">{{ user.created_at.strftime('%Y/%m/%d') if user.created_at else '' }}</td>
+                            <td class="d-none d-lg-table-cell">{{ user.created_at.strftime('%m/%d') if user.created_at else '' }}</td>
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm" role="group">
                                     <a href="#" class="btn btn-outline-secondary" title="詳細">
@@ -84,7 +109,7 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="6" class="text-center py-4">
+                            <td colspan="7" class="text-center py-4">
                                 <div class="py-5">
                                     <i class="fas fa-users fa-3x text-muted mb-3"></i>
                                     <p class="lead text-muted">登録されているユーザーがありません。</p>

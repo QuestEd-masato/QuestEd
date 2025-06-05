@@ -7,11 +7,14 @@ import secrets
 import logging
 
 from app.models import db, User, School
+from app.auth.password_validator import validate_password, generate_secure_password
+from app.utils.rate_limiting import auth_limit, api_limit
 from utils.email_sender import send_confirmation_email, send_reset_password_email
 
 auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
+@auth_limit()
 def login():
     """ログイン処理"""
     if request.method == 'POST':
@@ -55,6 +58,7 @@ def logout():
     return redirect(url_for('auth.login'))
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
+@auth_limit()
 def register():
     """新規登録処理"""
     try:
@@ -99,8 +103,10 @@ def register():
                 return render_template('register.html')
             
             # パスワード強度チェック
-            if len(password) < 8:
-                flash('パスワードは8文字以上である必要があります。')
+            is_valid, password_errors = validate_password(password)
+            if not is_valid:
+                for error in password_errors:
+                    flash(error)
                 return render_template('register.html')
             
             # MVPモード: メール確認をバイパス
@@ -228,6 +234,7 @@ def awaiting_approval():
     return render_template('awaiting_approval.html')
 
 @auth_bp.route('/forgot_password', methods=['GET', 'POST'])
+@auth_limit()
 def forgot_password():
     """パスワードリセットリクエスト"""
     if request.method == 'POST':
@@ -257,6 +264,7 @@ def forgot_password():
     return render_template('forgot_password.html')
 
 @auth_bp.route('/reset_password/<int:user_id>/<token>', methods=['GET', 'POST'])
+@auth_limit()
 def reset_password(user_id, token):
     """パスワードリセット処理"""
     user = User.query.get_or_404(user_id)
@@ -281,8 +289,11 @@ def reset_password(user_id, token):
             flash('パスワードが一致しません。')
             return render_template('reset_password.html', user_id=user_id, token=token)
         
-        if len(password) < 8:
-            flash('パスワードは8文字以上である必要があります。')
+        # パスワード強度チェック
+        is_valid, password_errors = validate_password(password)
+        if not is_valid:
+            for error in password_errors:
+                flash(error)
             return render_template('reset_password.html', user_id=user_id, token=token)
         
         # パスワードを更新
@@ -315,8 +326,11 @@ def change_password():
             flash('新しいパスワードが一致しません。')
             return render_template('change_password.html')
         
-        if len(new_password) < 8:
-            flash('パスワードは8文字以上である必要があります。')
+        # パスワード強度チェック
+        is_valid, password_errors = validate_password(new_password)
+        if not is_valid:
+            for error in password_errors:
+                flash(error)
             return render_template('change_password.html')
         
         # パスワードを更新

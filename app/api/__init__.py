@@ -6,11 +6,13 @@ import logging
 
 from app.models import db, ChatHistory, InquiryTheme, Class, StudentEvaluation, User
 from app.ai import generate_chat_response
+from app.utils.rate_limiting import smart_ai_limit, api_limit
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
 @api_bp.route('/chat', methods=['GET', 'POST'])
 @login_required
+@smart_ai_limit()
 def chat():
     """チャットAPIエンドポイント - AIチャット応答を生成"""
     # GETリクエストの場合はエラーを返す
@@ -188,6 +190,7 @@ def export_evaluations():
 
 @api_bp.route('/theme/<int:theme_id>/select', methods=['POST'])
 @login_required
+@api_limit()
 def select_theme(theme_id):
     """テーマ選択API"""
     if current_user.role != 'student':
@@ -225,6 +228,7 @@ def select_theme(theme_id):
 
 @api_bp.route('/todo/<int:todo_id>/toggle', methods=['POST'])
 @login_required
+@api_limit()
 def toggle_todo(todo_id):
     """To Do完了状態切り替えAPI"""
     if current_user.role != 'student':
@@ -258,6 +262,7 @@ def toggle_todo(todo_id):
 
 @api_bp.route('/goal/<int:goal_id>/progress', methods=['POST'])
 @login_required
+@api_limit()
 def update_goal_progress(goal_id):
     """目標進捗更新API"""
     if current_user.role != 'student':
