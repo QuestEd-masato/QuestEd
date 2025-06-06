@@ -959,3 +959,144 @@ textarea {
         padding: 1rem;
     }
 }
+
+/* ======================================
+   ヘッダーとドロップダウンのUI改善
+   ====================================== */
+
+/* ヘッダーの高さを統一（BaseBuilderと同じ） */
+.navbar {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+    min-height: 56px;
+    max-height: 56px;
+}
+
+.navbar-brand {
+    font-size: 1.25rem;
+    padding: 0;
+    line-height: 1.5;
+    margin-right: 1rem;
+}
+
+/* ナビゲーションリンクの調整 */
+.navbar-nav .nav-link {
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+}
+
+/* ドロップダウンメニューのモダンなスタイル */
+.dropdown-toggle {
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.375rem 1rem;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.dropdown-toggle:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-toggle::after {
+    margin-left: 0.5rem;
+    transition: transform 0.3s ease;
+}
+
+.dropdown-toggle[aria-expanded="true"]::after {
+    transform: rotate(180deg);
+}
+
+.dropdown-menu {
+    border: none;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    border-radius: 12px;
+    padding: 0.5rem 0;
+    margin-top: 0.5rem;
+    min-width: 200px;
+    animation: fadeInDown 0.3s ease;
+}
+
+.dropdown-item {
+    padding: 0.625rem 1.25rem;
+    transition: all 0.2s ease;
+    font-weight: 400;
+    color: #495057;
+    position: relative;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+    color: #0056b3;
+    padding-left: 1.5rem;
+}
+
+.dropdown-item:hover::before {
+    content: '▸';
+    position: absolute;
+    left: 0.75rem;
+    color: #0056b3;
+}
+
+.dropdown-divider {
+    margin: 0.25rem 0;
+    border-color: #e9ecef;
+}
+
+/* アニメーション */
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ダークテーマのナビバー用 */
+.navbar-dark .dropdown-toggle {
+    color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.navbar-dark .dropdown-toggle:hover {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* ライトテーマのナビバー用 */
+.navbar-light .dropdown-toggle {
+    color: rgba(0, 0, 0, 0.7);
+    border-color: rgba(0, 0, 0, 0.1);
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.navbar-light .dropdown-toggle:hover {
+    color: rgba(0, 0, 0, 0.9);
+    border-color: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.1);
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .navbar {
+        padding-top: 0.25rem !important;
+        padding-bottom: 0.25rem !important;
+    }
+    
+    .dropdown-menu {
+        position: static;
+        float: none;
+        width: auto;
+        margin-top: 0;
+        box-shadow: none;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+}

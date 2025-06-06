@@ -52,9 +52,8 @@ def create_app(config_object=None):
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'この機能を使用するにはログインしてください。'
     
-    # 管理画面を初期化（カスタムインデックスビューを使用）
-    if admin and CustomAdminIndexView:
-        admin._set_admin_index_view(CustomAdminIndexView())
+    # 管理画面を初期化
+    if admin:
         admin.init_app(app)
     
     csrf.init_app(app)

@@ -9,6 +9,7 @@ import io
 import random
 import string
 import logging
+from functools import wraps
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.models import (
@@ -20,12 +21,12 @@ admin_bp = Blueprint('admin_panel', __name__, url_prefix='/admin')
 
 def admin_required(f):
     """管理者権限を要求するデコレータ"""
+    @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated or current_user.role != 'admin':
             flash('この機能は管理者のみ利用可能です。')
             return redirect(url_for('index'))
         return f(*args, **kwargs)
-    decorated_function.__name__ = f.__name__
     return decorated_function
 
 @admin_bp.route('/dashboard')
