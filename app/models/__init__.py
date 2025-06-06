@@ -32,7 +32,7 @@ class User(UserMixin, db.Model):
     activity_logs = db.relationship('ActivityLog', backref='student', lazy=True, cascade='all, delete-orphan')
     todos = db.relationship('Todo', backref='student', lazy=True, cascade='all, delete-orphan')
     goals = db.relationship('Goal', backref='student', lazy=True, cascade='all, delete-orphan')
-    student_evaluations = db.relationship('StudentEvaluation', foreign_keys='StudentEvaluation.student_id', backref='student', lazy=True, cascade='all, delete-orphan')
+    student_evaluations = db.relationship('StudentEvaluation', foreign_keys='StudentEvaluation.student_id', back_populates='student', lazy=True, cascade='all, delete-orphan')
     chat_histories = db.relationship('ChatHistory', backref='student', lazy=True, cascade='all, delete-orphan')
   
     def has_completed_surveys(self):
@@ -249,7 +249,7 @@ class StudentEvaluation(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # リレーションシップ
-    student = db.relationship('User', backref=db.backref('evaluations', lazy=True))
+    student = db.relationship('User', back_populates='student_evaluations')
     class_obj = db.relationship('Class', backref=db.backref('evaluations', lazy=True))
 
 class Curriculum(db.Model):
