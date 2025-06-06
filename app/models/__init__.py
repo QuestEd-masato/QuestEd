@@ -33,7 +33,7 @@ class User(UserMixin, db.Model):
     todos = db.relationship('Todo', backref='student', lazy=True, cascade='all, delete-orphan')
     goals = db.relationship('Goal', backref='student', lazy=True, cascade='all, delete-orphan')
     student_evaluations = db.relationship('StudentEvaluation', foreign_keys='StudentEvaluation.student_id', back_populates='student', lazy=True, cascade='all, delete-orphan')
-    chat_histories = db.relationship('ChatHistory', backref='student', lazy=True, cascade='all, delete-orphan')
+    chat_histories = db.relationship('ChatHistory', back_populates='user', lazy=True, cascade='all, delete-orphan')
   
     def has_completed_surveys(self):
         """学生がすべてのアンケートを完了しているかチェック"""
@@ -139,8 +139,8 @@ class ClassEnrollment(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     
     # リレーションシップ
-    student = db.relationship('User', foreign_keys=[student_id], backref='class_enrollments', overlaps='enrolled_classes,students')
-    class_obj = db.relationship('Class', foreign_keys=[class_id], backref='enrollments', overlaps='enrolled_classes,students')
+    student = db.relationship('User', foreign_keys=[student_id], backref='class_enrollments')
+    class_obj = db.relationship('Class', foreign_keys=[class_id], backref='enrollments')
     
     # ユニーク制約（同じ学生が同じクラスに複数回登録されないように）
     __table_args__ = (db.UniqueConstraint('class_id', 'student_id'),)
@@ -324,7 +324,7 @@ class ChatHistory(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     
     # userリレーションシップは1つだけにする
-    user = db.relationship('User', backref=db.backref('chat_histories', lazy=True))
+    user = db.relationship('User', back_populates='chat_histories')
     class_obj = db.relationship('Class', backref=db.backref('chat_histories', lazy=True))
 
 class Milestone(db.Model):
