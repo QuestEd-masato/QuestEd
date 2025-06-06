@@ -1,0 +1,361 @@
+/* ボタンのフォーカス状態とエフェクト */
+.btn:focus,
+.btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.15);
+}
+
+/* ボタンの波紋エフェクト */
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.5);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+/* レスポンシブなカードデザイン */
+.card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+}
+
+.card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* レスポンシブな文字サイズ */
+.display-4 {
+    font-size: clamp(2.5rem, 5vw, 3.5rem);
+}
+
+.h1, h1 {
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+}
+
+.h2, h2 {
+    font-size: clamp(1.5rem, 3.5vw, 2rem);
+}
+
+.h3, h3 {
+    font-size: clamp(1.25rem, 3vw, 1.75rem);
+}
+
+.h4, h4 {
+    font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+}
+
+/* ダッシュボードカードの最適化 */
+.dashboard-card {
+    min-height: 200px;
+    position: relative;
+    overflow: hidden;
+}
+
+.dashboard-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    transform: rotate(45deg);
+    transition: transform 0.6s ease;
+}
+
+.dashboard-card:hover::before {
+    transform: rotate(45deg) translate(50px, 50px);
+}
+
+/* 統計カードのアイコンアニメーション */
+.stat-icon {
+    transition: transform 0.3s ease;
+}
+
+.card:hover .stat-icon {
+    transform: scale(1.1) rotate(5deg);
+}
+
+/* グリッドレイアウトの改善 */
+@media (max-width: 768px) {
+    .col-md-6 {
+        margin-bottom: 1rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .btn-sm {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .page-header {
+        text-align: center;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .display-4 {
+        font-size: 2rem;
+    }
+}
+
+/* テーブルのレスポンシブ対応 */
+.table-responsive {
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table thead th {
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.875rem;
+    letter-spacing: 0.5px;
+}
+
+/* フォームの改善 */
+.form-control, .form-select {
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--btn-primary-border);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+}
+
+/* リンクの統一 */
+a {
+    color: var(--btn-primary-text);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    color: #003d82;
+}
+
+/* アニメーション */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card {
+    animation: fadeInUp 0.6s ease backwards;
+}
+
+.card:nth-child(1) { animation-delay: 0.1s; }
+.card:nth-child(2) { animation-delay: 0.2s; }
+.card:nth-child(3) { animation-delay: 0.3s; }
+.card:nth-child(4) { animation-delay: 0.4s; }
+
+/* スクロールバーのカスタマイズ */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* モバイルメニューの改善 */
+.navbar-toggler {
+    border: none;
+    padding: 0.25rem 0.5rem;
+}
+
+.navbar-toggler:focus {
+    box-shadow: none;
+}
+
+/* レスポンシブなスペーシング */
+.mb-4 {
+    margin-bottom: clamp(1rem, 3vw, 1.5rem) !important;
+}
+
+.mt-4 {
+    margin-top: clamp(1rem, 3vw, 1.5rem) !important;
+}
+
+.py-4 {
+    padding-top: clamp(1rem, 3vw, 1.5rem) !important;
+    padding-bottom: clamp(1rem, 3vw, 1.5rem) !important;
+}
+
+/* バッジの統一 */
+.badge {
+    font-weight: 500;
+    padding: 0.35em 0.65em;
+}
+
+.badge.bg-primary {
+    background-color: var(--btn-primary-bg) !important;
+    color: var(--btn-primary-text) !important;
+}
+
+.badge.bg-success {
+    background-color: var(--btn-success-bg) !important;
+    color: var(--btn-success-text) !important;
+}
+
+.badge.bg-info {
+    background-color: var(--btn-info-bg) !important;
+    color: var(--btn-info-text) !important;
+}
+
+.badge.bg-warning {
+    background-color: var(--btn-warning-bg) !important;
+    color: var(--btn-warning-text) !important;
+}
+
+.badge.bg-danger {
+    background-color: var(--btn-danger-bg) !important;
+    color: var(--btn-danger-text) !important;
+}
+
+/* アラートの統一 */
+.alert-primary {
+    background-color: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+    border-color: var(--btn-primary-border);
+}
+
+.alert-success {
+    background-color: var(--btn-success-bg);
+    color: var(--btn-success-text);
+    border-color: var(--btn-success-border);
+}
+
+.alert-info {
+    background-color: var(--btn-info-bg);
+    color: var(--btn-info-text);
+    border-color: var(--btn-info-border);
+}
+
+.alert-warning {
+    background-color: var(--btn-warning-bg);
+    color: var(--btn-warning-text);
+    border-color: var(--btn-warning-border);
+}
+
+.alert-danger {
+    background-color: var(--btn-danger-bg);
+    color: var(--btn-danger-text);
+    border-color: var(--btn-danger-border);
+}
+
+/* グリッドシステムのヘルパークラス */
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-left: -0.75rem;
+    margin-right: -0.75rem;
+}
+
+.col-12 {
+    flex: 0 0 100%;
+    max-width: 100%;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+
+.col-sm-6 {
+    flex: 0 0 50%;
+    max-width: 50%;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+
+.col-xl-3 {
+    flex: 0 0 25%;
+    max-width: 25%;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+
+@media (max-width: 576px) {
+    .col-sm-6 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 1200px) {
+    .col-xl-3 {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+}
+
+/* ギャップユーティリティ */
+.g-4 > * {
+    margin-bottom: 1.5rem;
+}
+
+.g-4 {
+    margin-bottom: -1.5rem;
+}
+
+/* シャドウユーティリティ */
+.shadow-sm {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+}
+
+/* Bootstrap風の追加クラス */
+.stretched-link::after {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1;
+    content: "";
+}

@@ -1,3 +1,37 @@
+/* 統一されたボタンスタイル */
+:root {
+    /* ボタンの統一カラーパレット（控えめで薄い色） */
+    --btn-primary-bg: #e7f1ff;
+    --btn-primary-text: #0056b3;
+    --btn-primary-hover: #d4e6ff;
+    --btn-primary-border: #b8d4f1;
+    
+    --btn-success-bg: #e6f4ea;
+    --btn-success-text: #0a5d2c;
+    --btn-success-hover: #d4eedb;
+    --btn-success-border: #b7dfcc;
+    
+    --btn-info-bg: #e8f4f8;
+    --btn-info-text: #0c5460;
+    --btn-info-hover: #d6ecf3;
+    --btn-info-border: #b8dae3;
+    
+    --btn-warning-bg: #fff8e6;
+    --btn-warning-text: #856404;
+    --btn-warning-hover: #fff3cd;
+    --btn-warning-border: #f5e7b3;
+    
+    --btn-danger-bg: #ffeef0;
+    --btn-danger-text: #721c24;
+    --btn-danger-hover: #ffdde1;
+    --btn-danger-border: #f5c6cb;
+    
+    --btn-secondary-bg: #f8f9fa;
+    --btn-secondary-text: #495057;
+    --btn-secondary-hover: #e9ecef;
+    --btn-secondary-border: #dee2e6;
+}
+
 /* 基本スタイル */
 * {
     margin: 0;
@@ -125,13 +159,13 @@ textarea {
     border-radius: 4px;
 }
 
-/* ボタン（レスポンシブ対応強化） */
+/* ボタンの基本スタイル */
 .btn {
     display: inline-block;
     padding: 0.5rem 1rem;
-    background-color: #0056b3;
-    color: white;
-    border: none;
+    background-color: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+    border: 1px solid var(--btn-primary-border);
     border-radius: 4px;
     cursor: pointer;
     text-decoration: none;
@@ -142,31 +176,110 @@ textarea {
     text-align: center;
     line-height: 1.5;
     transition: all 0.3s ease;
+    font-weight: 500;
+    position: relative;
 }
 
-.btn:hover {
-    background-color: #4285f4;
+/* プライマリボタン */
+.btn-primary,
+.btn-outline-primary {
+    background-color: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+    border-color: var(--btn-primary-border);
 }
 
-.btn-primary {
-    background-color: #0056b3;
-    color: white;
+.btn-primary:hover,
+.btn-outline-primary:hover {
+    background-color: var(--btn-primary-hover);
+    color: var(--btn-primary-text);
+    border-color: var(--btn-primary-border);
+    box-shadow: 0 2px 8px rgba(0, 86, 179, 0.15);
 }
 
-.btn-secondary {
-    background-color: #6c757d;
-    color: white;
+/* サクセスボタン */
+.btn-success,
+.btn-outline-success {
+    background-color: var(--btn-success-bg);
+    color: var(--btn-success-text);
+    border-color: var(--btn-success-border);
 }
 
-.btn-danger {
-    background-color: #dc3545;
-    color: white;
+.btn-success:hover,
+.btn-outline-success:hover {
+    background-color: var(--btn-success-hover);
+    color: var(--btn-success-text);
+    border-color: var(--btn-success-border);
+    box-shadow: 0 2px 8px rgba(10, 93, 44, 0.15);
+}
+
+/* インフォボタン */
+.btn-info,
+.btn-outline-info {
+    background-color: var(--btn-info-bg);
+    color: var(--btn-info-text);
+    border-color: var(--btn-info-border);
+}
+
+.btn-info:hover,
+.btn-outline-info:hover {
+    background-color: var(--btn-info-hover);
+    color: var(--btn-info-text);
+    border-color: var(--btn-info-border);
+    box-shadow: 0 2px 8px rgba(12, 84, 96, 0.15);
+}
+
+/* ワーニングボタン */
+.btn-warning,
+.btn-outline-warning {
+    background-color: var(--btn-warning-bg);
+    color: var(--btn-warning-text);
+    border-color: var(--btn-warning-border);
+}
+
+.btn-warning:hover,
+.btn-outline-warning:hover {
+    background-color: var(--btn-warning-hover);
+    color: var(--btn-warning-text);
+    border-color: var(--btn-warning-border);
+    box-shadow: 0 2px 8px rgba(133, 100, 4, 0.15);
+}
+
+/* デンジャーボタン */
+.btn-danger,
+.btn-outline-danger {
+    background-color: var(--btn-danger-bg);
+    color: var(--btn-danger-text);
+    border-color: var(--btn-danger-border);
+}
+
+.btn-danger:hover,
+.btn-outline-danger:hover {
+    background-color: var(--btn-danger-hover);
+    color: var(--btn-danger-text);
+    border-color: var(--btn-danger-border);
+    box-shadow: 0 2px 8px rgba(114, 28, 36, 0.15);
+}
+
+/* セカンダリボタン */
+.btn-secondary,
+.btn-outline-secondary {
+    background-color: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+    border-color: var(--btn-secondary-border);
+}
+
+.btn-secondary:hover,
+.btn-outline-secondary:hover {
+    background-color: var(--btn-secondary-hover);
+    color: var(--btn-secondary-text);
+    border-color: var(--btn-secondary-border);
+    box-shadow: 0 2px 8px rgba(73, 80, 87, 0.15);
 }
 
 .btn-outline {
     background-color: transparent;
-    border: 1px solid #0056b3;
-    color: #0056b3;
+    border: 1px solid var(--btn-primary-border);
+    color: var(--btn-primary-text);
 }
 
 .btn-sm {

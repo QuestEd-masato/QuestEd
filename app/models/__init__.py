@@ -52,7 +52,7 @@ class School(db.Model):
     __tablename__ = 'schools'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    code = db.Column(db.String(20), unique=True, nullable=False)  # 学校コード
+    code = db.Column(db.String(20), unique=True, nullable=True)  # 学校コード
     address = db.Column(db.Text)
     contact_email = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -137,8 +137,8 @@ class ClassEnrollment(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     
     # リレーションシップ
-    student = db.relationship('User', foreign_keys=[student_id], backref='class_enrollments')
-    class_obj = db.relationship('Class', foreign_keys=[class_id], backref='enrollments')
+    student = db.relationship('User', foreign_keys=[student_id], backref='class_enrollments', overlaps='enrolled_classes,students')
+    class_obj = db.relationship('Class', foreign_keys=[class_id], backref='enrollments', overlaps='enrolled_classes,students')
     
     # ユニーク制約（同じ学生が同じクラスに複数回登録されないように）
     __table_args__ = (db.UniqueConstraint('class_id', 'student_id'),)

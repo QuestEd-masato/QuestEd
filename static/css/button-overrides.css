@@ -1,0 +1,36 @@
+/* Bootstrap標準ボタンのオーバーライド */
+.btn-primary:not(:hover) {
+    background-color: var(--btn-primary-bg) !important;
+    color: var(--btn-primary-text) !important;
+    border-color: var(--btn-primary-border) !important;
+}
+
+.btn-success:not(:hover) {
+    background-color: var(--btn-success-bg) !important;
+    color: var(--btn-success-text) !important;
+    border-color: var(--btn-success-border) !important;
+}
+
+.btn-info:not(:hover) {
+    background-color: var(--btn-info-bg) !important;
+    color: var(--btn-info-text) !important;
+    border-color: var(--btn-info-border) !important;
+}
+
+.btn-warning:not(:hover) {
+    background-color: var(--btn-warning-bg) !important;
+    color: var(--btn-warning-text) !important;
+    border-color: var(--btn-warning-border) !important;
+}
+
+.btn-danger:not(:hover) {
+    background-color: var(--btn-danger-bg) !important;
+    color: var(--btn-danger-text) !important;
+    border-color: var(--btn-danger-border) !important;
+}
+
+.btn-secondary:not(:hover) {
+    background-color: var(--btn-secondary-bg) !important;
+    color: var(--btn-secondary-text) !important;
+    border-color: var(--btn-secondary-border) !important;
+}

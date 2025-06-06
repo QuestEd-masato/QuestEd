@@ -278,7 +278,7 @@ def create_school():
         # 学校を作成
         new_school = School(
             name=name,
-            code=code,
+            code=code if code else None,  # codeが空の場合はNoneを設定
             address=address,
             contact_email=email  # emailをcontact_emailフィールドにマッピング
         )
@@ -301,7 +301,7 @@ def edit_school(school_id):
     
     if request.method == 'POST':
         school.name = request.form.get('name')
-        school.code = request.form.get('code')
+        school.code = request.form.get('code') if request.form.get('code') else None
         school.address = request.form.get('address')
         school.contact_email = request.form.get('email')  # emailをcontact_emailフィールドにマッピング
         

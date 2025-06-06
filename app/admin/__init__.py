@@ -37,11 +37,13 @@ def dashboard():
     user_count = User.query.count()
     class_count = Class.query.count()
     school_count = School.query.count()
+    teacher_count = User.query.filter_by(role='teacher').count()
     
     return render_template('admin/dashboard.html', 
                           user_count=user_count, 
                           class_count=class_count,
-                          school_count=school_count)
+                          school_count=school_count,
+                          teacher_count=teacher_count)
 
 @admin_bp.route('/users')
 @login_required
