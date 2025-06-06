@@ -145,3 +145,4 @@ def delete_user(user_id):
 # 追加のルートをインポート
 from . import school_management
 from . import user_management
+from . import analytics

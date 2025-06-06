@@ -66,6 +66,10 @@ nav {
     z-index: 1001; /* ハンバーガーメニュー表示時にも前面に */
 }
 
+.navbar-brand {
+    font-size: 1.25rem;
+}
+
 nav ul {
     display: flex;
     list-style: none;

@@ -24,14 +24,16 @@ class User(UserMixin, db.Model):
     reset_token = db.Column(db.String(100), nullable=True)
     reset_token_created_at = db.Column(db.DateTime, nullable=True)
 
-    # リレーションシップの定義
-    classes_teaching = db.relationship('Class', backref='teacher', lazy=True)
-    interest_surveys = db.relationship('InterestSurvey', backref='student', lazy=True)
-    personality_surveys = db.relationship('PersonalitySurvey', backref='student', lazy=True)
-    inquiry_themes = db.relationship('InquiryTheme', backref='student', lazy=True)
-    activity_logs = db.relationship('ActivityLog', backref='student', lazy=True)
-    todos = db.relationship('Todo', backref='student', lazy=True)
-    goals = db.relationship('Goal', backref='student', lazy=True)
+    # リレーションシップの定義（カスケード削除を設定）
+    classes_teaching = db.relationship('Class', backref='teacher', lazy=True, cascade='all, delete-orphan')
+    interest_surveys = db.relationship('InterestSurvey', backref='student', lazy=True, cascade='all, delete-orphan')
+    personality_surveys = db.relationship('PersonalitySurvey', backref='student', lazy=True, cascade='all, delete-orphan')
+    inquiry_themes = db.relationship('InquiryTheme', backref='student', lazy=True, cascade='all, delete-orphan')
+    activity_logs = db.relationship('ActivityLog', backref='student', lazy=True, cascade='all, delete-orphan')
+    todos = db.relationship('Todo', backref='student', lazy=True, cascade='all, delete-orphan')
+    goals = db.relationship('Goal', backref='student', lazy=True, cascade='all, delete-orphan')
+    student_evaluations = db.relationship('StudentEvaluation', foreign_keys='StudentEvaluation.student_id', backref='student', lazy=True, cascade='all, delete-orphan')
+    chat_histories = db.relationship('ChatHistory', backref='student', lazy=True, cascade='all, delete-orphan')
   
     def has_completed_surveys(self):
         """学生がすべてのアンケートを完了しているかチェック"""
