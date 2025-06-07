@@ -23,16 +23,60 @@
 {% block extra_css %}
 {{ super() }}
 <style>
-/* 管理画面レイアウト改善 */
-
-/* サイドバーを非表示にしてフルワイド化 */
-.content-wrapper {
-    margin-left: 0 !important;
-}
-
-.main-sidebar {
+/* ===== 管理画面のサイドバー強制削除 ===== */
+/* あらゆる可能性のあるサイドバー要素を削除 */
+#admin-sidebar,
+.admin-sidebar,
+.sidebar,
+#sidebar,
+.nav-sidebar,
+.side-nav,
+.admin-nav,
+.left-sidebar,
+.main-sidebar,
+.sidebar-wrapper,
+.admin-sidebar-wrapper,
+nav.sidebar,
+.sidebar-navigation,
+.admin-panel-sidebar,
+.sidebar-menu,
+.admin-menu,
+.left-panel,
+.sidebar-content,
+aside.sidebar {
     display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    left: -9999px !important;
+    z-index: -999 !important;
 }
+
+/* コンテンツエリアの全幅表示を強制 */
+.main-content,
+.admin-content,
+.content-wrapper,
+.page-wrapper,
+.container-fluid,
+.admin-main,
+main.content,
+.content-area,
+.admin-body,
+.page-content,
+.main-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 15px !important;
+    padding-right: 15px !important;
+    flex: 1 !important;
+}
+
+/* 管理画面レイアウト改善 */
 
 /* テーブルの列幅調整 */
 .table th:nth-child(4),
@@ -203,4 +247,86 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ===== 管理画面サイドバー動的削除スクリプト =====
+document.addEventListener('DOMContentLoaded', function() {
+    // サイドバー要素の候補リスト
+    const sidebarSelectors = [
+        '#admin-sidebar', '.admin-sidebar', '.sidebar', '#sidebar',
+        '.nav-sidebar', '.side-nav', '.admin-nav', '.left-sidebar',
+        '.main-sidebar', '.sidebar-wrapper', '.admin-sidebar-wrapper',
+        'nav.sidebar', '.sidebar-navigation', '.admin-panel-sidebar',
+        '.sidebar-menu', '.admin-menu', '.left-panel', '.sidebar-content',
+        'aside.sidebar', '.admin-side-nav', '.dashboard-sidebar'
+    ];
+    
+    // 即座にサイドバーを削除
+    function removeSidebars() {
+        sidebarSelectors.forEach(selector => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(element => {
+                if (element) {
+                    element.style.display = 'none';
+                    element.style.visibility = 'hidden';
+                    element.style.opacity = '0';
+                    element.style.width = '0';
+                    element.style.height = '0';
+                    element.style.position = 'absolute';
+                    element.style.left = '-9999px';
+                    element.style.zIndex = '-999';
+                    element.remove(); // 完全に削除
+                }
+            });
+        });
+        
+        // コンテンツエリアを全幅にする
+        const contentSelectors = [
+            '.main-content', '.admin-content', '.content-wrapper',
+            '.page-wrapper', '.container-fluid', '.admin-main',
+            'main.content', '.content-area', '.admin-body',
+            '.page-content', '.main-panel'
+        ];
+        
+        contentSelectors.forEach(selector => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(element => {
+                if (element) {
+                    element.style.width = '100%';
+                    element.style.maxWidth = '100%';
+                    element.style.marginLeft = '0';
+                    element.style.marginRight = '0';
+                    element.style.paddingLeft = '15px';
+                    element.style.paddingRight = '15px';
+                    element.style.flex = '1';
+                }
+            });
+        });
+    }
+    
+    // 初回実行
+    removeSidebars();
+    
+    // DOM変更を監視して動的に追加されるサイドバーも削除
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList') {
+                removeSidebars();
+            }
+        });
+    });
+    
+    // DOM全体を監視
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+    
+    // 100ms後と500ms後にも実行（遅延読み込み対策）
+    setTimeout(removeSidebars, 100);
+    setTimeout(removeSidebars, 500);
+});
+</script>
 {% endblock %}

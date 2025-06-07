@@ -1295,3 +1295,350 @@ table td[style*="max-width"] {
 }
 
 /* ===== End of QuestEd UI/UX根本修正 ===== */
+
+/* ===== 管理画面サイドバー強制削除 2025/06/07 ===== */
+
+/* 管理画面でのあらゆるサイドバー要素を強制削除 */
+body.admin-page #admin-sidebar,
+body.admin-page .admin-sidebar,
+body.admin-page .sidebar,
+body.admin-page #sidebar,
+body.admin-page .nav-sidebar,
+body.admin-page .side-nav,
+body.admin-page .admin-nav,
+body.admin-page .left-sidebar,
+body.admin-page .main-sidebar,
+body.admin-page .sidebar-wrapper,
+body.admin-page .admin-sidebar-wrapper,
+body.admin-page nav.sidebar,
+body.admin-page .sidebar-navigation,
+body.admin-page .admin-panel-sidebar,
+body.admin-page .sidebar-menu,
+body.admin-page .admin-menu,
+body.admin-page .left-panel,
+body.admin-page .sidebar-content,
+body.admin-page aside.sidebar,
+/* 追加の可能性のある要素 */
+body.admin-page .admin-side-nav,
+body.admin-page .dashboard-sidebar,
+body.admin-page .control-sidebar,
+body.admin-page .adminlte-sidebar {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    left: -9999px !important;
+    z-index: -999 !important;
+    transform: translateX(-100%) !important;
+}
+
+/* 管理画面のコンテンツエリアを全幅に強制 */
+body.admin-page .main-content,
+body.admin-page .admin-content,
+body.admin-page .content-wrapper,
+body.admin-page .page-wrapper,
+body.admin-page .container-fluid,
+body.admin-page .admin-main,
+body.admin-page main.content,
+body.admin-page .content-area,
+body.admin-page .admin-body,
+body.admin-page .page-content,
+body.admin-page .main-panel,
+body.admin-page .admin-content-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 15px !important;
+    padding-right: 15px !important;
+    flex: 1 !important;
+}
+
+/* 管理画面のレイアウト調整 */
+body.admin-page .admin-layout,
+body.admin-page .main-layout,
+body.admin-page .app-layout,
+body.admin-page .dashboard-layout,
+body.admin-page .admin-wrapper {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+}
+
+/* 管理画面ボディの全幅表示 */
+body.admin-page,
+body.admin-page .admin-body,
+body.admin-page .dashboard-body {
+    width: 100vw !important;
+    overflow-x: hidden !important;
+}
+
+/* サイドバートグルボタンの削除 */
+body.admin-page .sidebar-toggle,
+body.admin-page .nav-toggle,
+body.admin-page .menu-toggle,
+body.admin-page .hamburger-sidebar,
+body.admin-page .sidebar-btn,
+body.admin-page .collapse-sidebar,
+body.admin-page .sidebar-collapse-btn {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+/* グリッドレイアウトの場合の調整 */
+body.admin-page .admin-grid,
+body.admin-page .dashboard-grid {
+    grid-template-columns: 1fr !important;
+    grid-template-areas: "content" !important;
+}
+
+/* ===== End of 管理画面サイドバー強制削除 ===== */
+
+/* ===== ハンバーガーメニュー ドロップダウン矢印修正 2025/06/07 ===== */
+
+/* デスクトップ用ドロップダウン矢印の統一 */
+.nav-link.dropdown-toggle::after {
+    content: "\f107" !important;
+    font-family: "Font Awesome 5 Free" !important;
+    font-weight: 900 !important;
+    margin-left: 0.5rem !important;
+    vertical-align: middle !important;
+    border: none !important;
+    font-size: 0.8em !important;
+    transition: transform 0.3s ease !important;
+}
+
+.nav-link.dropdown-toggle[aria-expanded="true"]::after {
+    transform: rotate(180deg) !important;
+}
+
+/* モバイル用ドロップダウン矢印の強化 */
+.mobile-dropdown::after {
+    content: "\f107" !important;
+    font-family: "Font Awesome 5 Free" !important;
+    font-weight: 900 !important;
+    position: absolute !important;
+    right: 1rem !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    transition: transform 0.3s ease !important;
+    font-size: 0.8em !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.mobile-dropdown.open::after {
+    transform: translateY(-50%) rotate(180deg) !important;
+    color: white !important;
+}
+
+/* モバイルメニューでのBootstrapドロップダウン矢印修正 */
+@media (max-width: 991px) {
+    .navbar-nav .dropdown-toggle::after {
+        content: "\f107" !important;
+        font-family: "Font Awesome 5 Free" !important;
+        font-weight: 900 !important;
+        display: inline-block !important;
+        margin-left: 0.5rem !important;
+        vertical-align: middle !important;
+        border: none !important;
+        font-size: 0.8em !important;
+        width: auto !important;
+        height: auto !important;
+        border-top: none !important;
+        border-right: none !important;
+        border-bottom: none !important;
+        border-left: none !important;
+        transition: transform 0.3s ease !important;
+    }
+    
+    .navbar-nav .dropdown-toggle[aria-expanded="true"]::after {
+        transform: rotate(180deg) !important;
+    }
+    
+    /* ナビゲーションコラプス内での矢印 */
+    .navbar-collapse .dropdown-toggle::after {
+        content: "\f107" !important;
+        font-family: "Font Awesome 5 Free" !important;
+        font-weight: 900 !important;
+        float: right !important;
+        margin-left: auto !important;
+        margin-right: 0 !important;
+        border: none !important;
+        font-size: 0.8em !important;
+        transition: transform 0.3s ease !important;
+    }
+    
+    .navbar-collapse .dropdown-toggle[aria-expanded="true"]::after {
+        transform: rotate(180deg) !important;
+    }
+}
+
+/* 特定のケース：Bootstrap4/5 互換性 */
+.dropdown-toggle::after {
+    font-family: "Font Awesome 5 Free" !important;
+}
+
+/* 追加：カスタムドロップダウンアイコンクラス */
+.custom-dropdown-arrow {
+    position: relative !important;
+}
+
+.custom-dropdown-arrow::after {
+    content: "\f107" !important;
+    font-family: "Font Awesome 5 Free" !important;
+    font-weight: 900 !important;
+    margin-left: 0.5rem !important;
+    transition: transform 0.3s ease !important;
+    display: inline-block !important;
+}
+
+.custom-dropdown-arrow.open::after,
+.custom-dropdown-arrow[aria-expanded="true"]::after {
+    transform: rotate(180deg) !important;
+}
+
+/* Font Awesome アイコンフォントの強制ロード確認 */
+@font-face {
+    font-family: 'Font Awesome 5 Free';
+    src: url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/webfonts/fa-solid-900.woff2') format('woff2');
+    font-weight: 900;
+    font-display: swap;
+}
+
+/* ===== End of ハンバーガーメニュー ドロップダウン矢印修正 ===== */
+
+/* ===== BaseBuilder 学生カードタイトル統一 2025/06/07 ===== */
+
+/* BaseBuilder内のすべてのカードタイトルを統一 */
+.basebuilder-content .card-title,
+.basebuilder-content .card-header h1,
+.basebuilder-content .card-header h2,
+.basebuilder-content .card-header h3,
+.basebuilder-content .card-header h4,
+.basebuilder-content .card-header h5,
+.basebuilder-content .card-header h6,
+.basebuilder-content .card-body h1,
+.basebuilder-content .card-body h2,
+.basebuilder-content .card-body h3,
+.basebuilder-content .card-body h4,
+.basebuilder-content .card-body h5,
+.basebuilder-content .card-body h6 {
+    font-size: 1.25rem !important;
+    font-weight: 600 !important;
+    line-height: 1.4 !important;
+    margin-bottom: 0.75rem !important;
+    color: #333 !important;
+}
+
+/* 特定のBaseBuilderページでのカードタイトル */
+[class*="basebuilder"] .card-title,
+[id*="basebuilder"] .card-title,
+body[class*="basebuilder"] .card-title {
+    font-size: 1.25rem !important;
+    font-weight: 600 !important;
+    line-height: 1.4 !important;
+    margin-bottom: 0.75rem !important;
+}
+
+/* BaseBuilderレイアウト内での統一 */
+.basebuilder-layout .card-title,
+.basebuilder-wrapper .card-title,
+.basebuilder-main .card-title {
+    font-size: 1.25rem !important;
+    font-weight: 600 !important;
+}
+
+/* BaseBuilderの学生ダッシュボード特有の調整 */
+.student-dashboard .card-title,
+.student-dashboard .card-header h5 {
+    font-size: 1.25rem !important;
+    font-weight: 600 !important;
+    margin: 0 !important;
+}
+
+/* BaseBuilderのテキストカード */
+.text-card .card-title,
+.text-card h5,
+.text-card h6 {
+    font-size: 1.25rem !important;
+    font-weight: 600 !important;
+}
+
+/* BaseBuilderの問題カード */
+.problem-card h6,
+.problem-card .card-title {
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+    margin-bottom: 0.5rem !important;
+}
+
+/* BaseBuilderのセクションタイトル */
+.section-title {
+    font-size: 1.75rem !important;
+    font-weight: 700 !important;
+    margin-bottom: 1.5rem !important;
+    color: #333 !important;
+}
+
+/* モバイルレスポンシブ調整 */
+@media (max-width: 768px) {
+    .basebuilder-content .card-title,
+    .basebuilder-content .card-header h5 {
+        font-size: 1.1rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .problem-card h6,
+    .problem-card .card-title {
+        font-size: 1rem !important;
+    }
+    
+    .section-title {
+        font-size: 1.5rem !important;
+        margin-bottom: 1rem !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .basebuilder-content .card-title,
+    .basebuilder-content .card-header h5 {
+        font-size: 1rem !important;
+        line-height: 1.3 !important;
+    }
+    
+    .section-title {
+        font-size: 1.3rem !important;
+    }
+}
+
+/* BaseBuilderカードのスペーシング改善 */
+.basebuilder-content .card {
+    margin-bottom: 1.5rem !important;
+}
+
+.basebuilder-content .card-header {
+    padding: 1rem 1.25rem 0.75rem !important;
+    background-color: #f8f9fa !important;
+    border-bottom: 1px solid #dee2e6 !important;
+}
+
+.basebuilder-content .card-body {
+    padding: 1.25rem !important;
+}
+
+/* BaseBuilderボタンの統一 */
+.basebuilder-content .btn {
+    font-size: 0.875rem !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 4px !important;
+}
+
+.basebuilder-content .btn-sm {
+    font-size: 0.8rem !important;
+    padding: 0.375rem 0.75rem !important;
+}
+
+/* ===== End of BaseBuilder 学生カードタイトル統一 ===== */
