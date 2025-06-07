@@ -52,10 +52,34 @@
     display: inline-block;
 }
 
+/* メールアドレス列の省略表示 */
+.email-cell {
+    max-width: 150px !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 学校名列の省略表示 */
+.school-cell {
+    max-width: 120px !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
     .table-responsive {
         overflow-x: auto;
+    }
+    
+    .email-cell {
+        max-width: 120px !important;
+    }
+    
+    .school-cell {
+        max-width: 100px !important;
     }
 }
 </style>
@@ -112,10 +136,10 @@
                                     </div>
                                 </div>
                             </td>
-                            <td class="d-none d-sm-table-cell text-truncate" style="max-width: 150px;" title="{{ user.email }}">{{ user.email }}</td>
+                            <td class="d-none d-sm-table-cell email-cell" title="{{ user.email }}">{{ user.email }}</td>
                             <td class="d-none d-md-table-cell">
                                 {% if user.school_name %}
-                                    <div class="text-truncate" style="max-width: 120px;" title="{{ user.school_name }} ({{ user.school_code }})">
+                                    <div class="school-cell" title="{{ user.school_name }} ({{ user.school_code }})">
                                         <div class="fw-bold">{{ user.school_name }}</div>
                                         <div class="small text-muted">{{ user.school_code }}</div>
                                     </div>
