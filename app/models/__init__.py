@@ -93,7 +93,7 @@ class ClassGroup(db.Model):
     
     # リレーションシップ
     enrollments = db.relationship('StudentEnrollment', backref='class_group', lazy=True)
-    teacher = db.relationship('User', backref='class_groups_teaching', lazy=True)
+    teacher = db.relationship('User', backref=db.backref('class_groups_teaching', lazy=True, cascade='all, delete-orphan'))
 
 class StudentEnrollment(db.Model):
     __tablename__ = 'student_enrollments'
@@ -108,7 +108,7 @@ class StudentEnrollment(db.Model):
     __table_args__ = (db.UniqueConstraint('student_id', 'class_group_id', 'school_year_id'),)
     
     # リレーションシップ
-    student = db.relationship('User', backref='student_enrollments', lazy=True)
+    student = db.relationship('User', backref=db.backref('student_enrollments', lazy=True, cascade='all, delete-orphan'))
     school_year = db.relationship('SchoolYear', backref='student_enrollments', lazy=True)
 
 # クラスモデル定義
@@ -139,7 +139,7 @@ class ClassEnrollment(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     
     # リレーションシップ
-    student = db.relationship('User', foreign_keys=[student_id], backref='class_enrollments')
+    student = db.relationship('User', foreign_keys=[student_id], backref=db.backref('class_enrollments', cascade='all, delete-orphan'))
     class_obj = db.relationship('Class', foreign_keys=[class_id], backref='enrollments')
     
     # ユニーク制約（同じ学生が同じクラスに複数回登録されないように）
@@ -156,7 +156,7 @@ class MainTheme(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # リレーションシップ
-    teacher = db.relationship('User', backref=db.backref('main_themes', lazy=True))
+    teacher = db.relationship('User', backref=db.backref('main_themes', lazy=True, cascade='all, delete-orphan'))
     class_obj = db.relationship('Class', backref=db.backref('main_themes', lazy=True))
     
     # このメインテーマに関連する個人テーマ
@@ -272,7 +272,7 @@ class Curriculum(db.Model):
     
     # リレーションシップ
     class_obj = db.relationship('Class', backref=db.backref('curriculums', lazy=True))
-    teacher = db.relationship('User', backref=db.backref('created_curriculums', lazy=True))
+    teacher = db.relationship('User', backref=db.backref('created_curriculums', lazy=True, cascade='all, delete-orphan'))
 
 class RubricTemplate(db.Model):
     __tablename__ = 'rubric_templates'
@@ -287,7 +287,7 @@ class RubricTemplate(db.Model):
     
     # リレーションシップ
     class_obj = db.relationship('Class', backref=db.backref('rubric_templates', lazy=True))
-    teacher = db.relationship('User', backref=db.backref('created_rubrics', lazy=True))
+    teacher = db.relationship('User', backref=db.backref('created_rubrics', lazy=True, cascade='all, delete-orphan'))
 
 class Group(db.Model):
     __tablename__ = 'groups'
@@ -300,9 +300,9 @@ class Group(db.Model):
 
     # リレーションシップ
     class_obj = db.relationship('Class', backref=db.backref('groups', lazy=True))
-    creator = db.relationship('User', backref=db.backref('created_groups', lazy=True))
+    creator = db.relationship('User', backref=db.backref('created_groups', lazy=True, cascade='all, delete-orphan'))
     members = db.relationship('User', secondary='group_memberships',
-                             backref=db.backref('joined_groups', lazy='dynamic'))
+                             backref=db.backref('joined_groups', lazy='dynamic', cascade='all, delete'))
 
 class GroupMembership(db.Model):
     __tablename__ = 'group_memberships'

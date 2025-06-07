@@ -79,16 +79,9 @@ def delete_user(user_id):
         return redirect(url_for('admin_panel.users'))
     
     try:
-        # 関連データの削除
-        # ユーザーが教師の場合、教えているクラスを削除
-        if user.role == 'teacher':
-            classes = Class.query.filter_by(teacher_id=user.id).all()
-            for class_obj in classes:
-                db.session.delete(class_obj)
-        
-        # ユーザーが生徒の場合、関連データを削除
+        # アクティビティログに関連する画像ファイルを削除
+        # （ファイルシステム上のファイルはカスケード削除されないため手動で削除）
         if user.role == 'student':
-            # アクティビティログに関連する画像ファイルを削除
             activity_logs = ActivityLog.query.filter_by(student_id=user.id).all()
             for log in activity_logs:
                 if log.image_url:

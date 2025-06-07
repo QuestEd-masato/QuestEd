@@ -16,7 +16,7 @@ class ProblemCategory(db.Model):
     # リレーションシップ - 文字列参照を使用
     problems = db.relationship('BasicKnowledgeItem', backref='category', lazy=True)
     subcategories = db.relationship('ProblemCategory', backref=db.backref('parent', remote_side=[id]))
-    creator = db.relationship('User', backref=db.backref('created_categories', lazy=True))
+    creator = db.relationship('User', backref=db.backref('created_categories', lazy=True, cascade='all, delete-orphan'))
     text_sets = db.relationship('TextSet', backref='category', lazy=True)
     # school_ref = db.relationship('School', back_populates='problem_categories', lazy=True)
     
@@ -31,7 +31,7 @@ class TextDelivery(db.Model):
     due_date = db.Column(db.Date, nullable=True)
     
     # リレーションシップ - 文字列参照を使用
-    deliverer = db.relationship('User', backref='delivered_texts')
+    deliverer = db.relationship('User', backref=db.backref('delivered_texts', cascade='all, delete-orphan'))
     # Classとのリレーションシップを文字列で参照して循環インポートを回避
     delivered_class = db.relationship('Class', backref='text_deliveries')
     text_set = db.relationship('TextSet', backref='deliveries')
@@ -56,7 +56,7 @@ class BasicKnowledgeItem(db.Model):
     school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=True)
     
     # リレーションシップ
-    creator = db.relationship('User', backref=db.backref('created_problems', lazy=True))
+    creator = db.relationship('User', backref=db.backref('created_problems', lazy=True, cascade='all, delete-orphan'))
     answer_records = db.relationship('AnswerRecord', backref='problem', lazy=True)
     theme_relations = db.relationship('KnowledgeThemeRelation', backref='problem', lazy=True)
     # school_ref = db.relationship('School', back_populates='basic_knowledge_items', lazy=True)
@@ -74,7 +74,7 @@ class KnowledgeThemeRelation(db.Model):
     # リレーションシップ
     # themeは文字列で参照して循環インポートを回避
     theme = db.relationship('InquiryTheme', backref=db.backref('knowledge_relations', lazy=True))
-    creator = db.relationship('User', backref=db.backref('created_relations', lazy=True))
+    creator = db.relationship('User', backref=db.backref('created_relations', lazy=True, cascade='all, delete-orphan'))
 
 # 解答履歴モデル → 単語学習記録モデルに変更
 class AnswerRecord(db.Model):
@@ -88,7 +88,7 @@ class AnswerRecord(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     
     # リレーションシップ
-    student = db.relationship('User', backref=db.backref('answer_records', lazy=True))
+    student = db.relationship('User', backref=db.backref('answer_records', lazy=True, cascade='all, delete-orphan'))
 
 # 熟練度記録モデル → 単語熟練度記録モデルに変更
 class ProficiencyRecord(db.Model):
@@ -101,7 +101,7 @@ class ProficiencyRecord(db.Model):
     review_date = db.Column(db.Date)  # 次回復習日を追加
     
     # リレーションシップ
-    student = db.relationship('User', backref=db.backref('proficiency_records', lazy=True))
+    student = db.relationship('User', backref=db.backref('proficiency_records', lazy=True, cascade='all, delete-orphan'))
     category = db.relationship('ProblemCategory', backref=db.backref('proficiency_records', lazy=True))
     
     # ユニーク制約（学生+カテゴリの組み合わせは一意）
@@ -117,7 +117,7 @@ class TextProficiencyRecord(db.Model):
     last_updated = db.Column(db.DateTime, default=datetime.utcnow)
     
     # リレーションシップ
-    student = db.relationship('User', backref=db.backref('text_proficiency_records', lazy=True))
+    student = db.relationship('User', backref=db.backref('text_proficiency_records', lazy=True, cascade='all, delete-orphan'))
     text_set = db.relationship('TextSet', backref=db.backref('proficiency_records', lazy=True))
     
     # ユニーク制約（学生+テキストの組み合わせは一意）
@@ -136,7 +136,7 @@ class LearningPath(db.Model):
     school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=True)
     
     # リレーションシップ
-    creator = db.relationship('User', backref=db.backref('created_paths', lazy=True))
+    creator = db.relationship('User', backref=db.backref('created_paths', lazy=True, cascade='all, delete-orphan'))
     assignments = db.relationship('PathAssignment', backref='path', lazy=True)
     # school_ref = db.relationship('School', back_populates='learning_paths', lazy=True)
     
@@ -153,8 +153,8 @@ class PathAssignment(db.Model):
     progress = db.Column(db.Integer, default=0)  # 0-100のスケール
     
     # リレーションシップ
-    student = db.relationship('User', foreign_keys=[student_id], backref=db.backref('assigned_paths', lazy=True))
-    assigner = db.relationship('User', foreign_keys=[assigned_by], backref=db.backref('assigned_to_others', lazy=True))
+    student = db.relationship('User', foreign_keys=[student_id], backref=db.backref('assigned_paths', lazy=True, cascade='all, delete-orphan'))
+    assigner = db.relationship('User', foreign_keys=[assigned_by], backref=db.backref('assigned_to_others', lazy=True, cascade='all, delete-orphan'))
     
     # ユニーク制約（学生+パスの組み合わせは一意）
     __table_args__ = (db.UniqueConstraint('path_id', 'student_id'),)
@@ -170,7 +170,7 @@ class WordProficiency(db.Model):
     review_date = db.Column(db.Date, default=datetime.now().date())  # 次回復習日
     
     # リレーションシップ
-    student = db.relationship('User', backref=db.backref('word_proficiency_records', lazy=True))
+    student = db.relationship('User', backref=db.backref('word_proficiency_records', lazy=True, cascade='all, delete-orphan'))
     problem = db.relationship('BasicKnowledgeItem', backref=db.backref('word_proficiency_records', lazy=True))
     
     # ユニーク制約（学生+問題の組み合わせは一意）
@@ -189,5 +189,5 @@ class TextSet(db.Model):
     
     # リレーションシップ
     problems = db.relationship('BasicKnowledgeItem', backref='text_set', lazy=True)
-    creator = db.relationship('User', backref=db.backref('created_text_sets', lazy=True))
+    creator = db.relationship('User', backref=db.backref('created_text_sets', lazy=True, cascade='all, delete-orphan'))
     # school_ref = db.relationship('School', back_populates='text_sets', lazy=True)
