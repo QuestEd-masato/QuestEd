@@ -1,7 +1,8 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, Response, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, Response, session, current_app
 from flask_login import login_required, current_user
 import json
 import random
+import traceback
 from datetime import datetime, timedelta, date
 from extensions import db
 from app.models import User, InquiryTheme, Class
@@ -21,154 +22,165 @@ basebuilder_module = Blueprint('basebuilder_module', __name__, url_prefix='/base
 @basebuilder_module.route('/')
 @login_required
 def index():
-    if current_user.role == 'student':
-        # 今日の日付
-        today = datetime.now().date()
+    try:
+        current_app.logger.info(f"BaseBuilder index accessed by user {current_user.id}")
         
-        # 学生が所属するクラスを取得
-        enrolled_class_ids = [c.id for c in current_user.enrolled_classes]
-        
-        # 1. 配信されたテキストを取得
-        delivered_texts = TextDelivery.query.filter(
-            TextDelivery.class_id.in_(enrolled_class_ids)
-        ).order_by(TextDelivery.delivered_at.desc()).limit(5).all()
-        
-        # 配信されたテキストのカテゴリをすべて取得
-        delivered_category_ids = set()
-        for delivery in delivered_texts:
-            delivered_category_ids.add(delivery.text_set.category_id)
-        
-        # 2. それぞれのカテゴリを取得
-        delivered_categories = ProblemCategory.query.filter(
-            ProblemCategory.id.in_(delivered_category_ids)
-        ).all()
-        
-        # 3. カテゴリごとのテキストセットをグループ化
-        category_text_sets = {}
-        for category_id in delivered_category_ids:
-            text_sets = TextSet.query.filter_by(category_id=category_id).all()
-            category_text_sets[category_id] = text_sets
-        
-        # 4. カテゴリの定着度を計算
-        category_proficiency = {}
-        for record in ProficiencyRecord.query.filter_by(student_id=current_user.id).all():
-            category_proficiency[record.category_id] = {
-                'level': record.level * 20,  # 0-5を0-100%に変換
-                'last_updated': record.last_updated
-            }
-        
-        # 5. テキストの定着度を計算
-        text_proficiency = {}
-        for text_set in TextSet.query.all():
-            # テキストの定着度レコードを取得
-            text_prof_record = TextProficiencyRecord.query.filter_by(
-                student_id=current_user.id,
-                text_set_id=text_set.id
-            ).first()
-    
-            if text_prof_record:
-                # 定着度レコードが存在する場合
-                text_proficiency[text_set.id] = {
-                    'level': text_prof_record.level,
-                    'last_updated': text_prof_record.last_updated
-                }
-            else:
-                # 定着度レコードが存在しない場合
-                text_proficiency[text_set.id] = {
-                    'level': 0,
-                    'last_updated': None
-                }
-
-        # テキスト学習進捗状況を計算（解答済み問題数ベース）
-        text_progress = {}
-        for delivery in delivered_texts:
-            # テキストの問題総数
-            problems = BasicKnowledgeItem.query.filter_by(
-                text_set_id=delivery.text_set_id
+        if current_user.role == 'student':
+            # 今日の日付
+            today = datetime.now().date()
+            
+            # 学生が所属するクラスを取得
+            enrolled_class_ids = [c.id for c in current_user.enrolled_classes]
+            
+            # 1. 配信されたテキストを取得
+            delivered_texts = TextDelivery.query.filter(
+                TextDelivery.class_id.in_(enrolled_class_ids)
+            ).order_by(TextDelivery.delivered_at.desc()).limit(5).all()
+            
+            # 配信されたテキストのカテゴリをすべて取得
+            delivered_category_ids = set()
+            for delivery in delivered_texts:
+                delivered_category_ids.add(delivery.text_set.category_id)
+            
+            # 2. それぞれのカテゴリを取得
+            delivered_categories = ProblemCategory.query.filter(
+                ProblemCategory.id.in_(delivered_category_ids)
             ).all()
-    
-            total_problems = len(problems)
-    
-            # 解答済みの問題数
-            answered_count = 0
-            for problem in problems:
-                answer = AnswerRecord.query.filter_by(
+            
+            # 3. カテゴリごとのテキストセットをグループ化
+            category_text_sets = {}
+            for category_id in delivered_category_ids:
+                text_sets = TextSet.query.filter_by(category_id=category_id).all()
+                category_text_sets[category_id] = text_sets
+            
+            # 4. カテゴリの定着度を計算
+            category_proficiency = {}
+            for record in ProficiencyRecord.query.filter_by(student_id=current_user.id).all():
+                category_proficiency[record.category_id] = {
+                    'level': record.level * 20,  # 0-5を0-100%に変換
+                    'last_updated': record.last_updated
+                }
+            
+            # 5. テキストの定着度を計算
+            text_proficiency = {}
+            for text_set in TextSet.query.all():
+                # テキストの定着度レコードを取得
+                text_prof_record = TextProficiencyRecord.query.filter_by(
                     student_id=current_user.id,
-                    problem_id=problem.id
+                    text_set_id=text_set.id
                 ).first()
-        
-                if answer:
-                    answered_count += 1
     
-            # 進捗率を計算
-            if total_problems > 0:
-                progress_percent = int((answered_count / total_problems) * 100)
-            else:
-                progress_percent = 0
+                if text_prof_record:
+                    # 定着度レコードが存在する場合
+                    text_proficiency[text_set.id] = {
+                        'level': text_prof_record.level,
+                        'last_updated': text_prof_record.last_updated
+                    }
+                else:
+                    # 定着度レコードが存在しない場合
+                    text_proficiency[text_set.id] = {
+                        'level': 0,
+                        'last_updated': None
+                    }
+
+            # テキスト学習進捗状況を計算（解答済み問題数ベース）
+            text_progress = {}
+            for delivery in delivered_texts:
+                # テキストの問題総数
+                problems = BasicKnowledgeItem.query.filter_by(
+                    text_set_id=delivery.text_set_id
+                ).all()
     
-            text_progress[delivery.text_set_id] = {
-                'answered': answered_count,
-                'total': total_problems,
-                'percent': progress_percent
-            }
-        
-        # 6. 学生の最近の解答履歴を取得（最新10件）
-        recent_answers = AnswerRecord.query.filter_by(
-            student_id=current_user.id
-        ).order_by(AnswerRecord.timestamp.desc()).limit(10).all()
-        
-        # 7. 学生の選択した探究テーマを取得
-        theme = InquiryTheme.query.filter_by(
-            student_id=current_user.id, 
-            is_selected=True
-        ).first()
-        
-        # 8. テーマに関連する問題を取得
-        related_problems = []
-        if theme:
-            theme_relations = KnowledgeThemeRelation.query.filter_by(
-                theme_id=theme.id
-            ).all()
-            related_problem_ids = [relation.problem_id for relation in theme_relations]
-            related_problems = BasicKnowledgeItem.query.filter(
-                BasicKnowledgeItem.id.in_(related_problem_ids),
-                BasicKnowledgeItem.is_active == True
-            ).all()
-        
-        return render_template(
-            'basebuilder/student_dashboard.html',
-            delivered_categories=delivered_categories,
-            category_text_sets=category_text_sets,
-            category_proficiency=category_proficiency,
-            delivered_texts=delivered_texts,
-            text_proficiency=text_proficiency,
-            recent_answers=recent_answers,
-            related_problems=related_problems,
-            theme=theme,
-            today=today
-        )
+                total_problems = len(problems)
     
-    elif current_user.role == 'teacher':
-        # 教師向けダッシュボード（既存のままでOK）
-        problem_count = BasicKnowledgeItem.query.filter_by(created_by=current_user.id).count()
-        category_count = ProblemCategory.query.filter_by(created_by=current_user.id).count()
-        path_count = LearningPath.query.filter_by(created_by=current_user.id).count()
-        classes = current_user.classes_teaching
-        recent_problems = BasicKnowledgeItem.query.filter_by(
-            created_by=current_user.id
-        ).order_by(BasicKnowledgeItem.created_at.desc()).limit(5).all()
-        
-        return render_template(
-            'basebuilder/teacher_dashboard.html',
-            problem_count=problem_count,
-            category_count=category_count,
-            path_count=path_count,
-            classes=classes,
-            recent_problems=recent_problems
-        )
+                # 解答済みの問題数
+                answered_count = 0
+                for problem in problems:
+                    answer = AnswerRecord.query.filter_by(
+                        student_id=current_user.id,
+                        problem_id=problem.id
+                    ).first()
+            
+                    if answer:
+                        answered_count += 1
     
-    # その他のロールの場合
-    return redirect(url_for('index'))
+                # 進捗率を計算
+                if total_problems > 0:
+                    progress_percent = int((answered_count / total_problems) * 100)
+                else:
+                    progress_percent = 0
+    
+                text_progress[delivery.text_set_id] = {
+                    'answered': answered_count,
+                    'total': total_problems,
+                    'percent': progress_percent
+                }
+            
+            # 6. 学生の最近の解答履歴を取得（最新10件）
+            recent_answers = AnswerRecord.query.filter_by(
+                student_id=current_user.id
+            ).order_by(AnswerRecord.timestamp.desc()).limit(10).all()
+            
+            # 7. 学生の選択した探究テーマを取得
+            theme = InquiryTheme.query.filter_by(
+                student_id=current_user.id, 
+                is_selected=True
+            ).first()
+            
+            # 8. テーマに関連する問題を取得
+            related_problems = []
+            if theme:
+                theme_relations = KnowledgeThemeRelation.query.filter_by(
+                    theme_id=theme.id
+                ).all()
+                related_problem_ids = [relation.problem_id for relation in theme_relations]
+                related_problems = BasicKnowledgeItem.query.filter(
+                    BasicKnowledgeItem.id.in_(related_problem_ids),
+                    BasicKnowledgeItem.is_active == True
+                ).all()
+            
+            return render_template(
+                'basebuilder/student_dashboard.html',
+                delivered_categories=delivered_categories,
+                category_text_sets=category_text_sets,
+                category_proficiency=category_proficiency,
+                delivered_texts=delivered_texts,
+                text_proficiency=text_proficiency,
+                recent_answers=recent_answers,
+                related_problems=related_problems,
+                theme=theme,
+                today=today
+            )
+    
+        elif current_user.role == 'teacher':
+            # 教師向けダッシュボード（既存のままでOK）
+            problem_count = BasicKnowledgeItem.query.filter_by(created_by=current_user.id).count()
+            category_count = ProblemCategory.query.filter_by(created_by=current_user.id).count()
+            path_count = LearningPath.query.filter_by(created_by=current_user.id).count()
+            classes = current_user.classes_teaching
+            recent_problems = BasicKnowledgeItem.query.filter_by(
+                created_by=current_user.id
+            ).order_by(BasicKnowledgeItem.created_at.desc()).limit(5).all()
+            
+            return render_template(
+                'basebuilder/teacher_dashboard.html',
+                problem_count=problem_count,
+                category_count=category_count,
+                path_count=path_count,
+                classes=classes,
+                recent_problems=recent_problems
+            )
+        
+        # その他のロールの場合
+        return redirect(url_for('index'))
+    except Exception as e:
+        current_app.logger.error(f"BaseBuilder index error: {str(e)}")
+        current_app.logger.error(f"Traceback: {traceback.format_exc()}")
+        # 500.htmlが無い場合はエラーメッセージを返す
+        try:
+            return render_template('errors/500.html'), 500
+        except:
+            return f"Internal Server Error: {str(e)}", 500
 
 # 問題カテゴリ一覧
 @basebuilder_module.route('/categories')
@@ -2819,126 +2831,137 @@ def my_texts():
 @basebuilder_module.route('/problem/<int:problem_id>/solve', methods=['GET'])
 @login_required
 def solve_problem(problem_id):
-    if current_user.role != 'student':
-        flash('この機能は学生のみ利用可能です。')
-        return redirect(url_for('basebuilder_module.index'))
-    
-    # 問題を取得
-    problem = BasicKnowledgeItem.query.get_or_404(problem_id)
-    
-    # テキストコンテキスト（テキスト内の問題かどうか）
-    text_context = None
-    if problem.text_set_id:
-        text_set = TextSet.query.get(problem.text_set_id)
+    try:
+        current_app.logger.info(f"Solving problem {problem_id} for user {current_user.id}")
         
-        # テキスト内の前後の問題を取得
-        next_problem = BasicKnowledgeItem.query.filter(
-            BasicKnowledgeItem.text_set_id == problem.text_set_id,
-            BasicKnowledgeItem.order_in_text > problem.order_in_text
-        ).order_by(BasicKnowledgeItem.order_in_text).first()
+        if current_user.role != 'student':
+            flash('この機能は学生のみ利用可能です。')
+            return redirect(url_for('basebuilder_module.index'))
         
-        prev_problem = BasicKnowledgeItem.query.filter(
-            BasicKnowledgeItem.text_set_id == problem.text_set_id,
-            BasicKnowledgeItem.order_in_text < problem.order_in_text
-        ).order_by(BasicKnowledgeItem.order_in_text.desc()).first()
+        # 問題を取得
+        problem = BasicKnowledgeItem.query.get_or_404(problem_id)
         
-        # テキストコンテキスト情報を構築
-        text_context = {
-            'text_set': text_set,
-            'current_order': problem.order_in_text,
-            'next_problem_id': next_problem.id if next_problem else None,
-            'prev_problem_id': prev_problem.id if prev_problem else None
-        }
-    
-    # 単語ごとの熟練度を取得（存在しない場合は作成）
-    word_proficiency = WordProficiency.query.filter_by(
-        student_id=current_user.id,
-        problem_id=problem_id
-    ).first()
-    
-    if not word_proficiency:
-        word_proficiency = WordProficiency(
+        # テキストコンテキスト（テキスト内の問題かどうか）
+        text_context = None
+        if problem.text_set_id:
+            text_set = TextSet.query.get(problem.text_set_id)
+            
+            # テキスト内の前後の問題を取得
+            next_problem = BasicKnowledgeItem.query.filter(
+                BasicKnowledgeItem.text_set_id == problem.text_set_id,
+                BasicKnowledgeItem.order_in_text > problem.order_in_text
+            ).order_by(BasicKnowledgeItem.order_in_text).first()
+            
+            prev_problem = BasicKnowledgeItem.query.filter(
+                BasicKnowledgeItem.text_set_id == problem.text_set_id,
+                BasicKnowledgeItem.order_in_text < problem.order_in_text
+            ).order_by(BasicKnowledgeItem.order_in_text.desc()).first()
+            
+            # テキストコンテキスト情報を構築
+            text_context = {
+                'text_set': text_set,
+                'current_order': problem.order_in_text,
+                'next_problem_id': next_problem.id if next_problem else None,
+                'prev_problem_id': prev_problem.id if prev_problem else None
+            }
+        
+        # 単語ごとの熟練度を取得（存在しない場合は作成）
+        word_proficiency = WordProficiency.query.filter_by(
             student_id=current_user.id,
-            problem_id=problem_id,
-            level=0,
-            review_date=datetime.now().date()
-        )
-        db.session.add(word_proficiency)
-        db.session.commit()
-    
-    # 単語の熟練度に応じて問題形式を決定（0-2: 選択式、3-5: 入力式）
-    # 修正：カテゴリの熟練度ではなく単語ごとの熟練度に基づく
-    is_choice_mode = word_proficiency.level < 3
-    
-    # 選択式の場合はダミー選択肢を用意
-    dummy_choices = []
-    all_choices = []
-    correct_index = 0
-    
-    if is_choice_mode:
-        # 同じカテゴリから3つのダミー選択肢を取得
-        dummy_words = BasicKnowledgeItem.query.filter(
-            BasicKnowledgeItem.category_id == problem.category_id,
-            BasicKnowledgeItem.id != problem_id,
-            BasicKnowledgeItem.is_active == True
-        ).order_by(func.random()).limit(3).all()
+            problem_id=problem_id
+        ).first()
         
-        dummy_choices = [word.title for word in dummy_words]
+        if not word_proficiency:
+            word_proficiency = WordProficiency(
+                student_id=current_user.id,
+                problem_id=problem_id,
+                level=0,
+                review_date=datetime.now().date()
+            )
+            db.session.add(word_proficiency)
+            db.session.commit()
         
-        # ダミー選択肢が足りない場合は他のカテゴリから取得
-        if len(dummy_choices) < 3:
-            other_words = BasicKnowledgeItem.query.filter(
-                BasicKnowledgeItem.category_id != problem.category_id,
+        # 単語の熟練度に応じて問題形式を決定（0-2: 選択式、3-5: 入力式）
+        # 修正：カテゴリの熟練度ではなく単語ごとの熟練度に基づく
+        is_choice_mode = word_proficiency.level < 3
+        
+        # 選択式の場合はダミー選択肢を用意
+        dummy_choices = []
+        all_choices = []
+        correct_index = 0
+        
+        if is_choice_mode:
+            # 同じカテゴリから3つのダミー選択肢を取得
+            dummy_words = BasicKnowledgeItem.query.filter(
+                BasicKnowledgeItem.category_id == problem.category_id,
                 BasicKnowledgeItem.id != problem_id,
                 BasicKnowledgeItem.is_active == True
-            ).order_by(func.random()).limit(3 - len(dummy_choices)).all()
+            ).order_by(func.random()).limit(3).all()
             
-            dummy_choices.extend([word.title for word in other_words])
+            dummy_choices = [word.title for word in dummy_words]
+            
+            # ダミー選択肢が足りない場合は他のカテゴリから取得
+            if len(dummy_choices) < 3:
+                other_words = BasicKnowledgeItem.query.filter(
+                    BasicKnowledgeItem.category_id != problem.category_id,
+                    BasicKnowledgeItem.id != problem_id,
+                    BasicKnowledgeItem.is_active == True
+                ).order_by(func.random()).limit(3 - len(dummy_choices)).all()
+                
+                dummy_choices.extend([word.title for word in other_words])
+            
+            # それでも足りない場合は固定の選択肢を追加
+            while len(dummy_choices) < 3:
+                dummy_choices.append(f"選択肢{len(dummy_choices)+1}")
+            
+            # 選択肢をランダムに並べ替え
+            all_choices = [problem.title] + dummy_choices
+            random.shuffle(all_choices)
+            
+            # 正解が配列の何番目にあるか確認
+            correct_index = all_choices.index(problem.title)
+            
+            # ダミー選択肢を更新（正解を除外）
+            dummy_choices = [choice for choice in all_choices if choice != problem.title]
         
-        # それでも足りない場合は固定の選択肢を追加
-        while len(dummy_choices) < 3:
-            dummy_choices.append(f"選択肢{len(dummy_choices)+1}")
+        # セッション関連の確認
+        in_session = False
+        learning_session = None
+        if 'learning_session' in session:
+            learning_session = session['learning_session']
+            in_session = (learning_session.get('current_problem_id') == problem_id)
         
-        # 選択肢をランダムに並べ替え
-        all_choices = [problem.title] + dummy_choices
-        random.shuffle(all_choices)
+        # カテゴリ熟練度も取得（表示用）
+        category_proficiency = ProficiencyRecord.query.filter_by(
+            student_id=current_user.id,
+            category_id=problem.category_id
+        ).first()
         
-        # 正解が配列の何番目にあるか確認
-        correct_index = all_choices.index(problem.title)
-        
-        # ダミー選択肢を更新（正解を除外）
-        dummy_choices = [choice for choice in all_choices if choice != problem.title]
-    
-    # セッション関連の確認
-    in_session = False
-    learning_session = None
-    if 'learning_session' in session:
-        learning_session = session['learning_session']
-        in_session = (learning_session.get('current_problem_id') == problem_id)
-    
-    # カテゴリ熟練度も取得（表示用）
-    category_proficiency = ProficiencyRecord.query.filter_by(
-        student_id=current_user.id,
-        category_id=problem.category_id
-    ).first()
-    
-    if not category_proficiency:
-        # カテゴリの熟練度がなければ更新または作成する
-        category_proficiency = update_category_proficiency(current_user.id, problem.category_id)
+        if not category_proficiency:
+            # カテゴリの熟練度がなければ更新または作成する
+            category_proficiency = update_category_proficiency(current_user.id, problem.category_id)
 
-    return render_template(
-        'basebuilder/solve_problem.html',
-        problem=problem,
-        proficiency_record=category_proficiency,
-        word_proficiency=word_proficiency,
-        dummy_choices=dummy_choices,
-        all_choices=all_choices if is_choice_mode else None,
-        correct_index=correct_index if is_choice_mode else None,
-        is_choice_mode=is_choice_mode,
-        in_session=in_session,
-        learning_session=learning_session,
-        text_context=text_context
-    )
+        return render_template(
+            'basebuilder/solve_problem.html',
+            problem=problem,
+            proficiency_record=category_proficiency,
+            word_proficiency=word_proficiency,
+            dummy_choices=dummy_choices,
+            all_choices=all_choices if is_choice_mode else None,
+            correct_index=correct_index if is_choice_mode else None,
+            is_choice_mode=is_choice_mode,
+            in_session=in_session,
+            learning_session=learning_session,
+            text_context=text_context
+        )
+    except Exception as e:
+        current_app.logger.error(f"Solve problem error: {str(e)}")
+        current_app.logger.error(f"Traceback: {traceback.format_exc()}")
+        # 500.htmlが無い場合はエラーメッセージを返す
+        try:
+            return render_template('errors/500.html'), 500
+        except:
+            return f"Internal Server Error: {str(e)}", 500
 
 @basebuilder_module.route('/problem/<int:problem_id>/submit', methods=['POST'])
 @login_required

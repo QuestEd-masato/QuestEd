@@ -20,6 +20,47 @@
 </style>
 {% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+/* 管理画面レイアウト改善 */
+
+/* サイドバーを非表示にしてフルワイド化 */
+.content-wrapper {
+    margin-left: 0 !important;
+}
+
+.main-sidebar {
+    display: none !important;
+}
+
+/* テーブルの列幅調整 */
+.table th:nth-child(4),
+.table td:nth-child(4) {
+    min-width: 100px; /* ロール列の幅 */
+}
+
+.table th:last-child,
+.table td:last-child {
+    min-width: 280px; /* 操作列の幅 */
+    white-space: nowrap;
+}
+
+/* ボタンを横並びに配置 */
+.table td:last-child .btn {
+    margin-right: 5px;
+    display: inline-block;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .table-responsive {
+        overflow-x: auto;
+    }
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid px-3 px-md-4 mt-4">
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">

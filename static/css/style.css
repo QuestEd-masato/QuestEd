@@ -1112,3 +1112,41 @@ textarea {
         border: 1px solid rgba(0, 0, 0, 0.1);
     }
 }
+
+/* ===== QuestEd UI改善 2025/06/07 ===== */
+
+/* ロゴサイズをBaseBuilderと統一（30px） */
+.navbar-brand img {
+    max-height: 30px !important;
+    width: auto;
+}
+
+/* ドロップダウン矢印の修正 */
+.dropdown-toggle {
+    position: relative;
+    padding-right: 2rem !important;
+    background: transparent !important;
+}
+
+/* Bootstrapのデフォルト矢印を削除 */
+.dropdown-toggle::after {
+    display: none !important;
+}
+
+/* 新しい下向き矢印を追加 */
+.dropdown-toggle::before {
+    content: '\25BC';
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.7em;
+    color: inherit;
+}
+
+/* ヘッダーのホバー効果 */
+.navbar .dropdown-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* ===== End of QuestEd UI改善 ===== */
