@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'add_cascade_delete'
-down_revision = 'add_class_id_to_inquiry_theme_and_activity_log'
+down_revision = 'add_class_id_fields'
 branch_labels = None
 depends_on = None
 

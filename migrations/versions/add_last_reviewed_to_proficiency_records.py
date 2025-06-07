@@ -1,7 +1,7 @@
 """Add last_reviewed column to proficiency_records for time decay
 
 Revision ID: add_last_reviewed_column
-Revises: add_cascade_delete_to_user_relationships
+Revises: add_cascade_delete
 Create Date: 2024-06-07 00:00:00.000000
 
 """
@@ -11,7 +11,7 @@ from datetime import datetime
 
 # revision identifiers, used by Alembic.
 revision = 'add_last_reviewed_column'
-down_revision = 'add_cascade_delete_to_user_relationships'
+down_revision = 'add_cascade_delete'
 branch_labels = None
 depends_on = None
 
