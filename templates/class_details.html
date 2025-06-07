@@ -81,43 +81,19 @@
                         <tbody>
                         {% for info in students_info %}
                             <tr>
-                                <td>
-                                    <strong>{{ info.student.username }}</strong>
-                                    <br>
-                                    <small class="text-muted">{{ info.student.email }}</small>
-                                </td>
-                                <td>
+                                <td>{{ info.student.username }}</td>
+                                <td class="text-truncate-hover" style="max-width: 200px;" 
+                                    onclick="showFullText('探究テーマ', '{{ info.selected_theme.title if info.selected_theme else "未選択" }}')">
                                     {% if info.selected_theme %}
-                                        <div class="theme-info">
-                                            <span class="badge bg-success">{{ info.selected_theme.title }}</span>
-                                            {% if info.selected_theme.question %}
-                                            <br>
-                                            <small class="text-muted">{{ info.selected_theme.question|truncate(50) }}</small>
-                                            {% endif %}
-                                        </div>
+                                        {{ info.selected_theme.title|truncate(30) }}
                                     {% else %}
                                         <span class="badge bg-secondary">未選択</span>
                                     {% endif %}
                                 </td>
-                                <td>
+                                <td class="text-truncate-hover" style="max-width: 200px;" 
+                                    onclick="showFullText('最新の活動記録', '{{ info.latest_activity.title if info.latest_activity else "記録なし" }}')">
                                     {% if info.latest_activity %}
-                                        <div class="activity-info">
-                                            <strong>{{ info.latest_activity.title }}</strong>
-                                            <br>
-                                            <small class="text-muted">
-                                                {{ info.latest_activity.timestamp.strftime('%Y/%m/%d %H:%M') }}
-                                            </small>
-                                            {% if info.latest_activity.content %}
-                                            <br>
-                                            <small>{{ info.latest_activity.content|truncate(50) }}</small>
-                                            {% endif %}
-                                            {% if info.latest_activity.reflection %}
-                                            <br>
-                                            <small class="text-info">
-                                                <i class="fas fa-comment"></i> 振り返りあり
-                                            </small>
-                                            {% endif %}
-                                        </div>
+                                        {{ info.latest_activity.title|truncate(30) }}
                                     {% else %}
                                         <span class="text-muted">記録なし</span>
                                     {% endif %}
@@ -140,7 +116,7 @@
                                           class="d-inline ml-1">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn btn-sm btn-outline-danger">
-                                            <i class="fas fa-user-times"></i>
+                                            <i class="fas fa-user-times"></i> 削除
                                         </button>
                                     </form>
                                 </td>
@@ -231,6 +207,31 @@
     </div>
 </div>
 {% endblock %}
+
+<!-- モーダルウィンドウ -->
+<div class="modal fade" id="textModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"></h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-text" style="white-space: pre-wrap;"></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showFullText(title, content) {
+    $('#textModal .modal-title').text(title);
+    $('#textModal .modal-text').text(content || '（データなし）');
+    $('#textModal').modal('show');
+}
+</script>
 
 {% block extra_css %}
 <style>

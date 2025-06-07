@@ -1150,3 +1150,93 @@ textarea {
 }
 
 /* ===== End of QuestEd UI改善 ===== */
+
+/* ===== QuestEd UI/UX総合改善 2025/06/07 ===== */
+
+/* テーブルの列幅調整 */
+.problems-table .difficulty-col {
+    min-width: 100px;
+}
+
+.problems-table .date-col {
+    min-width: 130px;
+    white-space: nowrap;
+}
+
+.problems-table .action-col {
+    min-width: 200px;
+}
+
+/* 省略表示用スタイル */
+.text-truncate-hover {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.text-truncate-hover:hover {
+    background-color: #f8f9fa;
+    text-decoration: underline;
+}
+
+/* カードタイトルの統一 */
+.card-header h3, 
+.card-header h4, 
+.card-header h5 {
+    font-size: 1.25rem !important;
+    font-weight: 600;
+    margin: 0;
+}
+
+/* アクションボタングループ */
+.action-buttons,
+.btn-group {
+    display: flex;
+    gap: 5px;
+    flex-wrap: nowrap;
+}
+
+/* ハンバーガーメニューのドロップダウン修正 */
+.navbar-collapse .dropdown-toggle::after {
+    display: inline-block;
+    margin-left: .255em;
+    vertical-align: .255em;
+    content: "";
+    border-top: .3em solid;
+    border-right: .3em solid transparent;
+    border-bottom: 0;
+    border-left: .3em solid transparent;
+    font-family: inherit !important;
+}
+
+/* モバイル最適化 */
+@media (max-width: 576px) {
+    .card-body {
+        padding: 0.75rem;
+    }
+    
+    .text-card-mobile {
+        padding: 10px;
+    }
+    
+    .mobile-hide {
+        display: none !important;
+    }
+}
+
+/* モーダルのモダンスタイル */
+.modal-content {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+    background-color: #f8f9fa;
+    border-radius: 10px 10px 0 0;
+}
+
+/* ===== End of QuestEd UI/UX総合改善 ===== */
