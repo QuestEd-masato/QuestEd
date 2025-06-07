@@ -99,10 +99,28 @@ class ProficiencyRecord(db.Model):
     level = db.Column(db.Integer, default=0)  # 0-5のスケール → ポイントとして使用
     last_updated = db.Column(db.DateTime, default=datetime.utcnow)
     review_date = db.Column(db.Date)  # 次回復習日を追加
+    last_reviewed = db.Column(db.DateTime, default=datetime.utcnow)  # 最後に復習した日時
     
     # リレーションシップ
     student = db.relationship('User', backref=db.backref('proficiency_records', lazy=True, cascade='all, delete-orphan'))
     category = db.relationship('ProblemCategory', backref=db.backref('proficiency_records', lazy=True))
+    
+    @property
+    def adjusted_proficiency(self):
+        """2週間経過で1ポイント減少する定着度を計算"""
+        if not self.last_reviewed:
+            return self.level
+        
+        days_passed = (datetime.utcnow() - self.last_reviewed).days
+        decay_points = days_passed // 14  # 14日ごとに1ポイント減少
+        
+        return max(0, self.level - decay_points)
+    
+    def update_review_date(self):
+        """復習日を更新"""
+        self.last_reviewed = datetime.utcnow()
+        from extensions import db
+        db.session.commit()
     
     # ユニーク制約（学生+カテゴリの組み合わせは一意）
     __table_args__ = (db.UniqueConstraint('student_id', 'category_id'),)

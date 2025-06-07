@@ -972,7 +972,12 @@ textarea {
     max-height: 56px;
 }
 
+/* ロゴサイズを統一（BaseBuilderと同じサイズ） */
+.navbar-brand img, 
 .navbar-brand {
+    max-height: 30px;
+    height: 30px;
+    width: auto;
     font-size: 1.25rem;
     padding: 0;
     line-height: 1.5;
@@ -985,31 +990,38 @@ textarea {
     padding-bottom: 0.25rem;
 }
 
-/* ドロップダウンメニューのモダンなスタイル */
+/* ドロップダウンボタンの修正 */
 .dropdown-toggle {
+    background: transparent !important;
+    border: none;
+    padding: 0.375rem 0.75rem;
     position: relative;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.1);
-    padding: 0.375rem 1rem;
-    border-radius: 20px;
+    padding-right: 1.5rem;
     transition: all 0.3s ease;
     font-weight: 500;
 }
 
-.dropdown-toggle:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.3);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
+/* カスタム下向き矢印 */
 .dropdown-toggle::after {
-    margin-left: 0.5rem;
+    content: '\25BC';
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.7rem;
     transition: transform 0.3s ease;
+    margin-left: 0;
+    border: none;
+    vertical-align: 0;
 }
 
 .dropdown-toggle[aria-expanded="true"]::after {
-    transform: rotate(180deg);
+    transform: translateY(-50%) rotate(180deg);
+}
+
+/* ホバー時のみ背景色を変更 */
+.dropdown-toggle:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
 }
 
 .dropdown-menu {

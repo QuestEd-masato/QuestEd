@@ -2,6 +2,24 @@
 
 {% block title %}ユーザー管理{% endblock %}
 
+{% block extra_head %}
+<style>
+.table th.role-column {
+    min-width: 100px;
+}
+.table th.actions-column {
+    min-width: 250px;
+}
+.table .btn-group {
+    display: flex;
+    gap: 0.25rem;
+}
+.table .btn-sm {
+    white-space: nowrap;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid px-3 px-md-4 mt-4">
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
@@ -28,9 +46,9 @@
                             <th style="min-width: 120px;">ユーザー名</th>
                             <th class="d-none d-sm-table-cell" style="min-width: 150px;">メールアドレス</th>
                             <th class="d-none d-md-table-cell" style="min-width: 120px;">所属学校</th>
-                            <th style="width: 80px;">ロール</th>
+                            <th class="role-column" style="width: 80px;">ロール</th>
                             <th class="d-none d-lg-table-cell" style="width: 100px;">作成日時</th>
-                            <th class="text-end" style="width: 130px;">操作</th>
+                            <th class="actions-column text-end" style="width: 130px;">操作</th>
                         </tr>
                     </thead>
                     <tbody>

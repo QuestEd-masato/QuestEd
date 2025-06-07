@@ -1,5 +1,47 @@
 {% extends 'basebuilder/layout.html' %}
 
+{% block extra_head %}
+<style>
+/* 単語一覧テーブルの列幅調整 */
+.problems-table th.difficulty-column,
+.problems-table td.difficulty-column {
+    min-width: 60px;
+}
+
+.problems-table th.proficiency-column,
+.problems-table td.proficiency-column {
+    min-width: 80px;
+}
+
+/* 定着度バーの修正 */
+.proficiency-display {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.proficiency-meter {
+    flex: 1;
+    height: 10px;
+    background-color: #e9ecef;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.proficiency-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #4e73df 0%, #36b9cc 100%);
+}
+
+.proficiency-text {
+    min-width: 35px;
+    text-align: right;
+    font-size: 0.875rem;
+    color: #666;
+}
+</style>
+{% endblock %}
+
 {% block basebuilder_content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h1 class="section-title">単語検索</h1>
@@ -110,15 +152,15 @@
   <div class="card-body">
     {% if problems %}
       <div class="table-responsive">
-        <table class="table table-hover">
+        <table class="table table-hover problems-table">
           <thead>
             <tr>
               <th>単語</th>
               <th>意味</th>
               <th>カテゴリ</th>
-              <th>難易度</th>
+              <th class="difficulty-column">難易度</th>
               {% if current_user.role == 'student' %}
-                <th>定着度</th>
+                <th class="proficiency-column">定着度</th>
               {% elif current_user.role == 'teacher' %}
                 <th>作成日</th>
               {% endif %}
@@ -131,27 +173,20 @@
                 <td>{{ problem.title }}</td>
                 <td>{{ problem.question }}</td>
                 <td>{{ problem.category.name }}</td>
-                <td>
+                <td class="difficulty-column">
                   <span class="problem-difficulty difficulty-{{ problem.difficulty }}">
                     {{ problem.difficulty }}
                   </span>
                 </td>
                 {% if current_user.role == 'student' %}
-                  <td>
+                  <td class="proficiency-column">
                     {% set word_proficiency = word_proficiencies.get(problem.id, None) %}
                     {% if word_proficiency %}
-                      <div class="progress" style="height: 15px;">
-                        <div class="progress-bar 
-                          {% if word_proficiency.level >= 4 %}bg-success
-                          {% elif word_proficiency.level >= 2 %}bg-info
-                          {% else %}bg-warning{% endif %}" 
-                          role="progressbar" 
-                          style="width: {{ word_proficiency.level * 20 }}%;" 
-                          aria-valuenow="{{ word_proficiency.level }}" 
-                          aria-valuemin="0" 
-                          aria-valuemax="5">
-                          {{ word_proficiency.level }}/5
+                      <div class="proficiency-display">
+                        <div class="proficiency-meter">
+                          <div class="proficiency-bar" style="width: {{ (word_proficiency.level/5)*100 }}%"></div>
                         </div>
+                        <span class="proficiency-text">{{ word_proficiency.level }}/5</span>
                       </div>
                     {% else %}
                       <span class="badge bg-secondary">未学習</span>
