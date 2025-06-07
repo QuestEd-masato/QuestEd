@@ -82,18 +82,18 @@
                         {% for info in students_info %}
                             <tr>
                                 <td>{{ info.student.username }}</td>
-                                <td class="text-truncate-hover" style="max-width: 200px;" 
-                                    onclick="showFullText('探究テーマ', '{{ info.selected_theme.title if info.selected_theme else "未選択" }}')">
+                                <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;"
+                                    onclick="showFullText('探究テーマ', `{{ (info.selected_theme.title if info.selected_theme else '未選択') | replace('`', '\\`') | replace('\n', '\\n') }}`)">
                                     {% if info.selected_theme %}
-                                        {{ info.selected_theme.title|truncate(30) }}
+                                        {{ info.selected_theme.title }}
                                     {% else %}
                                         <span class="badge bg-secondary">未選択</span>
                                     {% endif %}
                                 </td>
-                                <td class="text-truncate-hover" style="max-width: 200px;" 
-                                    onclick="showFullText('最新の活動記録', '{{ info.latest_activity.title if info.latest_activity else "記録なし" }}')">
+                                <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;"
+                                    onclick="showFullText('最新の活動記録', `{{ (info.latest_activity.title if info.latest_activity else '記録なし') | replace('`', '\\`') | replace('\n', '\\n') }}`)">
                                     {% if info.latest_activity %}
-                                        {{ info.latest_activity.title|truncate(30) }}
+                                        {{ info.latest_activity.title }}
                                     {% else %}
                                         <span class="text-muted">記録なし</span>
                                     {% endif %}
@@ -107,7 +107,7 @@
                                     <form method="POST" action="{{ url_for('teacher.generate_student_report', class_id=class_obj.id, student_id=info.student.id) }}" style="display: inline;">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn btn-sm btn-info" title="活動報告PDFを生成">
-                                            <i class="fas fa-file-pdf"></i> PDF
+                                            <i class="fas fa-file-pdf"></i> <span class="d-none d-md-inline">PDF</span>
                                         </button>
                                     </form>
                                     <!-- 削除ボタン -->
@@ -116,7 +116,7 @@
                                           class="d-inline ml-1">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn btn-sm btn-outline-danger">
-                                            <i class="fas fa-user-times"></i> 削除
+                                            <i class="fas fa-user-times"></i> <span class="d-none d-md-inline">削除</span>
                                         </button>
                                     </form>
                                 </td>
@@ -214,9 +214,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title"></h5>
-                <button type="button" class="close" data-dismiss="modal">
-                    <span>&times;</span>
-                </button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <p class="modal-text" style="white-space: pre-wrap;"></p>
@@ -226,10 +224,35 @@
 </div>
 
 <script>
-function showFullText(title, content) {
-    $('#textModal .modal-title').text(title);
-    $('#textModal .modal-text').text(content || '（データなし）');
-    $('#textModal').modal('show');
+// グローバル関数として定義
+window.showFullText = function(title, content) {
+    try {
+        const modalElement = document.getElementById('textModal');
+        if (!modalElement) {
+            console.error('Modal element not found');
+            return;
+        }
+        
+        // Bootstrap 5とjQueryの両方に対応
+        if (typeof bootstrap !== 'undefined') {
+            // Bootstrap 5
+            const modal = new bootstrap.Modal(modalElement);
+            modalElement.querySelector('.modal-title').textContent = title;
+            modalElement.querySelector('.modal-text').textContent = content || '（データなし）';
+            modal.show();
+        } else if (typeof $ !== 'undefined') {
+            // jQuery + Bootstrap 4
+            $('#textModal .modal-title').text(title);
+            $('#textModal .modal-text').text(content || '（データなし）');
+            $('#textModal').modal('show');
+        } else {
+            // フォールバック：アラートで表示
+            alert(title + ':\n' + (content || '（データなし）'));
+        }
+    } catch (error) {
+        console.error('Error showing modal:', error);
+        alert(title + ':\n' + (content || '（データなし）'));
+    }
 }
 </script>
 
@@ -247,6 +270,51 @@ function showFullText(title, content) {
     }
     .card-header h5 {
         font-size: 1.1rem;
+    }
+    
+    /* 省略表示の改善 */
+    .text-truncate-hover {
+        max-width: 250px !important;
+        display: inline-block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        cursor: pointer;
+        vertical-align: middle;
+    }
+    
+    .text-truncate-hover:hover {
+        background-color: rgba(0, 123, 255, 0.05);
+        text-decoration: underline;
+    }
+    
+    /* ボタンの幅調整 */
+    .btn-sm {
+        min-width: auto;
+    }
+    
+    /* テーブルの列幅調整 */
+    @media (min-width: 768px) {
+        .table td:nth-child(1) { width: 20%; }
+        .table td:nth-child(2) { width: 30%; }
+        .table td:nth-child(3) { width: 35%; }
+        .table td:nth-child(4) { width: 15%; }
+    }
+    
+    /* モバイル対応 */
+    @media (max-width: 767px) {
+        .text-truncate-hover {
+            max-width: 150px !important;
+        }
+        
+        .table {
+            font-size: 0.875rem;
+        }
+        
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+        }
     }
 </style>
 {% endblock %}

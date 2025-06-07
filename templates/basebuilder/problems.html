@@ -158,13 +158,13 @@
               <th>単語</th>
               <th>意味</th>
               <th>カテゴリ</th>
-              <th class="difficulty-column">難易度</th>
+              <th style="min-width: 100px;">難易度</th>
               {% if current_user.role == 'student' %}
-                <th class="proficiency-column">定着度</th>
+                <th style="min-width: 80px;">定着度</th>
               {% elif current_user.role == 'teacher' %}
-                <th>作成日</th>
+                <th style="min-width: 130px; white-space: nowrap;">作成日</th>
               {% endif %}
-              <th>アクション</th>
+              <th style="min-width: 200px;">アクション</th>
             </tr>
           </thead>
           <tbody>
@@ -173,13 +173,13 @@
                 <td>{{ problem.title }}</td>
                 <td>{{ problem.question }}</td>
                 <td>{{ problem.category.name }}</td>
-                <td class="difficulty-column">
+                <td style="white-space: nowrap;">
                   <span class="problem-difficulty difficulty-{{ problem.difficulty }}">
                     {{ problem.difficulty }}
                   </span>
                 </td>
                 {% if current_user.role == 'student' %}
-                  <td class="proficiency-column">
+                  <td style="white-space: nowrap;">
                     {% set word_proficiency = word_proficiencies.get(problem.id, None) %}
                     {% if word_proficiency %}
                       <div class="proficiency-display">
@@ -193,23 +193,27 @@
                     {% endif %}
                   </td>
                 {% elif current_user.role == 'teacher' %}
-                  <td>{{ problem.created_at.strftime('%Y-%m-%d') }}</td>
+                  <td style="white-space: nowrap;">{{ problem.created_at.strftime('%Y-%m-%d') }}</td>
                 {% endif %}
-                <td>
+                <td style="white-space: nowrap;">
                   {% if current_user.role == 'student' %}
                     <a href="{{ url_for('basebuilder_module.solve_problem', problem_id=problem.id) }}" class="btn btn-sm btn-primary">
                       学習する
                     </a>
                   {% else %}
-                    <a href="{{ url_for('basebuilder_module.edit_problem', problem_id=problem.id) }}" class="btn btn-sm btn-outline">
-                      編集
-                    </a>
-                    <form method="POST" action="{{ url_for('basebuilder_module.delete_problem', problem_id=problem.id) }}" class="d-inline">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                      <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('本当にこの単語を削除しますか？')">
-                        削除
-                      </button>
-                    </form>
+                    <div style="display: inline-flex; gap: 5px;">
+                      <a href="{{ url_for('basebuilder_module.edit_problem', problem_id=problem.id) }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-edit"></i>
+                        <span class="d-none d-md-inline">編集</span>
+                      </a>
+                      <form method="POST" action="{{ url_for('basebuilder_module.delete_problem', problem_id=problem.id) }}" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('本当にこの単語を削除しますか？')">
+                          <i class="fas fa-trash"></i>
+                          <span class="d-none d-md-inline">削除</span>
+                        </button>
+                      </form>
+                    </div>
                   {% endif %}
                 </td>
               </tr>

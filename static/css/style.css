@@ -1240,3 +1240,58 @@ textarea {
 }
 
 /* ===== End of QuestEd UI/UX総合改善 ===== */
+
+/* ===== QuestEd UI/UX根本修正 2025/06/07 ===== */
+
+/* !importantを使用して確実に適用 */
+.text-truncate-cell {
+    max-width: 200px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    cursor: pointer !important;
+}
+
+/* ボタングループの横並び強制 */
+.btn-group-horizontal {
+    display: inline-flex !important;
+    gap: 5px !important;
+}
+
+/* カードヘッダーのフォントサイズ統一 */
+.card-header h3,
+.card-header h4,
+.card-header h5,
+.card-title {
+    font-size: 1.25rem !important;
+    font-weight: 600 !important;
+}
+
+/* ハンバーガーメニューの矢印修正 */
+@media (max-width: 768px) {
+    .navbar-nav .dropdown-toggle::after {
+        display: inline-block !important;
+        width: 0 !important;
+        height: 0 !important;
+        margin-left: .255em !important;
+        vertical-align: .255em !important;
+        content: "" !important;
+        border-top: .3em solid !important;
+        border-right: .3em solid transparent !important;
+        border-bottom: 0 !important;
+        border-left: .3em solid transparent !important;
+    }
+}
+
+/* テーブル強制スタイル */
+table td[style*="max-width"] {
+    text-overflow: ellipsis !important;
+    overflow: hidden !important;
+}
+
+/* ボタンテキストの表示制御 */
+.btn .d-none.d-md-inline {
+    margin-left: 0.25rem;
+}
+
+/* ===== End of QuestEd UI/UX根本修正 ===== */
