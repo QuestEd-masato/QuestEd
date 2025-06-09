@@ -2,6 +2,16 @@
 import os
 from dotenv import load_dotenv
 
+# Celeryスケジュールを条件付きでインポート
+try:
+    from celery.schedules import crontab
+    CELERY_AVAILABLE = True
+except ImportError:
+    CELERY_AVAILABLE = False
+    # Celeryが利用できない場合のダミー関数
+    def crontab(*args, **kwargs):
+        return 86400.0  # 24時間ごとのフォールバック
+
 load_dotenv()
 
 class Config:
@@ -41,7 +51,7 @@ class Config:
     CELERY_BEAT_SCHEDULE = {
         'daily-reports': {
             'task': 'app.tasks.daily_report.generate_daily_reports',
-            'schedule': 86400.0,  # 24時間ごと（毎日午前8時に実行）
+            'schedule': crontab(hour=18, minute=0),  # 毎日18:00に実行
             'options': {'queue': 'default'}
         },
     }
