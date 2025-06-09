@@ -27,19 +27,41 @@ def register_special_routes(app):
         response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
         return response
     
-    @app.route('/uploads/<filename>')
+    @app.route('/uploads/<path:filepath>')
     @login_required
-    def secure_uploads(filename):
-        """セキュアなファイル配信エンドポイント"""
-        # ファイル名の検証
-        if not filename or '..' in filename or '/' in filename:
+    def secure_uploads(filepath):
+        """セキュアなファイル配信エンドポイント（ユーザーディレクトリ対応）"""
+        # ファイルパスの検証
+        if not filepath or '..' in filepath:
             abort(403)
         
-        # ユーザーの権限チェック（学生は自分の画像のみアクセス可能）
+        # パスを分割（user_id/filename または filename）
+        path_parts = filepath.split('/')
+        if len(path_parts) == 2:
+            user_id, filename = path_parts
+            try:
+                user_id = int(user_id)
+            except ValueError:
+                abort(403)
+        elif len(path_parts) == 1:
+            user_id = None
+            filename = path_parts[0]
+        else:
+            abort(403)
+        
+        # ファイル名の追加検証
+        if not filename or '/' in filename or '\\' in filename:
+            abort(403)
+        
+        # ユーザーの権限チェック
         from app.models import ActivityLog
         
         if current_user.role == 'student':
-            # 学生は自分がアップロードした画像のみアクセス可能
+            # 学生は自分のディレクトリの画像のみアクセス可能
+            if user_id != current_user.id:
+                abort(403)
+            
+            # 自分がアップロードした画像か確認
             activity = ActivityLog.query.filter(
                 ActivityLog.student_id == current_user.id,
                 ActivityLog.image_url.like(f'%{filename}')
@@ -49,13 +71,25 @@ def register_special_routes(app):
         elif current_user.role not in ['teacher', 'admin']:
             abort(403)
         
+        # ファイルパスの構築
         upload_folder = app.config.get('SECURE_UPLOAD_FOLDER', app.config['UPLOAD_FOLDER'])
-        file_path = os.path.join(upload_folder, filename)
+        if user_id:
+            file_path = os.path.join(upload_folder, str(user_id), filename)
+        else:
+            file_path = os.path.join(upload_folder, filename)
         
         if not os.path.exists(file_path):
             abort(404)
         
-        return send_from_directory(upload_folder, filename)
+        # セキュリティヘッダーを追加
+        response = make_response(send_from_directory(
+            os.path.dirname(file_path), 
+            os.path.basename(file_path)
+        ))
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['Content-Disposition'] = 'inline'
+        
+        return response
     
     @app.route('/admin_access')
     @login_required

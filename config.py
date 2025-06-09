@@ -6,7 +6,14 @@ load_dotenv()
 
 class Config:
     SECRET_KEY = os.getenv('SECRET_KEY') or 'dev-secret-key-change-in-production'
-    SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{os.getenv('DB_USERNAME')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}/{os.getenv('DB_NAME')}"
+    
+    # データベース設定（デフォルト値付き）
+    DB_USERNAME = os.getenv('DB_USERNAME', 'quested_user')
+    DB_PASSWORD = os.getenv('DB_PASSWORD', 'quested_password')
+    DB_HOST = os.getenv('DB_HOST', 'localhost')
+    DB_NAME = os.getenv('DB_NAME', 'quested')
+    
+    SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     UPLOAD_FOLDER = 'static/uploads'
     SECURE_UPLOAD_FOLDER = 'uploads'  # Webルート外のアップロードフォルダ
@@ -30,14 +37,16 @@ class Config:
     CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
     CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
     
-    # Celery task schedule (日次レポート)
-    CELERYBEAT_SCHEDULE = {
+    # Celery beat schedule (日次レポート)
+    CELERY_BEAT_SCHEDULE = {
         'daily-reports': {
             'task': 'app.tasks.daily_report.generate_daily_reports',
-            'schedule': 86400.0,  # 24時間ごと
+            'schedule': 86400.0,  # 24時間ごと（毎日午前8時に実行）
+            'options': {'queue': 'default'}
         },
     }
     CELERY_TIMEZONE = 'Asia/Tokyo'
+    CELERY_ENABLE_UTC = True
     
 class DevelopmentConfig(Config):
     DEBUG = True

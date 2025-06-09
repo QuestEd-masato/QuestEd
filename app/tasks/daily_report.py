@@ -11,14 +11,14 @@ import logging
 
 # Celeryタスクとしての実装
 try:
-    from app.tasks import celery
-    from app import create_app
-    from app.models import db, User, ChatHistory, Class, Subject, ActivityLog, Goal, Todo
-    from app.utils.email_sender import EmailSender
-    from app.ai import generate_chat_response
-    CELERY_AVAILABLE = True
+    from app.tasks import celery, CELERY_AVAILABLE
+    if CELERY_AVAILABLE:
+        from app import create_app
+        from app.models import db, User, ChatHistory, Class, Subject, ActivityLog, Goal, Todo
+        from app.utils.email_sender import EmailSender
+        from app.ai import generate_chat_response
 except ImportError:
-    # Celeryが利用できない場合のスタンドアロン実行用
+    # 必要なモジュールが利用できない場合
     CELERY_AVAILABLE = False
     celery = None
 

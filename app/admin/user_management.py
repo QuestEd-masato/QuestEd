@@ -12,6 +12,7 @@ import secrets
 from app.models import User, db
 from app.admin import admin_bp, admin_required
 from app.auth.password_validator import generate_secure_password
+from app.utils.file_security import file_validator
 
 # CSVファイルの拡張子チェック用関数
 def allowed_csv_file(filename):
@@ -47,10 +48,19 @@ def import_users():
             flash('CSVファイルが選択されていません。')
             return redirect(request.url)
         
-        if file and allowed_csv_file(file.filename):
+        # 新しいセキュリティバリデーターを使用
+        is_valid, error_message, csv_content = file_validator.validate_csv(
+            file.stream, file.filename
+        )
+        
+        if not is_valid:
+            flash(f'CSVファイルエラー: {error_message}')
+            return redirect(request.url)
+        
+        if is_valid:
             try:
                 # CSVファイルを読み込む
-                stream = io.StringIO(file.stream.read().decode('utf-8'))
+                stream = io.StringIO(csv_content)
                 csv_reader = csv.DictReader(stream)
                 
                 # 成功と失敗のカウンター

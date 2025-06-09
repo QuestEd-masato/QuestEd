@@ -32,6 +32,7 @@ from app.models import (
 )
 from app.ai import generate_personal_themes_with_ai
 from app.utils.rate_limiting import upload_limit, api_limit
+from app.utils.file_security import file_validator
 
 student_bp = Blueprint('student', __name__)
 
@@ -469,44 +470,28 @@ def new_activity():
                 timestamp=datetime.now()
             )
             
-            # 画像アップロード処理
+            # 画像アップロード処理（セキュリティ強化版）
             if 'image' in request.files:
                 file = request.files['image']
                 if file and file.filename != '':
-                    # ファイルサイズチェック
-                    file.seek(0, 2)
-                    file_length = file.tell()
-                    file.seek(0)
+                    # 新しいセキュリティバリデーターを使用
+                    is_valid, error_message, safe_filename = file_validator.validate_image(
+                        file.stream, file.filename
+                    )
                     
-                    if file_length > MAX_FILE_SIZE:
-                        flash('ファイルサイズが大きすぎます（最大5MB）')
+                    if not is_valid:
+                        flash(f'画像アップロードエラー: {error_message}')
                         return redirect(url_for('student.new_activity', class_id=class_id))
                     
-                    # ファイル拡張子チェック
-                    if not allowed_file(file.filename):
-                        flash('許可されていないファイル形式です。PNG、JPG、JPEG、GIFのみアップロード可能です。')
-                        return redirect(url_for('student.new_activity', class_id=class_id))
+                    # セキュアなファイルパスを作成
+                    filepath = file_validator.create_secure_path(safe_filename, current_user.id)
                     
-                    # ファイル内容の検証
-                    if not validate_image(file.stream):
-                        flash('無効な画像ファイルです。')
-                        return redirect(url_for('student.new_activity', class_id=class_id))
-                    
-                    # ファイル名を安全にする
-                    original_filename = secure_filename(file.filename)
-                    # ユニークなファイル名生成
-                    unique_filename = f"{uuid.uuid4().hex}_{original_filename}"
-                    
-                    # 保存パスを作成（セキュアなアップロードディレクトリ）
-                    upload_folder = current_app.config.get('SECURE_UPLOAD_FOLDER', current_app.config['UPLOAD_FOLDER'])
-                    if not os.path.exists(upload_folder):
-                        os.makedirs(upload_folder, mode=0o755)
-                    
-                    filepath = os.path.join(upload_folder, unique_filename)
+                    # ファイルを保存
+                    file.stream.seek(0)
                     file.save(filepath)
                     
-                    # URLパスを保存（後でセキュアなエンドポイント経由で提供）
-                    new_log.image_url = f"/uploads/{unique_filename}"
+                    # URLパスを保存（ユーザーIDディレクトリ付き）
+                    new_log.image_url = f"/uploads/{current_user.id}/{safe_filename}"
         
             db.session.add(new_log)
             db.session.commit()

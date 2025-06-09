@@ -59,6 +59,12 @@ def create_app(config_object=None):
     csrf.init_app(app)
     limiter.init_app(app)
     
+    # Celeryを初期化（利用可能な場合のみ）
+    from app.tasks import make_celery, CELERY_AVAILABLE
+    if CELERY_AVAILABLE:
+        celery = make_celery(app)
+        app.celery = celery
+    
     # テンプレートフィルターを登録
     register_template_filters(app)
     

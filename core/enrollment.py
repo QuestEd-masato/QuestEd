@@ -1,8 +1,8 @@
 # core/enrollment.py
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
-from app import db, User
-from core.models import School, SchoolYear, ClassGroup, StudentEnrollment
+from extensions import db
+from app.models import User, School, SchoolYear, ClassGroup, StudentEnrollment
 from werkzeug.security import generate_password_hash
 import csv
 import io
