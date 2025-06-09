@@ -1,4 +1,4 @@
-# QuestEd システム仕様書 v1.4.0
+# QuestEd システム仕様書 v1.4.1
 
 ## 1. システム概要
 
@@ -351,6 +351,42 @@ SESSION_COOKIE_HTTPONLY = True     # XSS対策
 SESSION_COOKIE_SAMESITE = 'Lax'    # CSRF対策
 ```
 
+### 5.4 ファイルアップロードセキュリティ (v1.4.1+)
+
+#### FileSecurityValidator クラス
+```python
+# 包括的ファイル検証システム
+class FileSecurityValidator:
+    def validate_image(self, file_stream, filename, max_size=5MB)
+    def validate_csv(self, file_stream, filename, max_size=2MB)
+    def create_secure_path(self, filename, user_id=None)
+```
+
+#### セキュリティ機能
+- **MIMEタイプ検証**: python-magic使用（フォールバック: imghdr）
+- **ファイルサイズ制限**: 画像5MB、CSV2MB
+- **ユーザー分離**: ユーザー別ディレクトリ構造
+- **拡張子検証**: 許可された形式のみ受け入れ
+- **XSS防止**: CSVファイル内容のスクリプトタグ検出
+- **パストラバーサル対策**: 危険な文字列の検出と拒否
+
+#### 対応ファイル形式
+```python
+# 画像ファイル
+ALLOWED_IMAGE_TYPES = {
+    'image/jpeg': ['.jpg', '.jpeg'],
+    'image/png': ['.png'],
+    'image/gif': ['.gif']
+}
+
+# CSVファイル
+ALLOWED_CSV_TYPES = {
+    'text/csv': ['.csv'],
+    'text/plain': ['.csv'],
+    'application/csv': ['.csv']
+}
+```
+
 ## 6. 教科機能仕様
 
 ### 6.1 対応教科
@@ -402,7 +438,7 @@ def generate_chat_response(message, context=None, subject=None):
 ## 7. 日次レポート機能
 
 ### 7.1 概要
-毎日20:00に自動実行され、生徒と教師に学習活動レポートをメール送信する機能。
+毎日18:00に自動実行され、生徒と教師に学習活動レポートをメール送信する機能。
 
 ### 7.2 技術仕様
 
@@ -460,6 +496,27 @@ sudo systemctl restart quested
 
 # 4. Celeryワーカー再起動
 sudo systemctl restart quested-celery
+```
+
+#### Celery管理ツール (v1.4.1+)
+```bash
+# 統合管理スクリプト
+python3 manage_celery.py --help
+
+# Celeryワーカー起動
+python3 manage_celery.py worker
+
+# スケジューラー起動
+python3 manage_celery.py beat
+
+# 状態確認
+python3 manage_celery.py status
+
+# 日次レポートテスト
+python3 manage_celery.py test-daily-report
+
+# systemdサービス生成
+python3 manage_celery.py install-service
 ```
 
 ### 8.2 バックアップ
@@ -596,6 +653,6 @@ celery -A celery_worker.celery worker --loglevel=info --concurrency=4
 
 ---
 
-**最終更新**: 2025年1月9日  
-**バージョン**: 1.4.0  
+**最終更新**: 2025年1月10日  
+**バージョン**: 1.4.1  
 **作成者**: QuestEd開発チーム
