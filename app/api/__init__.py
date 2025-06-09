@@ -4,7 +4,7 @@ from flask_login import login_required, current_user
 import json
 import logging
 
-from app.models import db, ChatHistory, InquiryTheme, Class, StudentEvaluation, User
+from app.models import db, ChatHistory, InquiryTheme, Class, StudentEvaluation, User, Subject
 from app.ai import generate_chat_response
 from app.utils.rate_limiting import smart_ai_limit, api_limit
 
@@ -42,6 +42,14 @@ def chat():
         # メッセージが空でないことを確認
         if not message:
             return jsonify({"error": "メッセージが空です"}), 400
+        
+        # クラスと教科情報を取得
+        class_obj = None
+        subject = None
+        if class_id:
+            class_obj = Class.query.get(class_id)
+            if class_obj and class_obj.subject_id:
+                subject = Subject.query.get(class_obj.subject_id)
         
         # コンテキストの準備
         context_data = []
@@ -89,14 +97,15 @@ def chat():
         if theme_context:
             full_message = f"{theme_context}\n\nユーザーの質問: {message}"
         
-        # AI応答を生成
-        ai_response = generate_chat_response(full_message, context_data)
+        # AI応答を生成（教科別プロンプト対応）
+        ai_response = generate_chat_response(full_message, context_data, subject=subject)
         
         # チャット履歴を保存
         # ユーザーのメッセージを保存
         user_chat = ChatHistory(
             user_id=current_user.id,
             class_id=class_id,
+            subject_id=subject.id if subject else None,
             message=message, 
             is_user=True
         )
@@ -106,6 +115,7 @@ def chat():
         ai_chat = ChatHistory(
             user_id=current_user.id,
             class_id=class_id,
+            subject_id=subject.id if subject else None,
             message=ai_response, 
             is_user=False
         )

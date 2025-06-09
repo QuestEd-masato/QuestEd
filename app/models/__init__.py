@@ -117,6 +117,7 @@ class Class(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     teacher_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=False)
+    subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id'), nullable=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     schedule = db.Column(db.String(200))
@@ -319,6 +320,7 @@ class ChatHistory(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     class_id = db.Column(db.Integer, db.ForeignKey('classes.id'), nullable=True)
+    subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id'), nullable=True)
     message = db.Column(db.Text, nullable=False)
     is_user = db.Column(db.Boolean, default=True)  # True=ユーザー, False=AI
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
@@ -339,11 +341,14 @@ class Milestone(db.Model):
     # クラスとの関連付け
     class_obj = db.relationship('Class', backref=db.backref('milestones', lazy=True))
 
+# Import Subject model
+from app.models.subject import Subject
+
 # Export all models
 __all__ = [
     'db', 'User', 'School', 'SchoolYear', 'ClassGroup', 'StudentEnrollment',
     'Class', 'ClassEnrollment', 'MainTheme', 'InquiryTheme', 'InterestSurvey',
     'PersonalitySurvey', 'ActivityLog', 'Todo', 'Goal', 'StudentEvaluation',
     'Curriculum', 'RubricTemplate', 'Group', 'GroupMembership', 'ChatHistory',
-    'Milestone'
+    'Milestone', 'Subject'
 ]

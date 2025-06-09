@@ -19,7 +19,10 @@
       "Bash(/home/masat/.npm-global/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/x64-linux/rg \"admin\\.dashboard\")",
       "Bash(pkill:*)",
       "Bash(sed:*)",
-      "Bash(PYTHONDONTWRITEBYTECODE=1 /mnt/c/Users/masat/AppData/Local/Programs/Python/Python313/python.exe run.py)"
+      "Bash(PYTHONDONTWRITEBYTECODE=1 /mnt/c/Users/masat/AppData/Local/Programs/Python/Python313/python.exe run.py)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ],
     "deny": []
   }

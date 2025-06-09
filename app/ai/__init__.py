@@ -391,22 +391,32 @@ def format_survey_responses(responses):
     
     return "\n".join(formatted)
 
-def generate_chat_response(message, context=None):
+def generate_chat_response(message, context=None, subject=None):
     """
     チャットメッセージに対するAI応答を生成
     
     Args:
         message: ユーザーからのメッセージ
         context: 会話のコンテキスト（オプション）
+        subject: Subjectモデルのインスタンス（教科情報）
         
     Returns:
         AIの応答テキスト
     """
+    # 基本のシステムプロンプト
     system_prompt = """
     あなたは教育支援AIアシスタントです。
     生徒や教師の質問に対して、親切で分かりやすく回答してください。
     探究学習、学習計画、学習方法などについてアドバイスを提供できます。
     """
+    
+    # 教科別プロンプトが設定されている場合は追加
+    if subject and subject.ai_system_prompt:
+        system_prompt = f"{system_prompt}\n\n【教科特性】\n{subject.ai_system_prompt}"
+        
+        # 教科の学習目標があれば追加
+        if subject.learning_objectives:
+            system_prompt += f"\n\n【学習目標】\n{subject.learning_objectives}"
     
     messages = [{"role": "system", "content": system_prompt}]
     

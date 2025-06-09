@@ -1,36 +1,94 @@
 /* Bootstrap標準ボタンのオーバーライド */
+/* プライマリボタン */
+.btn.btn-primary,
 .btn-primary:not(:hover) {
     background-color: var(--btn-primary-bg) !important;
     color: var(--btn-primary-text) !important;
     border-color: var(--btn-primary-border) !important;
 }
 
+.btn.btn-primary:hover,
+.btn-primary:hover {
+    background-color: var(--btn-primary-hover) !important;
+    color: var(--btn-primary-text) !important;
+    border-color: var(--btn-primary-border) !important;
+}
+
+/* サクセスボタン */
+.btn.btn-success,
 .btn-success:not(:hover) {
     background-color: var(--btn-success-bg) !important;
     color: var(--btn-success-text) !important;
     border-color: var(--btn-success-border) !important;
 }
 
+.btn.btn-success:hover,
+.btn-success:hover {
+    background-color: var(--btn-success-hover) !important;
+    color: var(--btn-success-text) !important;
+    border-color: var(--btn-success-border) !important;
+}
+
+/* インフォボタン */
+.btn.btn-info,
 .btn-info:not(:hover) {
     background-color: var(--btn-info-bg) !important;
     color: var(--btn-info-text) !important;
     border-color: var(--btn-info-border) !important;
 }
 
+.btn.btn-info:hover,
+.btn-info:hover {
+    background-color: var(--btn-info-hover) !important;
+    color: var(--btn-info-text) !important;
+    border-color: var(--btn-info-border) !important;
+}
+
+/* ワーニングボタン */
+.btn.btn-warning,
 .btn-warning:not(:hover) {
     background-color: var(--btn-warning-bg) !important;
     color: var(--btn-warning-text) !important;
     border-color: var(--btn-warning-border) !important;
 }
 
-.btn-danger:not(:hover) {
+.btn.btn-warning:hover,
+.btn-warning:hover {
+    background-color: var(--btn-warning-hover) !important;
+    color: var(--btn-warning-text) !important;
+    border-color: var(--btn-warning-border) !important;
+}
+
+/* デンジャーボタン */
+.btn.btn-danger,
+.btn-danger:not(:hover),
+.btn.btn-outline-danger,
+.btn-outline-danger:not(:hover) {
     background-color: var(--btn-danger-bg) !important;
     color: var(--btn-danger-text) !important;
     border-color: var(--btn-danger-border) !important;
 }
 
+.btn.btn-danger:hover,
+.btn-danger:hover,
+.btn.btn-outline-danger:hover,
+.btn-outline-danger:hover {
+    background-color: var(--btn-danger-hover) !important;
+    color: var(--btn-danger-text) !important;
+    border-color: var(--btn-danger-border) !important;
+}
+
+/* セカンダリボタン */
+.btn.btn-secondary,
 .btn-secondary:not(:hover) {
     background-color: var(--btn-secondary-bg) !important;
+    color: var(--btn-secondary-text) !important;
+    border-color: var(--btn-secondary-border) !important;
+}
+
+.btn.btn-secondary:hover,
+.btn-secondary:hover {
+    background-color: var(--btn-secondary-hover) !important;
     color: var(--btn-secondary-text) !important;
     border-color: var(--btn-secondary-border) !important;
 }

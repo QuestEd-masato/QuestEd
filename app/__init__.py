@@ -62,6 +62,10 @@ def create_app(config_object=None):
     # テンプレートフィルターを登録
     register_template_filters(app)
     
+    # バージョン管理を初期化
+    from app.version import init_version
+    init_version(app)
+    
     with app.app_context():
         # モデルをインポート
         from app.models import (

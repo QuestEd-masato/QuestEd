@@ -13,7 +13,7 @@ from app.models import (
     db, User, Class, ClassEnrollment, MainTheme, InquiryTheme,
     Milestone, StudentEvaluation, Curriculum, RubricTemplate,
     Group, GroupMembership, School, InterestSurvey, PersonalitySurvey,
-    ActivityLog, Goal, Todo
+    ActivityLog, Goal, Todo, Subject
 )
 from app.ai import generate_student_evaluation, generate_curriculum_with_ai
 
@@ -163,31 +163,52 @@ def create_class():
     if request.method == 'POST':
         name = request.form.get('name')
         description = request.form.get('description')
+        subject_id = request.form.get('subject_id')
         schedule = request.form.get('schedule')
         location = request.form.get('location')
         
         # 必須フィールドの確認
         if not name:
             flash('クラス名は必須です。')
-            return render_template('create_class.html')
+            subjects = Subject.query.filter_by(is_active=True).all()
+            return render_template('create_class.html', subjects=subjects)
+        
+        if not subject_id:
+            flash('教科は必須です。')
+            subjects = Subject.query.filter_by(is_active=True).all()
+            return render_template('create_class.html', subjects=subjects)
+        
+        # 教科名をクラス名に含める
+        subject = Subject.query.get(subject_id)
+        if subject:
+            full_name = f"{name} ({subject.name})"
+        else:
+            full_name = name
         
         # 新しいクラスを作成
         new_class = Class(
             teacher_id=current_user.id,
             school_id=current_user.school_id,
-            name=name,
+            subject_id=subject_id,
+            name=full_name,
             description=description,
             schedule=schedule,
             location=location
         )
         
-        db.session.add(new_class)
-        db.session.commit()
-        
-        flash('クラスが作成されました。')
-        return redirect(url_for('teacher.class_details', class_id=new_class.id))
+        try:
+            db.session.add(new_class)
+            db.session.commit()
+            flash(f'クラス「{full_name}」が作成されました。')
+            return redirect(url_for('teacher.class_details', class_id=new_class.id))
+        except Exception as e:
+            db.session.rollback()
+            flash('クラス作成中にエラーが発生しました。')
+            logging.error(f"Class creation error: {str(e)}")
     
-    return render_template('create_class.html')
+    # GETリクエスト時は教科リストを渡す
+    subjects = Subject.query.filter_by(is_active=True).all()
+    return render_template('create_class.html', subjects=subjects)
 
 @teacher_bp.route('/class/<int:class_id>')
 @login_required

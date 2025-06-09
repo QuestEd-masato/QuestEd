@@ -9,7 +9,7 @@ import logging
 from app.models import db, User, School
 from app.auth.password_validator import validate_password, generate_secure_password
 from app.utils.rate_limiting import auth_limit, api_limit
-from utils.email_sender import send_confirmation_email, send_reset_password_email
+from app.utils.email_sender import send_confirmation_email, send_reset_password_email
 
 auth_bp = Blueprint('auth', __name__)
 
