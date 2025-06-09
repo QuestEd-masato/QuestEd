@@ -33,7 +33,7 @@
                         <dt class="col-sm-3">担当教師</dt>
                         <dd class="col-sm-9">
                             {% if class_group.teacher %}
-                                {{ class_group.teacher.username }} ({{ class_group.teacher.email }})
+                                {{ class_group.teacher.display_name }} ({{ class_group.teacher.email }})
                             {% else %}
                                 <span class="text-muted">未設定</span>
                             {% endif %}
@@ -70,7 +70,7 @@
                             <tbody>
                                 {% for enrollment in enrollments %}
                                 <tr>
-                                    <td>{{ enrollment.student.username }}</td>
+                                    <td>{{ enrollment.student.display_name }}</td>
                                     <td>{{ enrollment.student.email }}</td>
                                     <td>{{ enrollment.enrolled_at.strftime('%Y/%m/%d') if enrollment.enrolled_at else '-' }}</td>
                                     <td>

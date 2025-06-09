@@ -8,7 +8,8 @@ class User(UserMixin, db.Model):
     __tablename__ = 'users'
     
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50), unique=True, nullable=False)
+    username = db.Column(db.String(50), unique=True, nullable=False)  # ログイン用ID
+    full_name = db.Column(db.String(100), nullable=True)  # 表示用氏名
     password = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
     role = db.Column(db.String(10), nullable=False)
@@ -48,6 +49,15 @@ class User(UserMixin, db.Model):
         if self.role != 'student':
             return False
         return InquiryTheme.query.filter_by(student_id=self.id, is_selected=True).first() is not None
+    
+    def get_display_name(self):
+        """表示用の名前を取得（full_name優先、フォールバックでusername）"""
+        return self.full_name if self.full_name else self.username
+    
+    @property
+    def display_name(self):
+        """表示名のプロパティ（テンプレートで使いやすくするため）"""
+        return self.get_display_name()
 
 # 学校管理のモデル定義
 class School(db.Model):

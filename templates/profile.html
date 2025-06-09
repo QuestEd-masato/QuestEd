@@ -11,8 +11,14 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             
             <div class="form-group">
-                <label for="username">ユーザー名</label>
+                <label for="username">ユーザー名（ログイン用）</label>
                 <input type="text" id="username" name="username" value="{{ user.username }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="full_name">氏名（表示用）</label>
+                <input type="text" id="full_name" name="full_name" value="{{ user.full_name if user.full_name else '' }}" placeholder="フルネームを入力してください">
+                <small class="form-text text-muted">サイト上で表示される名前です（任意）</small>
             </div>
             
             <div class="form-group">

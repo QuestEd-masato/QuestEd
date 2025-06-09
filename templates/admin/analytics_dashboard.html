@@ -251,7 +251,7 @@
                             {% endif %}
                         </div>
                         <div class="flex-grow-1">
-                            <div class="fw-bold">{{ user.username }}</div>
+                            <div class="fw-bold">{{ user.display_name }}</div>
                             <div class="small text-muted">
                                 {{ user.school_name }} • 
                                 {{ user.created_at.strftime('%m/%d %H:%M') if user.created_at }}

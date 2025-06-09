@@ -7,7 +7,7 @@
     <h2>教師ダッシュボード</h2>
     
     <div class="dashboard-welcome">
-        <h3>こんにちは、{{ current_user.username }}先生</h3>
+        <h3>こんにちは、{{ current_user.display_name }}先生</h3>
         <p>担当クラスの情報や学生の活動状況を確認できます</p>
     </div>
     
@@ -124,7 +124,7 @@
                     {% for activity_data in recent_activities %}
                         <div class="activity-item">
                             <div class="activity-meta">
-                                <span class="student-name">{{ activity_data.student.username }}</span>
+                                <span class="student-name">{{ activity_data.student.display_name }}</span>
                                 <span class="activity-date">{{ activity_data.activity.date.strftime('%Y年%m月%d日') }}</span>
                             </div>
                             <div class="activity-content">

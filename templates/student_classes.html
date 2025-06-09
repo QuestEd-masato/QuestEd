@@ -19,7 +19,7 @@
                     <div class="card h-100">
                         <div class="card-body">
                             <h5 class="card-title">{{ class.name }}</h5>
-                            <p class="card-text"><strong>担当教師:</strong> {{ class.teacher.username }}</p>
+                            <p class="card-text"><strong>担当教師:</strong> {{ class.teacher.display_name }}</p>
                         </div>
                         <div class="card-footer">
                             <a href="{{ url_for('teacher.class_details', class_id=class.id) }}" class="btn btn-primary">詳細を見る</a>

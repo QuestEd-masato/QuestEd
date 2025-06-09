@@ -64,6 +64,7 @@ def register():
     try:
         if request.method == 'POST':
             username = request.form.get('username')
+            full_name = request.form.get('full_name')
             password = request.form.get('password')
             confirm_password = request.form.get('confirm_password')
             email = request.form.get('email')
@@ -112,6 +113,7 @@ def register():
             # MVPモード: メール確認をバイパス
             new_user = User(
                 username=username,
+                full_name=full_name,
                 password=generate_password_hash(password),
                 email=email,
                 role=role,
@@ -358,6 +360,7 @@ def profile():
     if request.method == 'POST':
         # フォームデータ取得
         username = request.form.get('username')
+        full_name = request.form.get('full_name')
         email = request.form.get('email')
         
         # 入力検証
@@ -385,6 +388,7 @@ def profile():
         try:
             # ユーザー情報を更新
             current_user.username = username
+            current_user.full_name = full_name
             current_user.email = email
             db.session.commit()
             

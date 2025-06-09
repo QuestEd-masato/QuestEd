@@ -13,7 +13,7 @@
                 <div class="card-body">
                     <p>このページは管理者アクセス確認用のページです。</p>
                     {% if current_user.is_authenticated %}
-                        <p>ユーザー名: {{ current_user.username }}</p>
+                        <p>氏名: {{ current_user.display_name }}</p>
                         <p>ロール: {{ current_user.role }}</p>
                         <p>ID: {{ current_user.id }}</p>
                         {% if current_user.role == 'admin' %}

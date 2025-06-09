@@ -25,7 +25,7 @@
                     <tbody>
                         {% for student in pending_students %}
                         <tr>
-                            <td>{{ student.username }}</td>
+                            <td>{{ student.display_name }}</td>
                             <td>{{ student.email }}</td>
                             <td>{{ student.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
                             <td>

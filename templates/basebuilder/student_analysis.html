@@ -2,7 +2,7 @@
 
 {% block basebuilder_content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-  <h1 class="section-title">生徒詳細分析 - {{ student.username }}</h1>
+  <h1 class="section-title">生徒詳細分析 - {{ student.display_name }}</h1>
   <a href="{{ url_for('basebuilder_module.analysis') }}" class="btn btn-outline">
     <i class="fas fa-arrow-left"></i> 分析一覧に戻る
   </a>
@@ -16,7 +16,7 @@
         <h5 class="card-title">基本情報</h5>
       </div>
       <div class="card-body">
-        <p><strong>ユーザー名:</strong> {{ student.username }}</p>
+        <p><strong>氏名:</strong> {{ student.display_name }}</p>
         <p><strong>クラス:</strong> 
           {% for class_obj in student.enrolled_classes %}
             {{ class_obj.name }}{% if not loop.last %}, {% endif %}

@@ -16,7 +16,7 @@
                 <div class="col-md-6">
                     <p><strong>担当教師:</strong> 
                         {% if class_obj.teacher %}
-                        {{ class_obj.teacher.username }}
+                        {{ class_obj.teacher.display_name }}
                         {% else %}
                         <em>未割り当て</em>
                         {% endif %}
@@ -81,7 +81,7 @@
                         <tbody>
                         {% for info in students_info %}
                             <tr>
-                                <td>{{ info.student.username }}</td>
+                                <td>{{ info.student.display_name }}</td>
                                 <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;"
                                     onclick="showFullText('探究テーマ', `{{ (info.selected_theme.title if info.selected_theme else '未選択') | replace('`', '\\`') | replace('\n', '\\n') }}`)">
                                     {% if info.selected_theme %}
@@ -112,7 +112,7 @@
                                     </form>
                                     <!-- 削除ボタン -->
                                     <form method="POST" action="{{ url_for('teacher.remove_student', class_id=class_obj.id, student_id=info.student.id) }}" 
-                                          onsubmit="return confirm('{{ info.student.username }}さんをクラスから削除してもよろしいですか？');" 
+                                          onsubmit="return confirm('{{ info.student.display_name }}さんをクラスから削除してもよろしいですか？');" 
                                           class="d-inline ml-1">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn btn-sm btn-outline-danger">

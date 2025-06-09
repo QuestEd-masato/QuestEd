@@ -32,7 +32,7 @@
                         </tr>
                         <tr>
                             <th>作成者</th>
-                            <td>{{ creator.username }}</td>
+                            <td>{{ creator.display_name }}</td>
                         </tr>
                         <tr>
                             <th>作成日</th>
@@ -73,7 +73,7 @@
                         <tbody>
                             {% for member in members %}
                             <tr>
-                                <td>{{ member.username }}</td>
+                                <td>{{ member.display_name }}</td>
                                 <td>
                                     {% if member.id == group.created_by %}
                                     <span class="badge bg-primary">グループリーダー</span>
