@@ -73,26 +73,51 @@
     .input-group-append button {
         border-radius: 0 20px 20px 0;
     }
+    /* 学習ステップカードのスタイル */
+    .learning-steps-card {
+        margin-bottom: 20px;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    /* 学習ステップボタンの横並び対応 */
+    .learning-steps-card .list-group {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    .learning-steps-card .list-group-item {
+        flex: 1 1 auto;
+        min-width: 150px;
+        max-width: 250px;
+        margin: 5px;
+        text-align: center;
+    }
+    /* モバイル対応 */
+    @media (max-width: 576px) {
+        .learning-steps-card .list-group-item {
+            min-width: 100%;
+            margin: 2px 0;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <!-- チャットインターフェース -->
-    <div class="row">
-        {% if current_user.role == 'student' %}
-        <!-- 学生用サイドバー -->
-        <div class="col-md-3">
+    {% if current_user.role == 'student' %}
+    <!-- 学習ステップセクション（常に上部に表示） -->
+    <div class="row mb-3">
+        <div class="col-12">
             <!-- 学習ステップカード -->
-            <div class="card sidebar-card">
+            <div class="card learning-steps-card">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">学習ステップ</h5>
                 </div>
                 <div class="card-body p-0">
-                    <div class="list-group list-group-flush">
+                    <div class="list-group list-group-flush d-flex flex-wrap">
                         {% for step in learning_steps %}
-                            <button class="list-group-item list-group-item-action step-select" 
-                                   data-step="{{ step.id }}">
+                            <button class="list-group-item list-group-item-action step-select flex-fill m-1"
+                                   data-step="{{ step.id }}" style="min-width: 150px;">
                                 {{ step.name }}
                             </button>
                         {% endfor %}
@@ -100,10 +125,12 @@
                 </div>
             </div>
         </div>
-        {% endif %}
-        
-        <!-- メインチャットエリア -->
-        <div class="col-md-{% if current_user.role == 'student' %}9{% else %}12{% endif %}">
+    </div>
+    {% endif %}
+
+    <!-- メインチャットエリア（独立した行） -->
+    <div class="row">
+        <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <div>
