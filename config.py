@@ -26,6 +26,19 @@ class Config:
     DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
     TESTING = False
     
+    # Celery configuration
+    CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+    CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+    
+    # Celery task schedule (日次レポート)
+    CELERYBEAT_SCHEDULE = {
+        'daily-reports': {
+            'task': 'app.tasks.daily_report.generate_daily_reports',
+            'schedule': 86400.0,  # 24時間ごと
+        },
+    }
+    CELERY_TIMEZONE = 'Asia/Tokyo'
+    
 class DevelopmentConfig(Config):
     DEBUG = True
     # 開発環境ではHTTPS不要
