@@ -171,12 +171,12 @@ def download_user_template():
     csv_writer = csv.writer(csv_data)
     
     # ヘッダー行
-    csv_writer.writerow(['username', 'email', 'password', 'role', 'school_id'])
+    csv_writer.writerow(['username', 'full_name', 'email', 'password', 'role', 'school_id'])
     
     # サンプル行
-    csv_writer.writerow(['taro_yamada', 'taro@example.com', 'password123', 'student', '1'])
-    csv_writer.writerow(['hanako_tanaka', 'hanako@example.com', 'password456', 'teacher', '1'])
-    csv_writer.writerow(['admin_user', 'admin@example.com', 'adminpass', 'admin', ''])
+    csv_writer.writerow(['taro_yamada', '山田太郎', 'taro@example.com', 'password123', 'student', '1'])
+    csv_writer.writerow(['hanako_tanaka', '田中花子', 'hanako@example.com', 'password456', 'teacher', '1'])
+    csv_writer.writerow(['admin_user', '管理者', 'admin@example.com', 'adminpass', 'admin', ''])
     
     # CSVデータを取得
     csv_data.seek(0)

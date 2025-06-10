@@ -13,25 +13,25 @@
     </div>
     {% endif %}
     
-    <form method="POST" action="{{ url_for('student.edit_activity', log_id=activity.id) }}" enctype="multipart/form-data" id="activity-form">
+    <form method="POST" action="{{ url_for('student.edit_activity', log_id=log.id) }}" enctype="multipart/form-data" id="activity-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         
         <div class="form-row">
             <div class="form-group">
                 <label for="title">タイトル <span class="required">*</span></label>
-                <input type="text" id="title" name="title" value="{{ activity.title }}" required>
+                <input type="text" id="title" name="title" value="{{ log.title }}" required>
             </div>
             
             <div class="form-group">
                 <label for="date">日付 <span class="required">*</span></label>
-                <input type="date" id="date" name="date" value="{{ activity.date.strftime('%Y-%m-%d') }}" required>
+                <input type="date" id="date" name="date" value="{{ log.date.strftime('%Y-%m-%d') }}" required>
             </div>
         </div>
         
         <div class="form-group">
             <label for="tags">タグ（複数選択可）</label>
             <div class="tags-container">
-                {% set activity_tags = activity.tags.split(',') if activity.tags else [] %}
+                {% set activity_tags = log.tags.split(',') if log.tags else [] %}
                 <label class="tag-item"><input type="checkbox" name="tags" value="文献調査" {% if '文献調査' in activity_tags %}checked{% endif %}> 文献調査</label>
                 <label class="tag-item"><input type="checkbox" name="tags" value="実験" {% if '実験' in activity_tags %}checked{% endif %}> 実験</label>
                 <label class="tag-item"><input type="checkbox" name="tags" value="インタビュー" {% if 'インタビュー' in activity_tags %}checked{% endif %}> インタビュー</label>
@@ -51,21 +51,21 @@
                 <button type="button" onclick="formatText('list')"><i class="fas fa-list"></i></button>
                 <button type="button" onclick="formatText('heading')"><i class="fas fa-heading"></i></button>
             </div>
-            <textarea id="content" name="content" rows="8" required>{{ activity.content }}</textarea>
+            <textarea id="content" name="content" rows="8" required>{{ log.content }}</textarea>
             <div class="word-count">文字数: <span id="content-count">0</span>文字</div>
         </div>
         
         <div class="form-group">
             <label for="reflection">振り返り</label>
-            <textarea id="reflection" name="reflection" rows="4">{{ activity.reflection }}</textarea>
+            <textarea id="reflection" name="reflection" rows="4">{{ log.reflection }}</textarea>
         </div>
         
         <div class="form-group">
             <label for="image">画像（任意）</label>
-            {% if activity.image_url %}
+            {% if log.image_url %}
             <div class="current-image">
                 <p>現在の画像:</p>
-                <img src="{{ activity.image_url }}" alt="{{ activity.title }}" class="thumbnail">
+                <img src="{{ log.image_url }}" alt="{{ log.title }}" class="thumbnail">
                 <p class="image-note">新しい画像をアップロードすると、現在の画像は置き換えられます。</p>
             </div>
             {% endif %}

@@ -130,8 +130,8 @@ def get_daily_active_users(days=30):
         current_date += timedelta(days=1)
     
     return {
-        'dates': dates,
-        'values': values
+        'labels': dates,
+        'data': values
     }
 
 def get_api_usage_stats():

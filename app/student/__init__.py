@@ -656,10 +656,14 @@ def export_activities(format):
         flash('無効なフォーマットです。')
         return redirect(url_for('student.activities'))
     
+    # class_idパラメータを取得
+    class_id = request.args.get('class_id', type=int)
+    
     # 活動記録を取得
-    logs = ActivityLog.query.filter_by(student_id=current_user.id)\
-        .order_by(ActivityLog.date.desc())\
-        .all()
+    query = ActivityLog.query.filter_by(student_id=current_user.id)
+    if class_id:
+        query = query.filter_by(class_id=class_id)
+    activities = query.order_by(ActivityLog.date.desc()).all()
     
     if format == 'pdf':
         # PDFエクスポート処理
@@ -667,38 +671,57 @@ def export_activities(format):
             flash('PDF機能は現在利用できません。')
             return redirect(url_for('student.activities'))
         
+        # PDFエクスポート用にtheme変数を定義
+        theme = {
+            'title': '学習活動記録',
+            'description': f'{current_user.full_name or current_user.username}さんの活動記録'
+        }
+        
+        # クラス情報を取得（必要に応じて）
+        selected_class = None
+        if class_id:
+            selected_class = Class.query.get(class_id)
+            if selected_class:
+                theme['title'] = f'{selected_class.name} - 学習活動記録'
+        
         return render_template('export_activities_pdf.html', 
-                             logs=logs, 
+                             activities=activities,
+                             logs=activities,  # 互換性のため
+                             theme=theme,
                              student=current_user,
+                             current_user=current_user,
+                             selected_class=selected_class,
                              export_date=datetime.now())
     
     elif format == 'csv':
-        # CSVエクスポート処理
-        output = io.StringIO()
-        writer = csv.writer(output)
+        # UTF-8 BOMを追加して文字化けを防ぐ
+        output = io.BytesIO()
+        output.write(b'\xEF\xBB\xBF')  # UTF-8 BOM
+        
+        wrapper = io.TextIOWrapper(output, encoding='utf-8', newline='')
+        writer = csv.writer(wrapper)
         
         # ヘッダー
-        writer.writerow(['日付', 'タイトル', '内容', 'ふりかえり', 'タグ'])
+        writer.writerow(['日付', 'タイトル', '活動内容', '振り返り', 'タグ'])
         
         # データ
-        for log in logs:
+        for activity in activities:
             writer.writerow([
-                log.date.strftime('%Y-%m-%d'),
-                log.title,
-                log.content,
-                log.reflection,
-                log.tags
+                activity.date.strftime('%Y-%m-%d') if activity.date else '',
+                activity.title or '',
+                activity.content or '',
+                activity.reflection or '',
+                activity.tags or ''
             ])
         
-        # レスポンス作成
+        wrapper.flush()
         output.seek(0)
-        return Response(
-            output.getvalue(),
+        
+        return send_file(
+            output,
             mimetype='text/csv',
-            headers={
-                'Content-Disposition': f'attachment; filename=activities_{datetime.now().strftime("%Y%m%d")}.csv',
-                'Content-Type': 'text/csv; charset=utf-8-sig'
-            }
+            as_attachment=True,
+            download_name=f'活動記録_{datetime.now().strftime("%Y%m%d")}.csv'
         )
 
 # To Do管理
