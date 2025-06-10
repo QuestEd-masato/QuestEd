@@ -7,14 +7,24 @@ import logging
 from datetime import datetime
 
 # OpenAIクライアントの初期化
-try:
-    from openai import OpenAI
-    client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-except ImportError:
-    # 古いバージョンのOpenAI
-    import openai
-    openai.api_key = os.getenv('OPENAI_API_KEY')
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+if not OPENAI_API_KEY:
+    logging.error("OPENAI_API_KEY not found in environment variables")
     client = None
+else:
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=OPENAI_API_KEY)
+        logging.info("OpenAI client initialized successfully")
+    except ImportError:
+        # 古いバージョンのOpenAI
+        import openai
+        openai.api_key = OPENAI_API_KEY
+        client = None
+        logging.warning("Using legacy OpenAI library")
+    except Exception as e:
+        logging.error(f"Failed to initialize OpenAI client: {e}")
+        client = None
 
 ai_bp = Blueprint('ai', __name__)
 
@@ -100,6 +110,11 @@ def generate_student_evaluation(student, theme, goals, activity_logs, curriculum
     prompt += "評価は100〜150字程度に収め、客観的かつ建設的な内容にしてください。"
     
     try:
+        # OpenAI APIが利用可能かチェック
+        if not client:
+            logging.warning("OpenAI client not available, returning fallback evaluation")
+            return f"学生 {student_name} の学習への取り組みを評価いたします。システムの制約により、詳細な評価はできませんが、継続的な学習努力を評価しています。"
+        
         # OpenAI APIの呼び出し
         if client:
             # 新しいAPI

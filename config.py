@@ -15,7 +15,12 @@ except ImportError:
 load_dotenv()
 
 class Config:
-    SECRET_KEY = os.getenv('SECRET_KEY') or 'dev-secret-key-change-in-production'
+    SECRET_KEY = os.getenv('SECRET_KEY')
+    if not SECRET_KEY:
+        import secrets
+        SECRET_KEY = secrets.token_hex(32)
+        import logging
+        logging.warning("SECRET_KEY not set in environment. Generated temporary key. Set SECRET_KEY for production!")
     
     # データベース設定（デフォルト値付き）
     DB_USERNAME = os.getenv('DB_USERNAME', 'quested_user')

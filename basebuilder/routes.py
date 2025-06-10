@@ -61,20 +61,25 @@ def index():
                     'last_updated': record.last_updated
                 }
             
-            # 5. テキストの定着度を計算
+            # 5. テキストの定着度を計算（N+1クエリ最適化）
             text_proficiency = {}
-            for text_set in TextSet.query.all():
-                # テキストの定着度レコードを取得
-                text_prof_record = TextProficiencyRecord.query.filter_by(
-                    student_id=current_user.id,
-                    text_set_id=text_set.id
-                ).first()
-    
-                if text_prof_record:
+            
+            # 全テキストセットと該当学生の定着度レコードを1つのクエリで取得
+            text_sets_with_proficiency = db.session.query(
+                TextSet,
+                TextProficiencyRecord
+            ).outerjoin(
+                TextProficiencyRecord,
+                (TextSet.id == TextProficiencyRecord.text_set_id) & 
+                (TextProficiencyRecord.student_id == current_user.id)
+            ).all()
+            
+            for text_set, prof_record in text_sets_with_proficiency:
+                if prof_record:
                     # 定着度レコードが存在する場合
                     text_proficiency[text_set.id] = {
-                        'level': text_prof_record.level,
-                        'last_updated': text_prof_record.last_updated
+                        'level': prof_record.level,
+                        'last_updated': prof_record.last_updated
                     }
                 else:
                     # 定着度レコードが存在しない場合

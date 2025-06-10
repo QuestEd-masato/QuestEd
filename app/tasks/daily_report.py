@@ -7,6 +7,7 @@ import os
 import sys
 from datetime import datetime, date, timedelta
 from flask import render_template_string
+from markupsafe import escape
 import logging
 
 # Celeryタスクとしての実装
@@ -145,6 +146,9 @@ class DailyReportService:
                     data['subject'].name if data['subject'] else '一般',
                     data['questions']
                 )
+                # HTMLエスケープして安全性を確保
+                if 'summary' in data:
+                    data['summary'] = escape(data['summary'])
         
         return {
             'student': student,
