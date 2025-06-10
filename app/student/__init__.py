@@ -691,15 +691,17 @@ def export_activities(format):
                              student=current_user,
                              current_user=current_user,
                              selected_class=selected_class,
-                             export_date=datetime.now())
+                             export_date=datetime.now(),
+                             now=datetime.now())
     
     elif format == 'csv':
-        # UTF-8 BOMを追加して文字化けを防ぐ
-        output = io.BytesIO()
-        output.write(b'\xEF\xBB\xBF')  # UTF-8 BOM
+        # StringIOを使用する方法に変更
+        si = io.StringIO()
         
-        wrapper = io.TextIOWrapper(output, encoding='utf-8', newline='')
-        writer = csv.writer(wrapper)
+        # UTF-8 BOMを書き込む
+        si.write('\ufeff')
+        
+        writer = csv.writer(si)
         
         # ヘッダー
         writer.writerow(['日付', 'タイトル', '活動内容', '振り返り', 'タグ'])
@@ -714,14 +716,16 @@ def export_activities(format):
                 activity.tags or ''
             ])
         
-        wrapper.flush()
+        # BytesIOに変換
+        output = io.BytesIO()
+        output.write(si.getvalue().encode('utf-8-sig'))
         output.seek(0)
         
         return send_file(
             output,
-            mimetype='text/csv',
+            mimetype='text/csv; charset=utf-8',
             as_attachment=True,
-            download_name=f'活動記録_{datetime.now().strftime("%Y%m%d")}.csv'
+            download_name='活動記録.csv'
         )
 
 # To Do管理

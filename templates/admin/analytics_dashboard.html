@@ -314,10 +314,10 @@ const ctx = document.getElementById('dailyUsersChart').getContext('2d');
 const dailyUsersChart = new Chart(ctx, {
     type: 'line',
     data: {
-        labels: {{ daily_active_users.dates | tojson }},
+        labels: {{ daily_active_users.labels | tojson }},
         datasets: [{
             label: 'アクティブユーザー数',
-            data: {{ daily_active_users.values | tojson }},
+            data: {{ daily_active_users.data | tojson }},
             borderColor: '#0056b3',
             backgroundColor: 'rgba(0, 86, 179, 0.1)',
             tension: 0.4,
