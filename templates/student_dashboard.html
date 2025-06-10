@@ -306,7 +306,7 @@
             <div class="metric-label">最新の記録</div>
             <div style="margin-top: 0.5rem;">
                 <strong>{{ recent_activities[0].title }}</strong>
-                <p class="text-muted">{{ recent_activities[0].date.strftime('%Y年%m月%d日') }}</p>
+                <p class="text-muted">{{ recent_activities[0].timestamp.strftime('%Y年%m月%d日') if recent_activities[0].timestamp else '' }}</p>
             </div>
         </div>
         {% endif %}
@@ -346,22 +346,23 @@
         </div>
         
         <div style="margin-top: 1rem;">
-            <a href="{{ url_for('chat') }}" class="btn-sm btn-primary">AIチャットを開く</a>
+            <a href="{{ url_for('student.chat_page') }}" class="btn-sm btn-primary">AIチャットを開く</a>
         </div>
     </div>
 </div>
 
 <!-- ランキングセクション -->
+{% if class_top_learners or weekly_top_learners %}
 <div class="ranking-section">
     <!-- クラス学習ランキング -->
     <div class="ranking-card">
         <h3>🏆 クラス活動記録ランキング</h3>
         <ol class="ranking-list">
             {% for learner in class_top_learners[:5] %}
-            <li class="ranking-item {% if learner.id == current_user.id %}style='background: #e3f2fd;'{% endif %}">
+            <li class="ranking-item" {% if learner.id == current_user.id %}style="background: #e3f2fd;"{% endif %}>
                 <span class="rank-number">{{ loop.index }}</span>
-                <span class="rank-name">{{ learner.display_name }}</span>
-                <span class="rank-score">{{ learner.activity_count or 0 }}件</span>
+                <span class="rank-name">{{ learner.full_name|default(learner.username, true) }}</span>
+                <span class="rank-score">{{ learner.word_count|default(0, true) }}件</span>
             </li>
             {% else %}
             <li class="ranking-item">
@@ -376,10 +377,10 @@
         <h3>📅 今週の活動ランキング</h3>
         <ol class="ranking-list">
             {% for learner in weekly_top_learners[:5] %}
-            <li class="ranking-item {% if learner.id == current_user.id %}style='background: #e3f2fd;'{% endif %}">
+            <li class="ranking-item" {% if learner.id == current_user.id %}style="background: #e3f2fd;"{% endif %}>
                 <span class="rank-number">{{ loop.index }}</span>
-                <span class="rank-name">{{ learner.display_name }}</span>
-                <span class="rank-score">{{ learner.weekly_count or 0 }}件</span>
+                <span class="rank-name">{{ learner.full_name|default(learner.username, true) }}</span>
+                <span class="rank-score">{{ learner.word_count|default(0, true) }}件</span>
             </li>
             {% else %}
             <li class="ranking-item">
@@ -389,4 +390,5 @@
         </ol>
     </div>
 </div>
+{% endif %}
 {% endblock %}

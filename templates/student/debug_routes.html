@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}デバッグ: ルート一覧 | QuestEd{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>学生ルート一覧（デバッグ用）</h2>
+    
+    <div class="alert alert-warning">
+        <strong>注意:</strong> このページは開発環境でのみ表示されます。
+    </div>
+    
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>エンドポイント</th>
+                <th>パス</th>
+                <th>メソッド</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for route in routes %}
+            <tr>
+                <td><code>{{ route.endpoint }}</code></td>
+                <td><code>{{ route.path }}</code></td>
+                <td>{{ route.methods }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <a href="{{ url_for('student.dashboard') }}" class="btn btn-primary">ダッシュボードに戻る</a>
+</div>
+{% endblock %}

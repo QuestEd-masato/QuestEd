@@ -10,6 +10,8 @@ import csv
 import logging
 import imghdr
 import uuid
+import traceback
+from sqlalchemy import text, func
 
 # ReportLabを条件付きでインポート（PDF生成用）
 try:
@@ -63,55 +65,74 @@ def student_required(f):
     decorated_function.__name__ = f.__name__
     return decorated_function
 
-@student_bp.route('/student_dashboard')
+@student_bp.route('/dashboard')
+@student_bp.route('/student_dashboard')  # 両方のURLパターンをサポート
 @login_required
 @student_required
 def dashboard():
-    """生徒ダッシュボード - 既存テーブルを使用した安全な実装"""
+    """生徒ダッシュボード - リファクタリング版"""
+    
+    # コンテキスト辞書を初期化
+    context = {
+        # 基本情報
+        'current_user': current_user,
+        
+        # アンケート情報
+        'interest_survey': None,
+        'personality_survey': None,
+        
+        # テーマ情報
+        'selected_theme': None,
+        
+        # 活動記録
+        'recent_activities': [],
+        'weekly_activities_count': 0,
+        
+        # ToDo/目標
+        'pending_todos_count': 0,
+        'active_goals_count': 0,
+        
+        # チャット使用状況
+        'monthly_chat_count': 0,
+        
+        # ランキング
+        'class_top_learners': [],
+        'weekly_top_learners': [],
+        'weekly_words_learned': 0,
+        'weekly_target': 50,
+        
+        # クラス情報
+        'class_info': None
+    }
+    
     try:
-        # デフォルト値
-        class_top_learners = []
-        weekly_top_learners = []
-        weekly_words_learned = 0
-        weekly_target = 50
-        recent_activities = []
-        class_info = None
         
-        # 最近の活動記録を取得
-        try:
-            recent_activities = ActivityLog.query.filter_by(
-                student_id=current_user.id
-            ).order_by(ActivityLog.timestamp.desc()).limit(5).all()
-        except Exception as e:
-            current_app.logger.warning(f"Could not fetch recent activities: {str(e)}")
-            recent_activities = []
+        # アンケート情報の取得
+        context['interest_survey'] = InterestSurvey.query.filter_by(
+            student_id=current_user.id
+        ).first()
         
-        # アンケート状況を取得
-        interest_survey = None
-        personality_survey = None
-        selected_theme = None
+        context['personality_survey'] = PersonalitySurvey.query.filter_by(
+            student_id=current_user.id
+        ).first()
         
-        try:
-            interest_survey = InterestSurvey.query.filter_by(
-                student_id=current_user.id
-            ).first()
-        except Exception as e:
-            current_app.logger.warning(f"Could not fetch interest survey: {str(e)}")
+        # 選択中のテーマ
+        context['selected_theme'] = InquiryTheme.query.filter_by(
+            student_id=current_user.id,
+            is_selected=True
+        ).first()
         
-        try:
-            personality_survey = PersonalitySurvey.query.filter_by(
-                student_id=current_user.id
-            ).first()
-        except Exception as e:
-            current_app.logger.warning(f"Could not fetch personality survey: {str(e)}")
+        # 最近の活動記録
+        context['recent_activities'] = ActivityLog.query.filter_by(
+            student_id=current_user.id
+        ).order_by(ActivityLog.timestamp.desc()).limit(5).all()
         
-        try:
-            selected_theme = InquiryTheme.query.filter_by(
-                student_id=current_user.id,
-                is_selected=True
-            ).first()
-        except Exception as e:
-            current_app.logger.warning(f"Could not fetch selected theme: {str(e)}")
+        # 今週の活動数
+        one_week_ago = datetime.now() - timedelta(days=7)
+        context['weekly_activities_count'] = ActivityLog.query.filter(
+            ActivityLog.student_id == current_user.id,
+            ActivityLog.timestamp >= one_week_ago
+        ).count()
         
         # クラス情報を取得
         try:
@@ -123,7 +144,7 @@ def dashboard():
             
             if enrollment and enrollment.class_obj:
                 class_obj = enrollment.class_obj
-                class_info = {
+                context['class_info'] = {
                     'class_name': class_obj.name,
                     'teacher_name': class_obj.teacher.display_name if class_obj.teacher else None,
                     'subject_name': getattr(class_obj.subject, 'name', None) if hasattr(class_obj, 'subject') else None
@@ -179,10 +200,11 @@ def dashboard():
                         {
                             'id': r.id,
                             'username': r.username,
-                            'display_name': r.full_name or r.username,
-                            'activity_count': r.word_count
+                            'full_name': r.full_name,
+                            'word_count': r.word_count
                         } for r in class_rankings_result
                     ]
+                    context['class_top_learners'] = class_top_learners
                     
                     # 週間ランキング
                     one_week_ago = datetime.now() - timedelta(days=7)
@@ -210,10 +232,11 @@ def dashboard():
                         {
                             'id': r.id,
                             'username': r.username,
-                            'display_name': r.full_name or r.username,
-                            'weekly_count': r.word_count
+                            'full_name': r.full_name,
+                            'word_count': r.word_count
                         } for r in weekly_rankings_result
                     ]
+                    context['weekly_top_learners'] = weekly_top_learners
                     
                     # 自分の週間学習数
                     my_weekly_result = db.session.execute(
@@ -226,83 +249,54 @@ def dashboard():
                         {"user_id": current_user.id, "one_week_ago": one_week_ago}
                     ).first()
                     
-                    weekly_words_learned = my_weekly_result.count if my_weekly_result else 0
+                    context['weekly_words_learned'] = my_weekly_result.count if my_weekly_result else 0
                     
             except Exception as e:
                 current_app.logger.warning(f"Could not fetch rankings: {str(e)}")
         
-        # カウント値の算出
-        weekly_activities_count = 0
-        pending_todos_count = 0
-        active_goals_count = 0
-        monthly_chat_count = 0
-        
+        # ToDoカウント
         try:
-            one_week_ago = datetime.now() - timedelta(days=7)
-            weekly_activities_count = ActivityLog.query.filter(
-                ActivityLog.student_id == current_user.id,
-                ActivityLog.timestamp >= one_week_ago
-            ).count()
-        except:
-            pass
-        
-        try:
-            pending_todos_count = Todo.query.filter_by(
+            context['pending_todos_count'] = Todo.query.filter_by(
                 student_id=current_user.id,
                 is_completed=False
             ).count()
         except:
             pass
         
+        # 目標カウント
         try:
-            active_goals_count = Goal.query.filter_by(
+            context['active_goals_count'] = Goal.query.filter_by(
                 student_id=current_user.id,
                 is_completed=False
             ).count()
         except:
             pass
         
+        # チャット使用回数（今月）
         try:
-            one_month_ago = datetime.now() - timedelta(days=30)
-            monthly_chat_count = ChatHistory.query.filter(
+            this_month_start = datetime.now().replace(day=1, hour=0, minute=0, second=0)
+            context['monthly_chat_count'] = ChatHistory.query.filter(
                 ChatHistory.user_id == current_user.id,
-                ChatHistory.timestamp >= one_month_ago
+                ChatHistory.timestamp >= this_month_start
             ).count()
         except:
             pass
         
-        return render_template('student_dashboard.html',
-                             class_top_learners=class_top_learners,
-                             weekly_top_learners=weekly_top_learners,
-                             weekly_words_learned=weekly_words_learned,
-                             weekly_target=weekly_target,
-                             recent_activities=recent_activities,
-                             class_info=class_info,
-                             interest_survey=interest_survey,
-                             personality_survey=personality_survey,
-                             selected_theme=selected_theme,
-                             weekly_activities_count=weekly_activities_count,
-                             pending_todos_count=pending_todos_count,
-                             active_goals_count=active_goals_count,
-                             monthly_chat_count=monthly_chat_count)
-                             
     except Exception as e:
         current_app.logger.error(f"Dashboard error: {str(e)}")
-        # エラー時も基本的な表示は行う
-        return render_template('student_dashboard.html',
-                             class_top_learners=[],
-                             weekly_top_learners=[],
-                             weekly_words_learned=0,
-                             weekly_target=50,
-                             recent_activities=[],
-                             class_info=None,
-                             interest_survey=None,
-                             personality_survey=None,
-                             selected_theme=None,
-                             weekly_activities_count=0,
-                             pending_todos_count=0,
-                             active_goals_count=0,
-                             monthly_chat_count=0)
+        current_app.logger.error(traceback.format_exc())
+        flash('一部のデータの読み込みに失敗しました。', 'warning')
+    
+    return render_template('student_dashboard.html', **context)
+
+
+# エラーハンドリング用のフォールバックルート
+@student_bp.route('/dashboard_minimal')
+@login_required
+@student_required
+def dashboard_minimal():
+    """最小限のダッシュボード（エラー時のフォールバック）"""
+    return render_template('student/dashboard_minimal.html')
 
 # アンケート関連
 @student_bp.route('/surveys')
@@ -2096,3 +2090,22 @@ def debug_role():
         'role_type': str(type(current_user.role)),
         'id': current_user.id
     })
+
+@student_bp.route('/debug/routes')
+@login_required
+@student_required
+def debug_routes():
+    """利用可能なルートを表示（開発時のみ）"""
+    if not current_app.debug:
+        return redirect(url_for('student.dashboard'))
+    
+    routes = []
+    for rule in current_app.url_map.iter_rules():
+        if 'student' in rule.endpoint:
+            routes.append({
+                'endpoint': rule.endpoint,
+                'methods': ', '.join(rule.methods),
+                'path': str(rule)
+            })
+    
+    return render_template('student/debug_routes.html', routes=routes)

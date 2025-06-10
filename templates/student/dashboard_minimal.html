@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}ダッシュボード | QuestEd{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>ダッシュボード</h2>
+    
+    <div class="alert alert-info">
+        <p>現在、一部の機能が利用できません。</p>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">基本メニュー</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="{{ url_for('student.activities') }}">活動記録</a></li>
+                        <li><a href="{{ url_for('student.view_themes') }}">テーマ管理</a></li>
+                        <li><a href="{{ url_for('student.todos') }}">ToDo</a></li>
+                        <li><a href="{{ url_for('student.goals') }}">目標管理</a></li>
+                        <li><a href="{{ url_for('student.surveys') }}">アンケート</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">サポート</h5>
+                    <p>技術的な問題が発生している場合は、管理者にお問い合わせください。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
