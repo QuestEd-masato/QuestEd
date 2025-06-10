@@ -2,11 +2,12 @@
 """
 管理者向け分析・使用状況ダッシュボード
 """
-from flask import render_template, jsonify, request
+from flask import render_template, jsonify, request, current_app
 from flask_login import login_required
 from sqlalchemy import func, desc, text
 from datetime import datetime, timedelta
 import os
+import logging
 
 from app.models import (
     db, User, School, Class, ActivityLog, ChatHistory, 
@@ -19,31 +20,214 @@ from app.admin import admin_bp, admin_required
 @admin_required
 def analytics_dashboard():
     """使用状況分析ダッシュボード"""
-    # 基本統計
-    stats = get_basic_stats()
-    
-    # 日別アクティブユーザー（過去30日）
-    daily_active_users = get_daily_active_users()
-    
-    # API使用量統計
-    api_usage = get_api_usage_stats()
-    
-    # 学校別統計
-    school_stats = get_school_statistics()
-    
-    # 機能別使用統計
-    feature_usage = get_feature_usage_stats()
-    
-    # 最近のアクティビティ
-    recent_activities = get_recent_activities()
-    
-    return render_template('admin/analytics_dashboard.html',
-                         stats=stats,
-                         daily_active_users=daily_active_users,
-                         api_usage=api_usage,
-                         school_stats=school_stats,
-                         feature_usage=feature_usage,
-                         recent_activities=recent_activities)
+    try:
+        # 日別アクティブユーザー
+        daily_active_users = get_daily_active_users(30)
+        
+        # 基本統計情報
+        stats = {
+            'total_users': 0,
+            'new_users_this_month': 0,
+            'active_users_week': 0,
+            'total_activities': 0,
+            'ai_usage_count': 0,
+            'total_schools': 0,
+            'total_classes': 0
+        }
+        
+        try:
+            # 総ユーザー数
+            stats['total_users'] = User.query.count()
+            
+            # 今月の新規ユーザー
+            this_month_start = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            stats['new_users_this_month'] = User.query.filter(User.created_at >= this_month_start).count()
+            
+            # アクティブユーザー数（過去7日）
+            week_ago = datetime.now() - timedelta(days=7)
+            stats['active_users_week'] = db.session.query(ActivityLog.student_id).filter(
+                ActivityLog.timestamp >= week_ago
+            ).distinct().count()
+            
+            # 今月の総活動記録数
+            stats['total_activities'] = ActivityLog.query.filter(
+                ActivityLog.timestamp >= this_month_start
+            ).count()
+            
+            # 学校数
+            stats['total_schools'] = School.query.count()
+            
+            # クラス数  
+            stats['total_classes'] = Class.query.count()
+            
+        except Exception as e:
+            logging.error(f"Error fetching basic stats: {str(e)}")
+        
+        # API使用状況（簡易版）
+        api_usage = {
+            'chat_usage': 0,
+            'theme_generation': 0,
+            'evaluation_usage': 0,
+            'curriculum_usage': 0,
+            'total_api_calls': 0,
+            'estimated_cost_usd': 0,
+            'estimated_cost_jpy': 0
+        }
+        
+        try:
+            this_month_start = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            
+            # 各テーブルが存在する場合のみカウント
+            try:
+                api_usage['chat_usage'] = ChatHistory.query.filter(
+                    ChatHistory.timestamp >= this_month_start
+                ).count()
+            except:
+                pass
+                
+            try:
+                api_usage['theme_generation'] = InquiryTheme.query.filter(
+                    InquiryTheme.created_at >= this_month_start,
+                    InquiryTheme.description.isnot(None)
+                ).count()
+            except:
+                pass
+                
+            try:
+                api_usage['evaluation_usage'] = StudentEvaluation.query.filter(
+                    StudentEvaluation.created_at >= this_month_start
+                ).count()
+            except:
+                pass
+                
+            try:
+                api_usage['curriculum_usage'] = Curriculum.query.filter(
+                    Curriculum.created_at >= this_month_start
+                ).count()
+            except:
+                pass
+            
+            # 統計値を更新
+            stats['ai_usage_count'] = api_usage['chat_usage']
+            api_usage['total_api_calls'] = (api_usage['chat_usage'] + api_usage['theme_generation'] + 
+                                          api_usage['evaluation_usage'] + api_usage['curriculum_usage'])
+            
+            # 推定コスト計算
+            gpt35_cost = api_usage['chat_usage'] * 0.002
+            gpt4_cost = (api_usage['theme_generation'] + api_usage['evaluation_usage'] + 
+                        api_usage['curriculum_usage']) * 0.06
+            api_usage['estimated_cost_usd'] = round(gpt35_cost + gpt4_cost, 2)
+            api_usage['estimated_cost_jpy'] = round(api_usage['estimated_cost_usd'] * 150, 0)
+                
+        except Exception as e:
+            logging.warning(f"Could not fetch API usage: {str(e)}")
+        
+        # 学校統計（簡易版）
+        school_stats = []
+        try:
+            schools = School.query.all()
+            for school in schools:
+                try:
+                    user_count = User.query.filter_by(school_id=school.id).count()
+                    activity_count = ActivityLog.query.join(User).filter(User.school_id == school.id).count()
+                    
+                    school_stats.append({
+                        'school_name': school.name,
+                        'school_code': school.code,
+                        'user_count': user_count,
+                        'teacher_count': User.query.filter_by(school_id=school.id, role='teacher').count(),
+                        'student_count': User.query.filter_by(school_id=school.id, role='student').count(),
+                        'class_count': Class.query.join(User).filter(User.school_id == school.id).count(),
+                        'activity_count': activity_count
+                    })
+                except Exception as e:
+                    logging.warning(f"Could not fetch stats for school {school.id}: {str(e)}")
+        except Exception as e:
+            logging.error(f"Could not fetch school stats: {str(e)}")
+        
+        # 機能使用統計
+        feature_usage = {
+            'activity_logs': 0,
+            'chat_sessions': 0,
+            'todos_created': 0,
+            'goals_created': 0,
+            'themes_generated': 0
+        }
+        
+        try:
+            this_month_start = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            feature_usage['activity_logs'] = ActivityLog.query.filter(
+                ActivityLog.timestamp >= this_month_start
+            ).count()
+            feature_usage['chat_sessions'] = api_usage['chat_usage']
+            
+            try:
+                feature_usage['todos_created'] = Todo.query.filter(Todo.created_at >= this_month_start).count()
+            except:
+                pass
+                
+            try:
+                feature_usage['goals_created'] = Goal.query.filter(Goal.created_at >= this_month_start).count()
+            except:
+                pass
+                
+            feature_usage['themes_generated'] = api_usage['theme_generation']
+            
+        except Exception as e:
+            logging.warning(f"Could not fetch feature usage: {str(e)}")
+        
+        # 最近のアクティビティ
+        recent_activities = {
+            'recent_users': [],
+            'recent_activities': []
+        }
+        
+        try:
+            recent_users = User.query.order_by(User.created_at.desc()).limit(5).all()
+            recent_activities['recent_users'] = [
+                {
+                    'id': user.id,
+                    'username': user.username,
+                    'role': user.role,
+                    'created_at': user.created_at,
+                    'school_name': user.school.name if user.school else '未設定'
+                } for user in recent_users
+            ]
+            
+            recent_logs = ActivityLog.query.order_by(ActivityLog.timestamp.desc()).limit(10).all()
+            recent_activities['recent_activities'] = [
+                {
+                    'id': log.id,
+                    'student_name': log.student.display_name if log.student else 'Unknown',
+                    'title': log.title,
+                    'timestamp': log.timestamp,
+                    'has_image': bool(log.image_url)
+                } for log in recent_logs
+            ]
+        except Exception as e:
+            logging.warning(f"Could not fetch recent activities: {str(e)}")
+        
+        return render_template('admin/analytics_dashboard.html',
+                             stats=stats,
+                             daily_active_users=daily_active_users,
+                             api_usage=api_usage,
+                             school_stats=school_stats,
+                             feature_usage=feature_usage,
+                             recent_activities=recent_activities)
+                             
+    except Exception as e:
+        logging.error(f"Analytics dashboard error: {str(e)}")
+        # エラー時でも空のデータで表示
+        return render_template('admin/analytics_dashboard.html',
+                             stats={'total_users': 0, 'new_users_this_month': 0, 'active_users_week': 0, 
+                                   'total_activities': 0, 'ai_usage_count': 0, 'total_schools': 0, 'total_classes': 0},
+                             daily_active_users={'labels': [], 'data': []},
+                             api_usage={'chat_usage': 0, 'theme_generation': 0, 'evaluation_usage': 0, 
+                                       'curriculum_usage': 0, 'total_api_calls': 0, 'estimated_cost_usd': 0, 'estimated_cost_jpy': 0},
+                             school_stats=[],
+                             feature_usage={'activity_logs': 0, 'chat_sessions': 0, 'todos_created': 0, 
+                                          'goals_created': 0, 'themes_generated': 0},
+                             recent_activities={'recent_users': [], 'recent_activities': []})
 
 @admin_bp.route('/analytics/api')
 @login_required
@@ -97,42 +281,47 @@ def get_basic_stats():
 
 def get_daily_active_users(days=30):
     """日別アクティブユーザー数を取得"""
-    end_date = datetime.now().date()
-    start_date = end_date - timedelta(days=days-1)
-    
-    # SQLクエリで日別のユニークユーザー数を取得
-    query = text("""
-        SELECT DATE(al.timestamp) as activity_date,
-               COUNT(DISTINCT al.student_id) as active_users
-        FROM activity_logs al
-        WHERE DATE(al.timestamp) >= :start_date
-          AND DATE(al.timestamp) <= :end_date
-        GROUP BY DATE(al.timestamp)
-        ORDER BY activity_date
-    """)
-    
-    result = db.session.execute(query, {
-        'start_date': start_date,
-        'end_date': end_date
-    }).fetchall()
-    
-    # 日付と値のリストに変換
-    dates = []
-    values = []
-    
-    # 全ての日付を含むように補完
-    current_date = start_date
-    result_dict = {row.activity_date: row.active_users for row in result}
-    
-    while current_date <= end_date:
-        dates.append(current_date.strftime('%m/%d'))
-        values.append(result_dict.get(current_date, 0))
-        current_date += timedelta(days=1)
-    
-    return {
-        'labels': dates,
-        'data': values
-    }
+    try:
+        end_date = datetime.now().date()
+        start_date = end_date - timedelta(days=days)
+        
+        # 日別のアクティブユーザー数を集計
+        query = text("""
+            SELECT DATE(timestamp) as activity_date,
+                   COUNT(DISTINCT student_id) as active_users
+            FROM activity_logs
+            WHERE DATE(timestamp) >= :start_date
+              AND DATE(timestamp) <= :end_date
+            GROUP BY DATE(timestamp)
+            ORDER BY activity_date
+        """)
+        
+        result = db.session.execute(query, {
+            'start_date': start_date,
+            'end_date': end_date
+        }).fetchall()
+        
+        # 結果を辞書形式に整形
+        dates = []
+        values = []
+        
+        # 全日付を生成（データがない日も0として含める）
+        current_date = start_date
+        date_data = {row.activity_date: row.active_users for row in result}
+        
+        while current_date <= end_date:
+            dates.append(current_date.strftime('%m/%d'))
+            values.append(date_data.get(current_date, 0))
+            current_date += timedelta(days=1)
+        
+        return {
+            'labels': dates,
+            'data': values
+        }
+        
+    except Exception as e:
+        logging.error(f"Error in get_daily_active_users: {str(e)}")
+        return {'labels': [], 'data': []}
 
 def get_api_usage_stats():
     """API使用統計を取得"""

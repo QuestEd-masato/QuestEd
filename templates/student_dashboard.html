@@ -277,7 +277,7 @@
         <div style="margin-top: 1rem;">
             <strong>{{ selected_theme.title }}</strong>
             <p class="text-muted" style="margin-top: 0.5rem;">{{ selected_theme.question }}</p>
-            <a href="{{ url_for('student.themes') }}" class="btn-sm btn-outline-primary">テーマを変更</a>
+            <a href="{{ url_for('student.view_themes') }}" class="btn-sm btn-outline-primary">テーマを変更</a>
         </div>
         {% else %}
         <div class="metric-item">
@@ -285,7 +285,7 @@
             <div class="metric-value">未設定</div>
         </div>
         <p style="margin-top: 1rem;">探究活動を始めるためにテーマを選択してください。</p>
-        <a href="{{ url_for('student.themes') }}" class="btn-sm btn-primary">テーマを選ぶ</a>
+        <a href="{{ url_for('student.view_themes') }}" class="btn-sm btn-primary">テーマを選ぶ</a>
         {% endif %}
     </div>
     

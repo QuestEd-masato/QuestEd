@@ -2,7 +2,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file, session, Response, current_app
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import json
 import io
@@ -67,140 +67,242 @@ def student_required(f):
 @login_required
 @student_required
 def dashboard():
-    """学生ダッシュボード（クラス別テーマ表示）"""
-    # 生徒が所属するクラスとテーマを取得
-    class_themes = []
-    enrollments = ClassEnrollment.query.filter_by(
-        student_id=current_user.id,
-        is_active=True
-    ).all()
-    
-    for enrollment in enrollments:
-        class_obj = enrollment.class_obj
-        main_theme = MainTheme.query.filter_by(class_id=class_obj.id).first()
-        personal_theme = InquiryTheme.query.filter_by(
-            student_id=current_user.id,
-            class_id=class_obj.id,
-            is_selected=True
-        ).first()
-        
-        class_themes.append({
-            'class': class_obj,
-            'main_theme': main_theme,
-            'personal_theme': personal_theme
-        })
-    
-    # 学生が履修しているクラスを取得（既存コードの互換性のため）
-    classes = [enrollment.class_obj for enrollment in enrollments]
-    
-    # アンケートデータを個別に取得（テンプレートで参照されるため）
-    interest_survey = InterestSurvey.query.filter_by(
-        student_id=current_user.id
-    ).order_by(InterestSurvey.submitted_at.desc()).first()
-    
-    personality_survey = PersonalitySurvey.query.filter_by(
-        student_id=current_user.id
-    ).order_by(PersonalitySurvey.submitted_at.desc()).first()
-    
-    # アンケート完了状態をチェック（後方互換性のため）
-    has_completed_surveys = bool(interest_survey and personality_survey)
-    
-    # 選択中のテーマを取得
-    selected_theme = InquiryTheme.query.filter_by(
-        student_id=current_user.id,
-        is_selected=True
-    ).first()
-    
-    # 最新のマイルストーンを取得
-    upcoming_milestones = []
-    today = datetime.utcnow().date()
-    
-    for class_obj in classes:
-        milestones = Milestone.query.filter_by(class_id=class_obj.id)\
-            .filter(Milestone.due_date >= today)\
-            .order_by(Milestone.due_date).limit(3).all()
-        for milestone in milestones:
-            days_remaining = (milestone.due_date - today).days
-            upcoming_milestones.append({
-                'id': milestone.id,
-                'title': milestone.title,
-                'due_date': milestone.due_date,
-                'days_remaining': days_remaining,
-                'class_name': class_obj.name,
-                'milestone': milestone,
-                'class': class_obj
-            })
-    
-    # 期限日でソート
-    upcoming_milestones.sort(key=lambda x: x['due_date'])
-    
-    # 未完了のTo Doを取得
-    pending_todos = Todo.query.filter_by(
-        student_id=current_user.id,
-        is_completed=False
-    ).order_by(Todo.due_date).limit(5).all()
-    
-    # 進行中の目標を取得
-    active_goals = Goal.query.filter_by(
-        student_id=current_user.id,
-        is_completed=False
-    ).order_by(Goal.due_date).limit(3).all()
-    
-    # 最近の活動記録を取得
-    recent_activities = ActivityLog.query.filter_by(
-        student_id=current_user.id
-    ).order_by(ActivityLog.timestamp.desc()).limit(5).all()
-    
-    # 基礎学力トレーニングデータの取得
-    # BaseBuilderのインポートを試みる
+    """生徒ダッシュボード - 既存テーブルを使用した安全な実装"""
     try:
-        from basebuilder.models import TextDelivery, TextSet, TextProficiencyRecord
+        # デフォルト値
+        class_top_learners = []
+        weekly_top_learners = []
+        weekly_words_learned = 0
+        weekly_target = 50
+        recent_activities = []
+        class_info = None
         
-        # 配信されたテキストを取得
-        delivered_texts = []
-        for class_obj in classes:
-            deliveries = db.session.query(TextDelivery, TextSet)\
-                .join(TextSet, TextDelivery.text_set_id == TextSet.id)\
-                .filter(TextDelivery.class_id == class_obj.id)\
-                .order_by(TextDelivery.delivered_at.desc())\
-                .limit(5).all()
+        # 最近の活動記録を取得
+        try:
+            recent_activities = ActivityLog.query.filter_by(
+                student_id=current_user.id
+            ).order_by(ActivityLog.timestamp.desc()).limit(5).all()
+        except Exception as e:
+            current_app.logger.warning(f"Could not fetch recent activities: {str(e)}")
+            recent_activities = []
+        
+        # アンケート状況を取得
+        interest_survey = None
+        personality_survey = None
+        selected_theme = None
+        
+        try:
+            interest_survey = InterestSurvey.query.filter_by(
+                student_id=current_user.id
+            ).first()
+        except Exception as e:
+            current_app.logger.warning(f"Could not fetch interest survey: {str(e)}")
+        
+        try:
+            personality_survey = PersonalitySurvey.query.filter_by(
+                student_id=current_user.id
+            ).first()
+        except Exception as e:
+            current_app.logger.warning(f"Could not fetch personality survey: {str(e)}")
+        
+        try:
+            selected_theme = InquiryTheme.query.filter_by(
+                student_id=current_user.id,
+                is_selected=True
+            ).first()
+        except Exception as e:
+            current_app.logger.warning(f"Could not fetch selected theme: {str(e)}")
+        
+        # クラス情報を取得
+        try:
+            # ClassEnrollmentテーブルから現在のクラス情報を取得
+            enrollment = ClassEnrollment.query.filter_by(
+                student_id=current_user.id,
+                is_active=True
+            ).first()
             
-            for delivery, text_set in deliveries:
-                # 生徒の熟練度を取得
-                proficiency = TextProficiencyRecord.query.filter_by(
-                    student_id=current_user.id,
-                    text_set_id=text_set.id
-                ).first()
+            if enrollment and enrollment.class_obj:
+                class_obj = enrollment.class_obj
+                class_info = {
+                    'class_name': class_obj.name,
+                    'teacher_name': class_obj.teacher.display_name if class_obj.teacher else None,
+                    'subject_name': getattr(class_obj.subject, 'name', None) if hasattr(class_obj, 'subject') else None
+                }
+        except Exception as e:
+            current_app.logger.warning(f"Could not fetch class info: {str(e)}")
+        
+        # word_proficiencyテーブルが存在するか確認
+        has_word_proficiency = False
+        try:
+            # テーブルの存在確認
+            from sqlalchemy import text
+            result = db.session.execute(text("SHOW TABLES LIKE 'word_proficiency'")).first()
+            has_word_proficiency = result is not None
+        except:
+            pass
+        
+        # word_proficiencyが存在する場合のみランキングを取得
+        if has_word_proficiency:
+            try:
+                # 現在のクラスメイトのIDリストを取得
+                classmate_ids = []
+                if enrollment:
+                    classmates = User.query.join(ClassEnrollment).filter(
+                        ClassEnrollment.class_id == enrollment.class_id,
+                        ClassEnrollment.is_active == True,
+                        User.role == 'student'
+                    ).all()
+                    classmate_ids = [u.id for u in classmates]
                 
-                delivered_texts.append({
-                    'delivery': delivery,
-                    'text_set': text_set,
-                    'proficiency': proficiency,
-                    'class': class_obj
-                })
+                if classmate_ids:
+                    # クラス全体のランキング（SQLクエリで集計）
+                    ranking_query = text("""
+                        SELECT 
+                            u.id,
+                            u.username,
+                            u.full_name,
+                            COUNT(DISTINCT wp.word_id) as word_count
+                        FROM users u
+                        LEFT JOIN word_proficiency wp ON u.id = wp.user_id
+                        WHERE u.id IN :user_ids
+                        GROUP BY u.id, u.username, u.full_name
+                        ORDER BY word_count DESC
+                        LIMIT 10
+                    """)
+                    
+                    class_rankings_result = db.session.execute(
+                        ranking_query,
+                        {"user_ids": tuple(classmate_ids)}
+                    ).fetchall()
+                    
+                    class_top_learners = [
+                        {
+                            'id': r.id,
+                            'username': r.username,
+                            'display_name': r.full_name or r.username,
+                            'activity_count': r.word_count
+                        } for r in class_rankings_result
+                    ]
+                    
+                    # 週間ランキング
+                    one_week_ago = datetime.now() - timedelta(days=7)
+                    weekly_query = text("""
+                        SELECT 
+                            u.id,
+                            u.username,
+                            u.full_name,
+                            COUNT(DISTINCT wp.word_id) as word_count
+                        FROM users u
+                        LEFT JOIN word_proficiency wp ON u.id = wp.user_id
+                        WHERE u.id IN :user_ids
+                        AND wp.last_reviewed >= :one_week_ago
+                        GROUP BY u.id, u.username, u.full_name
+                        ORDER BY word_count DESC
+                        LIMIT 10
+                    """)
+                    
+                    weekly_rankings_result = db.session.execute(
+                        weekly_query,
+                        {"user_ids": tuple(classmate_ids), "one_week_ago": one_week_ago}
+                    ).fetchall()
+                    
+                    weekly_top_learners = [
+                        {
+                            'id': r.id,
+                            'username': r.username,
+                            'display_name': r.full_name or r.username,
+                            'weekly_count': r.word_count
+                        } for r in weekly_rankings_result
+                    ]
+                    
+                    # 自分の週間学習数
+                    my_weekly_result = db.session.execute(
+                        text("""
+                            SELECT COUNT(DISTINCT word_id) as count
+                            FROM word_proficiency
+                            WHERE user_id = :user_id
+                            AND last_reviewed >= :one_week_ago
+                        """),
+                        {"user_id": current_user.id, "one_week_ago": one_week_ago}
+                    ).first()
+                    
+                    weekly_words_learned = my_weekly_result.count if my_weekly_result else 0
+                    
+            except Exception as e:
+                current_app.logger.warning(f"Could not fetch rankings: {str(e)}")
         
-        # 配信日でソート（最新順）
-        delivered_texts.sort(key=lambda x: x['delivery'].delivered_at, reverse=True)
-        delivered_texts = delivered_texts[:5]  # 最新5件のみ
+        # カウント値の算出
+        weekly_activities_count = 0
+        pending_todos_count = 0
+        active_goals_count = 0
+        monthly_chat_count = 0
         
-    except ImportError:
-        # BaseBuilderモジュールが利用できない場合
-        delivered_texts = []
-    
-    return render_template('student_dashboard.html',
-                         class_themes=class_themes,
-                         classes=classes,
-                         has_completed_surveys=has_completed_surveys,
-                         interest_survey=interest_survey,
-                         personality_survey=personality_survey,
-                         selected_theme=selected_theme,
-                         upcoming_milestones=upcoming_milestones,
-                         pending_todos=pending_todos,
-                         todos=pending_todos,  # テンプレートがtodosを期待している
-                         active_goals=active_goals,
-                         recent_activities=recent_activities,
-                         delivered_texts=delivered_texts,
-                         today=datetime.utcnow().date())
+        try:
+            one_week_ago = datetime.now() - timedelta(days=7)
+            weekly_activities_count = ActivityLog.query.filter(
+                ActivityLog.student_id == current_user.id,
+                ActivityLog.timestamp >= one_week_ago
+            ).count()
+        except:
+            pass
+        
+        try:
+            pending_todos_count = Todo.query.filter_by(
+                student_id=current_user.id,
+                is_completed=False
+            ).count()
+        except:
+            pass
+        
+        try:
+            active_goals_count = Goal.query.filter_by(
+                student_id=current_user.id,
+                is_completed=False
+            ).count()
+        except:
+            pass
+        
+        try:
+            one_month_ago = datetime.now() - timedelta(days=30)
+            monthly_chat_count = ChatHistory.query.filter(
+                ChatHistory.user_id == current_user.id,
+                ChatHistory.timestamp >= one_month_ago
+            ).count()
+        except:
+            pass
+        
+        return render_template('student_dashboard.html',
+                             class_top_learners=class_top_learners,
+                             weekly_top_learners=weekly_top_learners,
+                             weekly_words_learned=weekly_words_learned,
+                             weekly_target=weekly_target,
+                             recent_activities=recent_activities,
+                             class_info=class_info,
+                             interest_survey=interest_survey,
+                             personality_survey=personality_survey,
+                             selected_theme=selected_theme,
+                             weekly_activities_count=weekly_activities_count,
+                             pending_todos_count=pending_todos_count,
+                             active_goals_count=active_goals_count,
+                             monthly_chat_count=monthly_chat_count)
+                             
+    except Exception as e:
+        current_app.logger.error(f"Dashboard error: {str(e)}")
+        # エラー時も基本的な表示は行う
+        return render_template('student_dashboard.html',
+                             class_top_learners=[],
+                             weekly_top_learners=[],
+                             weekly_words_learned=0,
+                             weekly_target=50,
+                             recent_activities=[],
+                             class_info=None,
+                             interest_survey=None,
+                             personality_survey=None,
+                             selected_theme=None,
+                             weekly_activities_count=0,
+                             pending_todos_count=0,
+                             active_goals_count=0,
+                             monthly_chat_count=0)
 
 # アンケート関連
 @student_bp.route('/surveys')
