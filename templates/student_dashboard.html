@@ -320,9 +320,7 @@
         
         <div style="margin-top: 1rem;">
             <a href="{{ url_for('basebuilder_module.index') }}" class="btn-sm btn-outline-primary">トレーニングを始める</a>
-            {% if class_info %}
-            <a href="{{ url_for('basebuilder_module.theme_relations') }}" class="btn-sm btn-outline-primary">テーマ連携</a>
-            {% endif %}
+            <a href="{{ url_for('basebuilder_module.index') }}" class="btn-sm btn-outline-primary">学習履歴</a>
         </div>
     </div>
     
@@ -350,7 +348,11 @@
         
         <div style="margin-top: 1rem;">
             <a href="{{ url_for('student.activities') }}" class="btn-sm btn-outline-primary">記録を見る</a>
-            <a href="{{ url_for('student.new_activity') }}" class="btn-sm btn-primary">新しい記録</a>
+            {% if class_info %}
+            <a href="{{ url_for('student.new_activity') }}?class_id={{ all_class_themes[0].class_id if all_class_themes else '' }}" class="btn-sm btn-primary">新しい記録</a>
+            {% else %}
+            <a href="{{ url_for('student.activities') }}" class="btn-sm btn-primary">新しい記録</a>
+            {% endif %}
         </div>
     </div>
     
