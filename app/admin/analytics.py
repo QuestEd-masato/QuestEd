@@ -144,7 +144,7 @@ def get_api_usage_stats():
     # テーマ生成（GPT-4）使用回数（推定）
     theme_generation = InquiryTheme.query.filter(
         InquiryTheme.created_at >= this_month_start,
-        InquiryTheme.content.isnot(None)
+        InquiryTheme.description.isnot(None)
     ).count()
     
     # 評価生成（GPT-4）使用回数

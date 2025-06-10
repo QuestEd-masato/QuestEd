@@ -92,3 +92,20 @@
     color: var(--btn-secondary-text) !important;
     border-color: var(--btn-secondary-border) !important;
 }
+
+/* ハンバーガーメニューの矢印アイコン */
+.navbar-toggler-icon::after {
+    content: '\f078';  /* Font Awesome down arrow */
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+}
+
+/* ドロップダウンが開いている時 */
+.navbar-toggler[aria-expanded="true"] .navbar-toggler-icon::after {
+    content: '\f077';  /* Font Awesome up arrow */
+}

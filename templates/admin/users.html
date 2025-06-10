@@ -192,7 +192,7 @@ main.content,
                                         {% endif %}
                                     </div>
                                     <div>
-                                        <div>{{ user.display_name }}</div>
+                                        <div>{{ user.full_name or user.username }}</div>
                                     </div>
                                 </div>
                             </td>
@@ -234,7 +234,7 @@ main.content,
                                         <i class="fas fa-edit d-md-none"></i>
                                         <span class="d-none d-md-inline">編集</span>
                                     </a>
-                                    <form action="{{ url_for('admin_panel.delete_user', user_id=user.id) }}" method="post" class="d-inline" onsubmit="return confirm('ユーザー「{{ user.display_name }}」を削除しますか？この操作は元に戻せません。');">
+                                    <form action="{{ url_for('admin_panel.delete_user', user_id=user.id) }}" method="post" class="d-inline" onsubmit="return confirm('ユーザー「{{ user.full_name or user.username }}」を削除しますか？この操作は元に戻せません。');">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn btn-outline-danger" title="削除">
                                             <i class="fas fa-trash-alt d-md-none"></i>

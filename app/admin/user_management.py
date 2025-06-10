@@ -13,6 +13,8 @@ from app.models import User, db
 from app.admin import admin_bp, admin_required
 from app.auth.password_validator import generate_secure_password
 from app.utils.file_security import file_validator
+from app.utils.email_sender import send_confirmation_email
+import logging
 
 # CSVファイルの拡張子チェック用関数
 def allowed_csv_file(filename):
@@ -104,13 +106,30 @@ def import_users():
                         # ユーザー作成
                         new_user = User(
                             username=row['username'],
+                            full_name=row.get('full_name', ''),
                             email=row['email'],
                             password=generate_password_hash(password),
                             role=row['role'],
-                            school_id=school_id
+                            school_id=school_id,
+                            email_confirmed=True,  # CSV登録ユーザーは確認済み
+                            is_approved=(row['role'] != 'student')  # 学生以外は自動承認
                         )
                         
                         db.session.add(new_user)
+                        db.session.flush()  # ユーザーIDを取得するため
+                        
+                        # 確認メール送信を試行
+                        try:
+                            token = secrets.token_urlsafe(32)
+                            send_confirmation_email(
+                                new_user.email, 
+                                new_user.id, 
+                                token, 
+                                new_user.username
+                            )
+                        except Exception as e:
+                            logging.warning(f"Failed to send confirmation email to {new_user.email}: {str(e)}")
+                        
                         success_count += 1
                         
                     except Exception as e:

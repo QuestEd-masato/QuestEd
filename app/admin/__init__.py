@@ -65,6 +65,7 @@ def users():
     users = query.add_columns(
         User.id,
         User.username,
+        User.full_name,
         User.email,
         User.role,
         User.created_at,

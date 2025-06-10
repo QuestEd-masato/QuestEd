@@ -30,21 +30,28 @@
             <h5 class="card-title">CSVファイル形式</h5>
         </div>
         <div class="card-body">
+            <p>CSVファイルの形式：
+                <a href="{{ url_for('static', filename='templates/csv_import_template.csv') }}" download>
+                    テンプレートをダウンロード
+                </a>
+            </p>
+            
             <p>以下のヘッダーを持つCSVファイルを準備してください：</p>
-            <pre>username,email,password,role,school_id</pre>
+            <pre>username,full_name,email,password,role,school_id</pre>
             
             <ul>
-                <li><strong>username</strong>: ユーザー名（必須）</li>
+                <li><strong>username</strong>: 学籍番号を推奨（例：2024001）（必須）</li>
+                <li><strong>full_name</strong>: 氏名（必須）</li>
                 <li><strong>email</strong>: メールアドレス（必須）</li>
-                <li><strong>password</strong>: パスワード（空白の場合はランダムなパスワードが生成されます）</li>
-                <li><strong>role</strong>: ロール（'student'または'teacher'）（必須）</li>
-                <li><strong>school_id</strong>: 学校ID（任意、数値）</li>
+                <li><strong>password</strong>: 初期パスワード（12文字以上、空白の場合はランダム生成）</li>
+                <li><strong>role</strong>: student/teacher/admin（必須）</li>
+                <li><strong>school_id</strong>: 学校ID（数字）</li>
             </ul>
             
             <p>例：</p>
-            <pre>username,email,password,role,school_id
-student1,student1@example.com,password123,student,1
-teacher1,teacher1@example.com,secure456,teacher,1</pre>
+            <pre>username,full_name,email,password,role,school_id
+2024001,山田太郎,yamada@example.com,password123456,student,1
+teacher01,鈴木先生,suzuki@school.com,password123456,teacher,1</pre>
             
             <div class="mt-3">
                 <a href="{{ url_for('admin_panel.download_user_template') }}" class="btn btn-outline-primary">
