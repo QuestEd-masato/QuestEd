@@ -141,6 +141,22 @@ main.content,
         </div>
     </div>
     
+    <!-- 学校フィルター -->
+    <div class="filter-section mb-3">
+        <div class="row">
+            <div class="col-md-4">
+                <select class="form-select" onchange="filterBySchool(this.value)">
+                    <option value="">すべての学校</option>
+                    {% for school in schools %}
+                    <option value="{{ school.id }}" {% if current_school_id == school.id|string %}selected{% endif %}>
+                        {{ school.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+    
     <div class="card shadow-sm">
         <div class="card-header bg-light d-flex justify-content-between align-items-center">
             <h5 class="card-title mb-0 py-2">ユーザー一覧</h5>
@@ -195,7 +211,7 @@ main.content,
                             </td>
                             <td>
                                 {% if user.role == 'admin' %}
-                                    <span class="badge bg-danger">管理者</span>
+                                    <span class="badge bg-danger role-badge-admin">管理者</span>
                                 {% elif user.role == 'teacher' %}
                                     <span class="badge bg-success">教師</span>
                                 {% else %}
@@ -251,6 +267,17 @@ main.content,
 
 {% block extra_js %}
 <script>
+// 学校フィルター機能
+function filterBySchool(schoolId) {
+    const currentUrl = new URL(window.location);
+    if (schoolId) {
+        currentUrl.searchParams.set('school_id', schoolId);
+    } else {
+        currentUrl.searchParams.delete('school_id');
+    }
+    window.location.href = currentUrl.toString();
+}
+
 // ===== 管理画面サイドバー動的削除スクリプト =====
 document.addEventListener('DOMContentLoaded', function() {
     // サイドバー要素の候補リスト

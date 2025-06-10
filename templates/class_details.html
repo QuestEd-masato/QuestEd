@@ -21,6 +21,13 @@
                         <em>未割り当て</em>
                         {% endif %}
                     </p>
+                    <p><strong>教科:</strong>
+                        {% if class_obj.subject %}
+                            {{ class_obj.subject.name }}
+                        {% else %}
+                            <em>未設定</em>
+                        {% endif %}
+                    </p>
                     {% if class_obj.description %}
                     <p><strong>説明:</strong> {{ class_obj.description }}</p>
                     {% endif %}

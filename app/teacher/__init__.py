@@ -287,17 +287,27 @@ def edit_class(class_id):
         flash('このクラスを編集する権限がありません。')
         return redirect(url_for('teacher.classes'))
     
+    # 教科リストを取得
+    subjects = Subject.query.filter_by(is_active=True).order_by(Subject.id).all()
+    
     if request.method == 'POST':
         class_obj.name = request.form.get('name', class_obj.name)
         class_obj.description = request.form.get('description', class_obj.description)
         class_obj.schedule = request.form.get('schedule', class_obj.schedule)
         class_obj.location = request.form.get('location', class_obj.location)
         
+        # 教科IDを保存
+        subject_id = request.form.get('subject_id')
+        if subject_id:
+            class_obj.subject_id = int(subject_id)
+        else:
+            class_obj.subject_id = None
+        
         db.session.commit()
         flash('クラス情報が更新されました。')
         return redirect(url_for('teacher.class_details', class_id=class_id))
     
-    return render_template('edit_class.html', class_obj=class_obj)
+    return render_template('edit_class.html', class_obj=class_obj, subjects=subjects)
 
 @teacher_bp.route('/class/<int:class_id>/delete')
 @login_required

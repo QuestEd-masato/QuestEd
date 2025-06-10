@@ -51,8 +51,18 @@ def dashboard():
 @admin_required
 def users():
     """ユーザー一覧（学校情報含む）"""
-    # ユーザーと学校情報をJOINして取得
-    users = User.query.outerjoin(School, User.school_id == School.id).add_columns(
+    # 学校フィルター
+    school_id = request.args.get('school_id', None)
+    
+    # クエリの作成
+    query = User.query.outerjoin(School, User.school_id == School.id)
+    
+    # 学校でフィルタリング
+    if school_id:
+        query = query.filter(User.school_id == school_id)
+    
+    # ユーザーと学校情報を取得
+    users = query.add_columns(
         User.id,
         User.username,
         User.email,
@@ -63,7 +73,13 @@ def users():
         School.code.label('school_code')
     ).all()
     
-    return render_template('admin/users.html', users=users)
+    # 学校一覧を取得（フィルター用）
+    schools = School.query.order_by(School.name).all()
+    
+    return render_template('admin/users.html', 
+                         users=users,
+                         schools=schools,
+                         current_school_id=school_id)
 
 @admin_bp.route('/users/<int:user_id>/delete', methods=['POST'])
 @login_required
