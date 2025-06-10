@@ -134,10 +134,12 @@ def dashboard():
             ActivityLog.timestamp >= one_week_ago
         ).count()
         
-        # クラス情報を取得
+        # クラス情報を取得（JOIN最適化）
         try:
             # ClassEnrollmentテーブルから現在のクラス情報を取得
-            enrollment = ClassEnrollment.query.filter_by(
+            enrollment = ClassEnrollment.query.options(
+                db.joinedload(ClassEnrollment.class_obj).joinedload(Class.teacher)
+            ).filter_by(
                 student_id=current_user.id,
                 is_active=True
             ).first()
@@ -155,11 +157,12 @@ def dashboard():
         # word_proficiencyテーブルが存在するか確認
         has_word_proficiency = False
         try:
-            # テーブルの存在確認
-            from sqlalchemy import text
-            result = db.session.execute(text("SHOW TABLES LIKE 'word_proficiency'")).first()
-            has_word_proficiency = result is not None
-        except:
+            # テーブルの存在確認（よりセキュアな方法）
+            from sqlalchemy import inspect
+            inspector = inspect(db.engine)
+            has_word_proficiency = 'word_proficiency' in inspector.get_table_names()
+        except Exception as e:
+            current_app.logger.debug(f"Table existence check failed: {str(e)}")
             pass
         
         # word_proficiencyが存在する場合のみランキングを取得
@@ -176,7 +179,7 @@ def dashboard():
                     classmate_ids = [u.id for u in classmates]
                 
                 if classmate_ids:
-                    # クラス全体のランキング（SQLクエリで集計）
+                    # クラス全体のランキング（最適化されたクエリ）
                     ranking_query = text("""
                         SELECT 
                             u.id,
@@ -187,7 +190,7 @@ def dashboard():
                         LEFT JOIN word_proficiency wp ON u.id = wp.user_id
                         WHERE u.id IN :user_ids
                         GROUP BY u.id, u.username, u.full_name
-                        ORDER BY word_count DESC
+                        ORDER BY word_count DESC, u.full_name ASC
                         LIMIT 10
                     """)
                     
@@ -260,8 +263,8 @@ def dashboard():
                 student_id=current_user.id,
                 is_completed=False
             ).count()
-        except:
-            pass
+        except Exception as e:
+            current_app.logger.debug(f"Could not fetch todo count: {str(e)}")
         
         # 目標カウント
         try:
@@ -269,18 +272,18 @@ def dashboard():
                 student_id=current_user.id,
                 is_completed=False
             ).count()
-        except:
-            pass
+        except Exception as e:
+            current_app.logger.debug(f"Could not fetch goal count: {str(e)}")
         
         # チャット使用回数（今月）
         try:
-            this_month_start = datetime.now().replace(day=1, hour=0, minute=0, second=0)
+            this_month_start = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             context['monthly_chat_count'] = ChatHistory.query.filter(
                 ChatHistory.user_id == current_user.id,
                 ChatHistory.timestamp >= this_month_start
             ).count()
-        except:
-            pass
+        except Exception as e:
+            current_app.logger.debug(f"Could not fetch chat count: {str(e)}")
         
     except Exception as e:
         current_app.logger.error(f"Dashboard error: {str(e)}")
