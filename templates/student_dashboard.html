@@ -19,14 +19,8 @@
     border-radius: 12px;
     padding: 1.5rem;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    transition: transform 0.2s;
     border: 1px solid #e9ecef;
-}
-
-.dashboard-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    border-color: #5DADE2;
+    /* ホバー効果を削除 */
 }
 
 .dashboard-card h3 {
@@ -232,6 +226,52 @@
         <p>あなたの探究学習の進捗状況や記録を確認できます</p>
     </div>
     
+    <!-- 基礎学力トレーニング -->
+    <div class="dashboard-card">
+        <h3>🔥 基礎学力トレーニング</h3>
+        <div class="metric-item">
+            <div class="metric-label">今週のトレーニング</div>
+            <div class="metric-value">{{ weekly_training_count or 0 }}回</div>
+        </div>
+        <div class="metric-item">
+            <div class="metric-label">達成率</div>
+            <div class="metric-value">{{ training_completion_rate or 0 }}%</div>
+        </div>
+        
+        <!-- 配信されたテキスト情報 -->
+        {% if delivered_texts %}
+        <div style="margin-top: 1rem;">
+            <div class="metric-label">配信テキスト</div>
+            {% for text in delivered_texts %}
+            <div class="metric-item">
+                <div>
+                    <div class="metric-label">{{ text.text_name }}</div>
+                    <div style="font-size: 0.8rem; color: #6c757d;">
+                        理解度: {{ text.understanding_level }}%
+                        {% if text.is_completed %}
+                        <span class="status-badge completed">完了</span>
+                        {% else %}
+                        <span class="status-badge pending">未完了</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <div style="margin-top: 1rem;">
+            <a href="{{ url_for('basebuilder_module.my_texts') }}" 
+               style="display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: #5DADE2; color: white; border: 1px solid #5DADE2; margin-right: 0.5rem;">
+               テキスト一覧
+            </a>
+            <a href="{{ url_for('basebuilder_module.index') }}" 
+               style="display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: transparent; color: #5DADE2; border: 1px solid #5DADE2;">
+               トレーニング
+            </a>
+        </div>
+    </div>
+    
     <!-- アンケート状況 -->
     <div class="dashboard-card">
         <h3>📋 アンケート状況</h3>
@@ -320,48 +360,64 @@
     </div>
     {% endif %}
     
-    <!-- 基礎学力トレーニング -->
+    <!-- ToDoと目標 -->
     <div class="dashboard-card">
-        <h3>🔥 基礎学力トレーニング</h3>
-        <div class="metric-item">
-            <div class="metric-label">今週のトレーニング</div>
-            <div class="metric-value">{{ weekly_training_count or 0 }}回</div>
-        </div>
-        <div class="metric-item">
-            <div class="metric-label">達成率</div>
-            <div class="metric-value">{{ training_completion_rate or 0 }}%</div>
-        </div>
+        <h3>✅ ToDo・目標</h3>
         
-        <!-- 配信されたテキスト情報 -->
-        {% if delivered_texts %}
-        <div style="margin-top: 1rem;">
-            <div class="metric-label">配信テキスト</div>
-            {% for text in delivered_texts %}
-            <div class="metric-item">
-                <div>
-                    <div class="metric-label">{{ text.text_name }}</div>
-                    <div style="font-size: 0.8rem; color: #6c757d;">
-                        理解度: {{ text.understanding_level }}%
-                        {% if text.is_completed %}
-                        <span class="status-badge completed">完了</span>
-                        {% else %}
-                        <span class="status-badge pending">未完了</span>
-                        {% endif %}
-                    </div>
-                </div>
+        <!-- クラスのToDo表示 -->
+        {% if class_todos %}
+        <div style="margin-bottom: 1rem;">
+            <div class="metric-label">クラスのToDo</div>
+            {% for todo in class_todos[:3] %}
+            <div style="margin-top: 0.5rem; padding: 0.75rem; background-color: #f8f9fa; border-radius: 6px;">
+                <strong>{{ todo.title }}</strong>
+                {% if todo.due_date %}
+                <p class="text-muted" style="margin: 0.25rem 0;">期限: {{ todo.due_date.strftime('%Y年%m月%d日') }}</p>
+                {% endif %}
+                <span class="status-badge {% if todo.status == 'completed' %}completed{% else %}pending{% endif %}">
+                    {{ todo.status }}
+                </span>
             </div>
             {% endfor %}
         </div>
         {% endif %}
         
+        <!-- クラスの目標表示 -->
+        {% if class_goals %}
+        <div style="margin-bottom: 1rem;">
+            <div class="metric-label">クラスの目標</div>
+            {% for goal in class_goals[:3] %}
+            <div style="margin-top: 0.5rem; padding: 0.75rem; background-color: #f8f9fa; border-radius: 6px;">
+                <strong>{{ goal.title }}</strong>
+                {% if goal.due_date %}
+                <p class="text-muted" style="margin: 0.25rem 0;">期限: {{ goal.due_date.strftime('%Y年%m月%d日') }}</p>
+                {% endif %}
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ goal.progress or 0 }}%"></div>
+                </div>
+                <small>進捗: {{ goal.progress or 0 }}%</small>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <div class="metric-item">
+            <div class="metric-label">未完了のToDo</div>
+            <div class="metric-value">{{ pending_todos_count or 0 }}件</div>
+        </div>
+        <div class="metric-item">
+            <div class="metric-label">進行中の目標</div>
+            <div class="metric-value">{{ active_goals_count or 0 }}件</div>
+        </div>
+        
         <div style="margin-top: 1rem;">
-            <a href="{{ url_for('basebuilder_module.my_texts') }}" 
-               style="display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: #5DADE2; color: white; border: 1px solid #5DADE2; margin-right: 0.5rem;">
-               テキスト一覧
+            <a href="{{ url_for('student.todos') }}" 
+               style="display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: transparent; color: #5DADE2; border: 1px solid #5DADE2; margin-right: 0.5rem;">
+               ToDoを見る
             </a>
-            <a href="{{ url_for('basebuilder_module.index') }}" 
+            <a href="{{ url_for('student.goals') }}" 
                style="display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: transparent; color: #5DADE2; border: 1px solid #5DADE2;">
-               トレーニング
+               目標を見る
             </a>
         </div>
     </div>
@@ -406,62 +462,6 @@
             {% endif %}
         </div>
     </div>
-    
-    <!-- ToDoと目標 -->
-    <div class="dashboard-card">
-        <h3>✅ ToDo・目標</h3>
-        <div class="metric-item">
-            <div class="metric-label">未完了のToDo</div>
-            <div class="metric-value">{{ pending_todos_count or 0 }}件</div>
-        </div>
-        <div class="metric-item">
-            <div class="metric-label">進行中の目標</div>
-            <div class="metric-value">{{ active_goals_count or 0 }}件</div>
-        </div>
-        
-        <!-- 最新のToDo表示 -->
-        {% if recent_todo %}
-        <div style="margin-top: 1rem;">
-            <div class="metric-label">最新のToDo</div>
-            <div style="margin-top: 0.5rem;">
-                <strong>{{ recent_todo.title }}</strong>
-                {% if recent_todo.due_date %}
-                <p class="text-muted">期限: {{ recent_todo.due_date.strftime('%Y年%m月%d日') }}</p>
-                {% endif %}
-                <span class="status-badge pending">{{ recent_todo.priority }}</span>
-            </div>
-        </div>
-        {% endif %}
-        
-        <!-- 最新の目標表示 -->
-        {% if recent_goal %}
-        <div style="margin-top: 1rem;">
-            <div class="metric-label">最新の目標</div>
-            <div style="margin-top: 0.5rem;">
-                <strong>{{ recent_goal.title }}</strong>
-                {% if recent_goal.due_date %}
-                <p class="text-muted">期限: {{ recent_goal.due_date.strftime('%Y年%m月%d日') }}</p>
-                {% endif %}
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: {{ recent_goal.progress or 0 }}%"></div>
-                </div>
-                <small>進捗: {{ recent_goal.progress or 0 }}%</small>
-            </div>
-        </div>
-        {% endif %}
-        
-        <div style="margin-top: 1rem;">
-            <a href="{{ url_for('student.todos') }}" 
-               style="display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: transparent; color: #5DADE2; border: 1px solid #5DADE2; margin-right: 0.5rem;">
-               ToDoを見る
-            </a>
-            <a href="{{ url_for('student.goals') }}" 
-               style="display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: transparent; color: #5DADE2; border: 1px solid #5DADE2;">
-               目標を見る
-            </a>
-        </div>
-    </div>
-    
     
     <!-- AIチャット -->
     <div class="dashboard-card">

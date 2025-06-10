@@ -93,6 +93,8 @@ def dashboard():
         'active_goals_count': 0,
         'recent_todo': None,
         'recent_goal': None,
+        'class_todos': [],  # クラスごとの最新ToDo
+        'class_goals': [],  # クラスごとの最新目標
         
         # チャット使用状況
         'monthly_chat_count': 0,
@@ -344,6 +346,51 @@ def dashboard():
                     })
             
             context['all_class_themes'] = all_class_themes
+            
+            # クラスごとの最新ToDo・目標を取得
+            class_todos = []
+            class_goals = []
+            
+            for enrollment in all_enrollments:
+                class_obj = enrollment.class_obj
+                if class_obj:
+                    # このクラスの最新ToDo
+                    latest_todo = Todo.query.filter_by(
+                        student_id=current_user.id,
+                        class_id=class_obj.id,
+                        is_completed=False
+                    ).order_by(
+                        Todo.due_date.asc().nullslast(),
+                        Todo.created_at.desc()
+                    ).first()
+                    
+                    if latest_todo:
+                        class_todos.append({
+                            'class_name': class_obj.name,
+                            'class_id': class_obj.id,
+                            'todo': latest_todo
+                        })
+                    
+                    # このクラスの最新目標
+                    latest_goal = Goal.query.filter_by(
+                        student_id=current_user.id,
+                        class_id=class_obj.id,
+                        is_completed=False
+                    ).order_by(
+                        Goal.due_date.asc().nullslast(),
+                        Goal.updated_at.desc()
+                    ).first()
+                    
+                    if latest_goal:
+                        class_goals.append({
+                            'class_name': class_obj.name,
+                            'class_id': class_obj.id,
+                            'goal': latest_goal
+                        })
+            
+            context['class_todos'] = class_todos
+            context['class_goals'] = class_goals
+            
         except Exception as e:
             current_app.logger.debug(f"Could not fetch all class themes: {str(e)}")
         
