@@ -199,6 +199,14 @@
     font-size: 1.1rem;
 }
 
+/* ボタンの機能性を保証 */
+.dashboard-card a {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+    z-index: 1000 !important;
+    position: relative !important;
+}
+
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
     .dashboard-container {
@@ -219,6 +227,8 @@
 {% endblock %}
 
 {% block content %}
+{% set btn_primary_style = "display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: #5DADE2; color: white; border: 1px solid #5DADE2; margin-right: 0.5rem; pointer-events: auto !important; cursor: pointer !important; z-index: 1000; position: relative;" %}
+{% set btn_outline_style = "display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: transparent; color: #5DADE2; border: 1px solid #5DADE2; margin-right: 0.5rem; pointer-events: auto !important; cursor: pointer !important; z-index: 1000; position: relative;" %}
 <div class="dashboard-container">
     <!-- ウェルカムカード -->
     <div class="dashboard-card welcome-card">
@@ -262,11 +272,11 @@
         
         <div style="margin-top: 1rem;">
             <a href="{{ url_for('basebuilder_module.my_texts') }}" 
-               style="display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: #5DADE2; color: white; border: 1px solid #5DADE2; margin-right: 0.5rem;">
+               style="{{ btn_primary_style }}">
                テキスト一覧
             </a>
             <a href="{{ url_for('basebuilder_module.index') }}" 
-               style="display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: transparent; color: #5DADE2; border: 1px solid #5DADE2;">
+               style="{{ btn_outline_style }}">
                トレーニング
             </a>
         </div>
@@ -343,15 +353,15 @@
             </div>
             <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
                 <a href="{{ url_for('student.view_themes') }}?class_id={{ class_theme.class_id }}" 
-                   style="display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: #5DADE2; color: white; border: 1px solid #5DADE2;">
+                   style="{{ btn_primary_style }}">
                    詳細
                 </a>
                 <a href="{{ url_for('student.activities') }}?class_id={{ class_theme.class_id }}" 
-                   style="display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: transparent; color: #5DADE2; border: 1px solid #5DADE2;">
+                   style="{{ btn_outline_style }}">
                    記録
                 </a>
                 <a href="{{ url_for('student.chat_page') }}?class_id={{ class_theme.class_id }}" 
-                   style="display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: transparent; color: #5DADE2; border: 1px solid #5DADE2;">
+                   style="{{ btn_outline_style }}">
                    AI
                 </a>
             </div>
