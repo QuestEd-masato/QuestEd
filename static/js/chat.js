@@ -1,3 +1,8 @@
+// グローバル変数
+let autoRefreshInterval = null;
+let isLoading = false;
+let lastMessageCount = 0;
+
 document.addEventListener('DOMContentLoaded', function() {
     // チャットコンテナの参照を取得
     const chatContainer = document.getElementById('chat-container');
@@ -150,7 +155,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // メッセージをチャット領域に追加する関数
-    function addMessage(content, isUser, isError = false) {
+    function addMessage(content, isUser, isError = false, autoScroll = true) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `chat-message ${isUser ? 'user-message' : 'ai-message'}`;
         
@@ -172,8 +177,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         chatContainer.appendChild(messageDiv);
         
-        // 自動スクロール
-        chatContainer.scrollTop = chatContainer.scrollHeight;
+        // 自動スクロール（オプション）
+        if (autoScroll) {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
     }
     
     // ローディングメッセージを追加する関数
@@ -216,6 +223,70 @@ document.addEventListener('DOMContentLoaded', function() {
         return `${year}-${month}-${day} ${hours}:${minutes}`;
     }
     
+    // 自動更新機能
+    function startAutoRefresh() {
+        autoRefreshInterval = setInterval(() => {
+            if (!isLoading) {
+                loadMessages();
+            }
+        }, 3000); // 3秒ごとに更新
+    }
+
+    // ローディング表示
+    function showLoading() {
+        const loadingIndicator = document.getElementById('loading-indicator');
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'block';
+        }
+        isLoading = true;
+    }
+
+    function hideLoading() {
+        const loadingIndicator = document.getElementById('loading-indicator');
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'none';
+        }
+        isLoading = false;
+    }
+
+    // メッセージを読み込む関数
+    function loadMessages() {
+        showLoading();
+        
+        // URLからclass_idを取得
+        const urlParams = new URLSearchParams(window.location.search);
+        const classId = urlParams.get('class_id');
+        
+        fetch('/api/chat/messages' + (classId ? `?class_id=${classId}` : ''), {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.messages && data.messages.length !== lastMessageCount) {
+                updateChatDisplay(data.messages);
+                lastMessageCount = data.messages.length;
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            console.error('Error loading messages:', error);
+        });
+    }
+
+    // チャット表示を更新する関数
+    function updateChatDisplay(messages) {
+        chatContainer.innerHTML = ''; // クリア
+        messages.forEach(message => {
+            addMessage(message.content, message.is_user, false, false);
+        });
+    }
+
+
     // 初期状態の設定
     if (isTeacher) {
         // 教師の場合は常に教師サポートモードに設定
@@ -232,4 +303,10 @@ document.addEventListener('DOMContentLoaded', function() {
             selectedStepField.value = 'free';
         }
     }
+
+    // ページ読み込み時に自動更新開始
+    startAutoRefresh();
+    
+    // 初期メッセージ数を設定
+    lastMessageCount = chatContainer.children.length;
 });

@@ -1,4 +1,4 @@
-username,full_name,email,password,role,school_id
+﻿username,full_name,email,password,role,school_id
 2024001,山田太郎,yamada@example.com,password123456,student,1
 2024002,田中花子,tanaka@example.com,password123456,student,1
 2024003,佐藤次郎,sato@example.com,password123456,student,1

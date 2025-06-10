@@ -182,9 +182,9 @@ def get_school_statistics():
                COUNT(DISTINCT CASE WHEN u.role = 'student' THEN u.id END) as student_count,
                COUNT(DISTINCT c.id) as class_count,
                COUNT(DISTINCT al.id) as activity_count
-        FROM school s
-        LEFT JOIN user u ON s.id = u.school_id
-        LEFT JOIN class c ON u.id = c.teacher_id
+        FROM schools s
+        LEFT JOIN users u ON s.id = u.school_id
+        LEFT JOIN classes c ON u.id = c.teacher_id
         LEFT JOIN activity_logs al ON u.id = al.student_id
         GROUP BY s.id, s.name, s.code
         ORDER BY user_count DESC
@@ -271,8 +271,8 @@ def get_school_performance_stats():
                COUNT(al.id) as total_activities,
                AVG(CASE WHEN al.timestamp >= DATE_SUB(NOW(), INTERVAL 7 DAY) 
                    THEN 1 ELSE 0 END) as weekly_activity_rate
-        FROM school s
-        LEFT JOIN user u ON s.id = u.school_id AND u.role = 'student'
+        FROM schools s
+        LEFT JOIN users u ON s.id = u.school_id AND u.role = 'student'
         LEFT JOIN activity_logs al ON u.id = al.student_id
         WHERE s.id IS NOT NULL
         GROUP BY s.id, s.name
