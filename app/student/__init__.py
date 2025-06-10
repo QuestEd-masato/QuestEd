@@ -110,7 +110,8 @@ def dashboard():
         # ベースビルダー情報
         'weekly_training_count': 0,
         'training_completion_rate': 0,
-        'recent_training': None
+        'recent_training': None,
+        'delivered_texts': []
     }
     
     try:
@@ -375,6 +376,52 @@ def dashboard():
                 weekly_target = 10
                 completion_rate = min(100, int((context['weekly_training_count'] / weekly_target) * 100)) if weekly_target > 0 else 0
                 context['training_completion_rate'] = completion_rate
+            
+            # 配信されたテキスト情報を取得
+            if 'text_delivery' in table_names and 'text_set' in table_names and 'text_proficiency_record' in table_names:
+                # 学生が所属するクラスのIDリストを取得
+                enrolled_class_ids = []
+                if all_enrollments:
+                    enrolled_class_ids = [e.class_obj.id for e in all_enrollments if e.class_obj]
+                
+                if enrolled_class_ids:
+                    # 配信されたテキストと理解度を取得
+                    delivered_texts_query = text("""
+                        SELECT 
+                            td.id as delivery_id,
+                            ts.title as text_name,
+                            ts.id as text_set_id,
+                            td.delivered_at,
+                            tpr.understanding_level,
+                            tpr.completed_at
+                        FROM text_delivery td
+                        JOIN text_set ts ON td.text_set_id = ts.id
+                        LEFT JOIN text_proficiency_record tpr ON (
+                            tpr.text_set_id = ts.id AND 
+                            tpr.user_id = :user_id
+                        )
+                        WHERE td.class_id IN :class_ids
+                        ORDER BY td.delivered_at DESC
+                        LIMIT 3
+                    """)
+                    
+                    texts_result = db.session.execute(
+                        delivered_texts_query,
+                        {"user_id": current_user.id, "class_ids": tuple(enrolled_class_ids)}
+                    ).fetchall()
+                    
+                    delivered_texts = []
+                    for row in texts_result:
+                        delivered_texts.append({
+                            'text_name': row.text_name,
+                            'text_set_id': row.text_set_id,
+                            'delivered_at': row.delivered_at,
+                            'understanding_level': row.understanding_level or 0,
+                            'completed_at': row.completed_at,
+                            'is_completed': row.completed_at is not None
+                        })
+                    
+                    context['delivered_texts'] = delivered_texts
                 
         except Exception as e:
             current_app.logger.debug(f"Could not fetch BaseBuilder info: {str(e)}")

@@ -273,28 +273,54 @@
         </div>
     </div>
     
-    <!-- 探究テーマ状況 -->
+    <!-- クラス情報 -->
+    {% if class_info %}
     <div class="dashboard-card">
-        <h3>🎯 探究テーマ</h3>
-        {% if selected_theme %}
+        <h3>🏫 クラス情報</h3>
         <div class="metric-item">
-            <div class="metric-label">現在のテーマ</div>
-            <div class="metric-value">設定済み</div>
+            <div class="metric-label">所属クラス</div>
+            <div class="metric-value">{{ class_info.class_name }}</div>
         </div>
-        <div style="margin-top: 1rem;">
-            <strong>{{ selected_theme.title }}</strong>
-            <p class="text-muted" style="margin-top: 0.5rem;">{{ selected_theme.question }}</p>
-            <a href="{{ url_for('student.view_themes') }}" class="btn-sm btn-outline-primary">テーマを変更</a>
-        </div>
-        {% else %}
+        {% if class_info.teacher_name %}
         <div class="metric-item">
-            <div class="metric-label">テーマ設定</div>
-            <div class="metric-value">未設定</div>
+            <div class="metric-label">担任教師</div>
+            <div class="metric-value">{{ class_info.teacher_name }}</div>
         </div>
-        <p style="margin-top: 1rem;">探究活動を始めるためにテーマを選択してください。</p>
-        <a href="{{ url_for('student.view_themes') }}" class="btn-sm btn-primary">テーマを選ぶ</a>
         {% endif %}
+        {% if class_info.subject_name %}
+        <div class="metric-item">
+            <div class="metric-label">教科</div>
+            <div class="metric-value">{{ class_info.subject_name }}</div>
+        </div>
+        {% endif %}
+        
+        <!-- 複数クラスのテーマ表示 -->
+        {% if all_class_themes %}
+        <div style="margin-top: 1rem;">
+            <div class="metric-label">全クラスのテーマ</div>
+            {% for class_theme in all_class_themes %}
+            <div class="metric-item">
+                <div>
+                    <div class="metric-label">{{ class_theme.class_name }}</div>
+                    <div style="font-size: 0.9rem; color: #6c757d;">{{ class_theme.theme_title or 'テーマ未設定' }}</div>
+                </div>
+                <div>
+                    {% if class_theme.theme_title %}
+                    <span class="status-badge completed">設定済</span>
+                    {% else %}
+                    <span class="status-badge pending">未設定</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <div style="margin-top: 1rem;">
+            <a href="{{ url_for('student.view_themes') }}" class="btn-sm btn-primary">テーマ管理</a>
+        </div>
     </div>
+    {% endif %}
     
     <!-- 基礎学力トレーニング -->
     <div class="dashboard-card">
@@ -308,19 +334,31 @@
             <div class="metric-value">{{ training_completion_rate or 0 }}%</div>
         </div>
         
-        {% if recent_training %}
+        <!-- 配信されたテキスト情報 -->
+        {% if delivered_texts %}
         <div style="margin-top: 1rem;">
-            <div class="metric-label">最新の取り組み</div>
-            <div style="margin-top: 0.5rem;">
-                <strong>{{ recent_training.category }}</strong>
-                <p class="text-muted">{{ recent_training.completed_at.strftime('%Y年%m月%d日') if recent_training.completed_at else '' }}</p>
+            <div class="metric-label">配信テキスト</div>
+            {% for text in delivered_texts %}
+            <div class="metric-item">
+                <div>
+                    <div class="metric-label">{{ text.text_name }}</div>
+                    <div style="font-size: 0.8rem; color: #6c757d;">
+                        理解度: {{ text.understanding_level }}%
+                        {% if text.is_completed %}
+                        <span class="status-badge completed">完了</span>
+                        {% else %}
+                        <span class="status-badge pending">未完了</span>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
+            {% endfor %}
         </div>
         {% endif %}
         
         <div style="margin-top: 1rem;">
-            <a href="{{ url_for('basebuilder_module.index') }}" class="btn-sm btn-outline-primary">トレーニングを始める</a>
-            <a href="{{ url_for('basebuilder_module.index') }}" class="btn-sm btn-outline-primary">学習履歴</a>
+            <a href="{{ url_for('basebuilder_module.my_texts') }}" class="btn-sm btn-primary">テキスト一覧</a>
+            <a href="{{ url_for('basebuilder_module.index') }}" class="btn-sm btn-outline-primary">トレーニング</a>
         </div>
     </div>
     
@@ -374,50 +412,6 @@
         </div>
     </div>
     
-    <!-- クラス情報 -->
-    {% if class_info %}
-    <div class="dashboard-card">
-        <h3>🏫 クラス情報</h3>
-        <div class="metric-item">
-            <div class="metric-label">所属クラス</div>
-            <div class="metric-value">{{ class_info.class_name }}</div>
-        </div>
-        {% if class_info.teacher_name %}
-        <div class="metric-item">
-            <div class="metric-label">担任教師</div>
-            <div class="metric-value">{{ class_info.teacher_name }}</div>
-        </div>
-        {% endif %}
-        {% if class_info.subject_name %}
-        <div class="metric-item">
-            <div class="metric-label">教科</div>
-            <div class="metric-value">{{ class_info.subject_name }}</div>
-        </div>
-        {% endif %}
-        
-        <!-- 複数クラスのテーマ表示 -->
-        {% if all_class_themes %}
-        <div style="margin-top: 1rem;">
-            <div class="metric-label">全クラスのテーマ</div>
-            {% for class_theme in all_class_themes %}
-            <div class="metric-item">
-                <div>
-                    <div class="metric-label">{{ class_theme.class_name }}</div>
-                    <div style="font-size: 0.9rem; color: #6c757d;">{{ class_theme.theme_title or 'テーマ未設定' }}</div>
-                </div>
-                <div>
-                    {% if class_theme.theme_title %}
-                    <span class="status-badge completed">設定済</span>
-                    {% else %}
-                    <span class="status-badge pending">未設定</span>
-                    {% endif %}
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
-    </div>
-    {% endif %}
     
     <!-- AIチャット -->
     <div class="dashboard-card">
