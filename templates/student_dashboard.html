@@ -247,9 +247,15 @@
             </div>
             <div>
                 {% if interest_survey %}
-                <a href="{{ url_for('student.interest_survey_edit') }}" class="btn-sm btn-outline-primary">編集</a>
+                <a href="{{ url_for('student.interest_survey_edit') }}" 
+                   style="display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: transparent; color: #5DADE2; border: 1px solid #5DADE2;">
+                   編集
+                </a>
                 {% else %}
-                <a href="{{ url_for('student.interest_survey') }}" class="btn-sm btn-primary">回答する</a>
+                <a href="{{ url_for('student.interest_survey') }}" 
+                   style="display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: #5DADE2; color: white; border: 1px solid #5DADE2;">
+                   回答する
+                </a>
                 {% endif %}
             </div>
         </div>
@@ -265,34 +271,52 @@
             </div>
             <div>
                 {% if personality_survey %}
-                <a href="{{ url_for('student.personality_survey_edit') }}" class="btn-sm btn-outline-primary">編集</a>
+                <a href="{{ url_for('student.personality_survey_edit') }}" 
+                   style="display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: transparent; color: #5DADE2; border: 1px solid #5DADE2;">
+                   編集
+                </a>
                 {% else %}
-                <a href="{{ url_for('student.personality_survey') }}" class="btn-sm btn-primary">回答する</a>
+                <a href="{{ url_for('student.personality_survey') }}" 
+                   style="display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: #5DADE2; color: white; border: 1px solid #5DADE2;">
+                   回答する
+                </a>
                 {% endif %}
             </div>
         </div>
     </div>
     
     <!-- クラス情報 -->
-    {% if class_info %}
+    {% if all_class_themes %}
     <div class="dashboard-card">
-        <h3>🏫 クラス情報</h3>
-        <div class="metric-item">
-            <div class="metric-label">所属クラス</div>
-            <div class="metric-value">{{ class_info.class_name }}</div>
+        <h3>🏫 所属クラス</h3>
+        {% for class_theme in all_class_themes %}
+        <div style="margin-bottom: 1rem; padding: 1rem; background-color: #f8f9fa; border-radius: 8px;">
+            <div class="metric-item">
+                <div class="metric-label">{{ class_theme.class_name }}</div>
+                <div class="metric-value">
+                    {% if class_theme.theme_title %}
+                    {{ class_theme.theme_title }}
+                    {% else %}
+                    テーマ未設定
+                    {% endif %}
+                </div>
+            </div>
+            <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
+                <a href="{{ url_for('student.view_themes') }}?class_id={{ class_theme.class_id }}" 
+                   style="display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: #5DADE2; color: white; border: 1px solid #5DADE2;">
+                   詳細
+                </a>
+                <a href="{{ url_for('student.activities') }}?class_id={{ class_theme.class_id }}" 
+                   style="display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: transparent; color: #5DADE2; border: 1px solid #5DADE2;">
+                   記録
+                </a>
+                <a href="{{ url_for('student.chat_page') }}?class_id={{ class_theme.class_id }}" 
+                   style="display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: transparent; color: #5DADE2; border: 1px solid #5DADE2;">
+                   AI
+                </a>
+            </div>
         </div>
-        {% if class_info.teacher_name %}
-        <div class="metric-item">
-            <div class="metric-label">担任教師</div>
-            <div class="metric-value">{{ class_info.teacher_name }}</div>
-        </div>
-        {% endif %}
-        
-        <div style="margin-top: 1rem;">
-            <a href="{{ url_for('student.activities') }}?class_id={{ all_class_themes[0].class_id if all_class_themes else '' }}" class="btn-sm btn-outline-primary">学習記録</a>
-            <a href="{{ url_for('student.chat_page') }}?class_id={{ all_class_themes[0].class_id if all_class_themes else '' }}" class="btn-sm btn-outline-primary">チャット</a>
-            <a href="{{ url_for('student.view_themes') }}" class="btn-sm btn-primary">テーマ管理</a>
-        </div>
+        {% endfor %}
     </div>
     {% endif %}
     
@@ -331,8 +355,14 @@
         {% endif %}
         
         <div style="margin-top: 1rem;">
-            <a href="{{ url_for('basebuilder_module.my_texts') }}" class="btn-sm btn-primary">テキスト一覧</a>
-            <a href="{{ url_for('basebuilder_module.index') }}" class="btn-sm btn-outline-primary">トレーニング</a>
+            <a href="{{ url_for('basebuilder_module.my_texts') }}" 
+               style="display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: #5DADE2; color: white; border: 1px solid #5DADE2; margin-right: 0.5rem;">
+               テキスト一覧
+            </a>
+            <a href="{{ url_for('basebuilder_module.index') }}" 
+               style="display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: transparent; color: #5DADE2; border: 1px solid #5DADE2;">
+               トレーニング
+            </a>
         </div>
     </div>
     
@@ -359,11 +389,20 @@
         {% endif %}
         
         <div style="margin-top: 1rem;">
-            <a href="{{ url_for('student.activities') }}" class="btn-sm btn-outline-primary">記録を見る</a>
+            <a href="{{ url_for('student.activities') }}" 
+               style="display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: transparent; color: #5DADE2; border: 1px solid #5DADE2; margin-right: 0.5rem;">
+               記録を見る
+            </a>
             {% if class_info %}
-            <a href="{{ url_for('student.new_activity') }}?class_id={{ all_class_themes[0].class_id if all_class_themes else '' }}" class="btn-sm btn-primary">新しい記録</a>
+            <a href="{{ url_for('student.new_activity') }}?class_id={{ all_class_themes[0].class_id if all_class_themes else '' }}" 
+               style="display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: #5DADE2; color: white; border: 1px solid #5DADE2;">
+               新しい記録
+            </a>
             {% else %}
-            <a href="{{ url_for('student.activities') }}" class="btn-sm btn-primary">新しい記録</a>
+            <a href="{{ url_for('student.activities') }}" 
+               style="display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: #5DADE2; color: white; border: 1px solid #5DADE2;">
+               新しい記録
+            </a>
             {% endif %}
         </div>
     </div>
@@ -412,8 +451,14 @@
         {% endif %}
         
         <div style="margin-top: 1rem;">
-            <a href="{{ url_for('student.todos') }}" class="btn-sm btn-outline-primary">ToDoを見る</a>
-            <a href="{{ url_for('student.goals') }}" class="btn-sm btn-outline-primary">目標を見る</a>
+            <a href="{{ url_for('student.todos') }}" 
+               style="display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: transparent; color: #5DADE2; border: 1px solid #5DADE2; margin-right: 0.5rem;">
+               ToDoを見る
+            </a>
+            <a href="{{ url_for('student.goals') }}" 
+               style="display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: transparent; color: #5DADE2; border: 1px solid #5DADE2;">
+               目標を見る
+            </a>
         </div>
     </div>
     
@@ -429,7 +474,10 @@
         </div>
         
         <div style="margin-top: 1rem;">
-            <a href="{{ url_for('student.chat_page') }}" class="btn-sm btn-primary">AIチャットを開く</a>
+            <a href="{{ url_for('student.chat_page') }}" 
+               style="display: inline-block; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.25rem; text-decoration: none; background-color: #5DADE2; color: white; border: 1px solid #5DADE2;">
+               AIチャットを開く
+            </a>
         </div>
     </div>
 </div>
