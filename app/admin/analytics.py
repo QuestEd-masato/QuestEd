@@ -104,7 +104,7 @@ def get_daily_active_users(days=30):
     query = text("""
         SELECT DATE(al.timestamp) as activity_date,
                COUNT(DISTINCT al.student_id) as active_users
-        FROM activity_log al
+        FROM activity_logs al
         WHERE DATE(al.timestamp) >= :start_date
           AND DATE(al.timestamp) <= :end_date
         GROUP BY DATE(al.timestamp)
@@ -185,7 +185,7 @@ def get_school_statistics():
         FROM school s
         LEFT JOIN user u ON s.id = u.school_id
         LEFT JOIN class c ON u.id = c.teacher_id
-        LEFT JOIN activity_log al ON u.id = al.student_id
+        LEFT JOIN activity_logs al ON u.id = al.student_id
         GROUP BY s.id, s.name, s.code
         ORDER BY user_count DESC
     """)
@@ -273,7 +273,7 @@ def get_school_performance_stats():
                    THEN 1 ELSE 0 END) as weekly_activity_rate
         FROM school s
         LEFT JOIN user u ON s.id = u.school_id AND u.role = 'student'
-        LEFT JOIN activity_log al ON u.id = al.student_id
+        LEFT JOIN activity_logs al ON u.id = al.student_id
         WHERE s.id IS NOT NULL
         GROUP BY s.id, s.name
         HAVING COUNT(DISTINCT u.id) > 0
