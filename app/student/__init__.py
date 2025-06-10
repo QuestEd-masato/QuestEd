@@ -102,7 +102,15 @@ def dashboard():
         'weekly_target': 50,
         
         # クラス情報
-        'class_info': None
+        'class_info': None,
+        
+        # 複数クラステーマ
+        'all_class_themes': [],
+        
+        # ベースビルダー情報
+        'weekly_training_count': 0,
+        'training_completion_rate': 0,
+        'recent_training': None
     }
     
     try:
@@ -284,6 +292,92 @@ def dashboard():
             ).count()
         except Exception as e:
             current_app.logger.debug(f"Could not fetch chat count: {str(e)}")
+        
+        # 複数クラスのテーマ情報を取得
+        try:
+            # 所属している全クラスを取得
+            all_enrollments = ClassEnrollment.query.options(
+                db.joinedload(ClassEnrollment.class_obj)
+            ).filter_by(
+                student_id=current_user.id,
+                is_active=True
+            ).all()
+            
+            all_class_themes = []
+            for enrollment in all_enrollments:
+                class_obj = enrollment.class_obj
+                if class_obj:
+                    # このクラスで選択中のテーマを取得
+                    selected_theme_for_class = InquiryTheme.query.filter_by(
+                        student_id=current_user.id,
+                        class_id=class_obj.id,
+                        is_selected=True
+                    ).first()
+                    
+                    all_class_themes.append({
+                        'class_name': class_obj.name,
+                        'class_id': class_obj.id,
+                        'theme_title': selected_theme_for_class.title if selected_theme_for_class else None
+                    })
+            
+            context['all_class_themes'] = all_class_themes
+        except Exception as e:
+            current_app.logger.debug(f"Could not fetch all class themes: {str(e)}")
+        
+        # ベースビルダー情報を取得
+        try:
+            # 今週のトレーニング回数
+            one_week_ago = datetime.now() - timedelta(days=7)
+            
+            # ProficiencyRecordテーブルが存在するかチェック
+            from sqlalchemy import inspect
+            inspector = inspect(db.engine)
+            table_names = inspector.get_table_names()
+            
+            if 'proficiency_record' in table_names:
+                # 今週のトレーニング回数（ProficiencyRecordから）
+                training_count_query = text("""
+                    SELECT COUNT(*) as count 
+                    FROM proficiency_record 
+                    WHERE user_id = :user_id 
+                    AND completed_at >= :one_week_ago
+                """)
+                
+                result = db.session.execute(
+                    training_count_query,
+                    {"user_id": current_user.id, "one_week_ago": one_week_ago}
+                ).first()
+                
+                context['weekly_training_count'] = result.count if result else 0
+                
+                # 最新のトレーニング記録
+                recent_training_query = text("""
+                    SELECT pr.*, bki.title as category 
+                    FROM proficiency_record pr
+                    LEFT JOIN basic_knowledge_item bki ON pr.item_id = bki.id
+                    WHERE pr.user_id = :user_id 
+                    ORDER BY pr.completed_at DESC 
+                    LIMIT 1
+                """)
+                
+                recent_result = db.session.execute(
+                    recent_training_query,
+                    {"user_id": current_user.id}
+                ).first()
+                
+                if recent_result:
+                    context['recent_training'] = {
+                        'category': recent_result.category or 'トレーニング',
+                        'completed_at': recent_result.completed_at
+                    }
+                
+                # 達成率計算（今週の目標を10回と仮定）
+                weekly_target = 10
+                completion_rate = min(100, int((context['weekly_training_count'] / weekly_target) * 100)) if weekly_target > 0 else 0
+                context['training_completion_rate'] = completion_rate
+                
+        except Exception as e:
+            current_app.logger.debug(f"Could not fetch BaseBuilder info: {str(e)}")
         
     except Exception as e:
         current_app.logger.error(f"Dashboard error: {str(e)}")

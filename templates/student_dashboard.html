@@ -20,11 +20,13 @@
     padding: 1.5rem;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     transition: transform 0.2s;
+    border: 1px solid #e9ecef;
 }
 
 .dashboard-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-color: #5DADE2;
 }
 
 .dashboard-card h3 {
@@ -33,6 +35,9 @@
     font-size: 1.25rem;
     border-bottom: 2px solid #e9ecef;
     padding-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .welcome-card {
@@ -154,25 +159,27 @@
 }
 
 .btn-primary {
-    background-color: #0056b3;
+    background-color: #5DADE2;
     color: white;
-    border: 1px solid #0056b3;
+    border: 1px solid #5DADE2;
 }
 
 .btn-primary:hover {
-    background-color: #004494;
+    background-color: #3498DB;
     color: white;
+    border-color: #3498DB;
 }
 
 .btn-outline-primary {
     background-color: transparent;
-    color: #0056b3;
-    border: 1px solid #0056b3;
+    color: #5DADE2;
+    border: 1px solid #5DADE2;
 }
 
 .btn-outline-primary:hover {
-    background-color: #0056b3;
+    background-color: #5DADE2;
     color: white;
+    border-color: #5DADE2;
 }
 
 .metric-item {
@@ -289,6 +296,36 @@
         {% endif %}
     </div>
     
+    <!-- 基礎学力トレーニング -->
+    <div class="dashboard-card">
+        <h3>🔥 基礎学力トレーニング</h3>
+        <div class="metric-item">
+            <div class="metric-label">今週のトレーニング</div>
+            <div class="metric-value">{{ weekly_training_count or 0 }}回</div>
+        </div>
+        <div class="metric-item">
+            <div class="metric-label">達成率</div>
+            <div class="metric-value">{{ training_completion_rate or 0 }}%</div>
+        </div>
+        
+        {% if recent_training %}
+        <div style="margin-top: 1rem;">
+            <div class="metric-label">最新の取り組み</div>
+            <div style="margin-top: 0.5rem;">
+                <strong>{{ recent_training.category }}</strong>
+                <p class="text-muted">{{ recent_training.completed_at.strftime('%Y年%m月%d日') if recent_training.completed_at else '' }}</p>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div style="margin-top: 1rem;">
+            <a href="{{ url_for('basebuilder_module.index') }}" class="btn-sm btn-outline-primary">トレーニングを始める</a>
+            {% if class_info %}
+            <a href="{{ url_for('basebuilder_module.theme_relations') }}" class="btn-sm btn-outline-primary">テーマ連携</a>
+            {% endif %}
+        </div>
+    </div>
+    
     <!-- 活動記録状況 -->
     <div class="dashboard-card">
         <h3>📝 活動記録</h3>
@@ -334,6 +371,51 @@
             <a href="{{ url_for('student.goals') }}" class="btn-sm btn-outline-primary">目標を見る</a>
         </div>
     </div>
+    
+    <!-- クラス情報 -->
+    {% if class_info %}
+    <div class="dashboard-card">
+        <h3>🏫 クラス情報</h3>
+        <div class="metric-item">
+            <div class="metric-label">所属クラス</div>
+            <div class="metric-value">{{ class_info.class_name }}</div>
+        </div>
+        {% if class_info.teacher_name %}
+        <div class="metric-item">
+            <div class="metric-label">担任教師</div>
+            <div class="metric-value">{{ class_info.teacher_name }}</div>
+        </div>
+        {% endif %}
+        {% if class_info.subject_name %}
+        <div class="metric-item">
+            <div class="metric-label">教科</div>
+            <div class="metric-value">{{ class_info.subject_name }}</div>
+        </div>
+        {% endif %}
+        
+        <!-- 複数クラスのテーマ表示 -->
+        {% if all_class_themes %}
+        <div style="margin-top: 1rem;">
+            <div class="metric-label">全クラスのテーマ</div>
+            {% for class_theme in all_class_themes %}
+            <div class="metric-item">
+                <div>
+                    <div class="metric-label">{{ class_theme.class_name }}</div>
+                    <div style="font-size: 0.9rem; color: #6c757d;">{{ class_theme.theme_title or 'テーマ未設定' }}</div>
+                </div>
+                <div>
+                    {% if class_theme.theme_title %}
+                    <span class="status-badge completed">設定済</span>
+                    {% else %}
+                    <span class="status-badge pending">未設定</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
     
     <!-- AIチャット -->
     <div class="dashboard-card">
