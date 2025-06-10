@@ -91,6 +91,8 @@ def dashboard():
         # ToDo/目標
         'pending_todos_count': 0,
         'active_goals_count': 0,
+        'recent_todo': None,
+        'recent_goal': None,
         
         # チャット使用状況
         'monthly_chat_count': 0,
@@ -266,21 +268,41 @@ def dashboard():
             except Exception as e:
                 current_app.logger.warning(f"Could not fetch rankings: {str(e)}")
         
-        # ToDoカウント
+        # ToDoカウントと最新ToDo
         try:
             context['pending_todos_count'] = Todo.query.filter_by(
                 student_id=current_user.id,
                 is_completed=False
             ).count()
+            
+            # 最新の未完了ToDo（期限が近いものを優先）
+            context['recent_todo'] = Todo.query.filter_by(
+                student_id=current_user.id,
+                is_completed=False
+            ).order_by(
+                Todo.due_date.asc().nullslast(),
+                Todo.created_at.desc()
+            ).first()
+            
         except Exception as e:
             current_app.logger.debug(f"Could not fetch todo count: {str(e)}")
         
-        # 目標カウント
+        # 目標カウントと最新目標
         try:
             context['active_goals_count'] = Goal.query.filter_by(
                 student_id=current_user.id,
                 is_completed=False
             ).count()
+            
+            # 最新の進行中目標（期限が近いものを優先）
+            context['recent_goal'] = Goal.query.filter_by(
+                student_id=current_user.id,
+                is_completed=False
+            ).order_by(
+                Goal.due_date.asc().nullslast(),
+                Goal.updated_at.desc()
+            ).first()
+            
         except Exception as e:
             current_app.logger.debug(f"Could not fetch goal count: {str(e)}")
         

@@ -287,36 +287,10 @@
             <div class="metric-value">{{ class_info.teacher_name }}</div>
         </div>
         {% endif %}
-        {% if class_info.subject_name %}
-        <div class="metric-item">
-            <div class="metric-label">教科</div>
-            <div class="metric-value">{{ class_info.subject_name }}</div>
-        </div>
-        {% endif %}
-        
-        <!-- 複数クラスのテーマ表示 -->
-        {% if all_class_themes %}
-        <div style="margin-top: 1rem;">
-            <div class="metric-label">全クラスのテーマ</div>
-            {% for class_theme in all_class_themes %}
-            <div class="metric-item">
-                <div>
-                    <div class="metric-label">{{ class_theme.class_name }}</div>
-                    <div style="font-size: 0.9rem; color: #6c757d;">{{ class_theme.theme_title or 'テーマ未設定' }}</div>
-                </div>
-                <div>
-                    {% if class_theme.theme_title %}
-                    <span class="status-badge completed">設定済</span>
-                    {% else %}
-                    <span class="status-badge pending">未設定</span>
-                    {% endif %}
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
         
         <div style="margin-top: 1rem;">
+            <a href="{{ url_for('student.activities') }}?class_id={{ all_class_themes[0].class_id if all_class_themes else '' }}" class="btn-sm btn-outline-primary">学習記録</a>
+            <a href="{{ url_for('student.chat_page') }}?class_id={{ all_class_themes[0].class_id if all_class_themes else '' }}" class="btn-sm btn-outline-primary">チャット</a>
             <a href="{{ url_for('student.view_themes') }}" class="btn-sm btn-primary">テーマ管理</a>
         </div>
     </div>
@@ -405,6 +379,37 @@
             <div class="metric-label">進行中の目標</div>
             <div class="metric-value">{{ active_goals_count or 0 }}件</div>
         </div>
+        
+        <!-- 最新のToDo表示 -->
+        {% if recent_todo %}
+        <div style="margin-top: 1rem;">
+            <div class="metric-label">最新のToDo</div>
+            <div style="margin-top: 0.5rem;">
+                <strong>{{ recent_todo.title }}</strong>
+                {% if recent_todo.due_date %}
+                <p class="text-muted">期限: {{ recent_todo.due_date.strftime('%Y年%m月%d日') }}</p>
+                {% endif %}
+                <span class="status-badge pending">{{ recent_todo.priority }}</span>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- 最新の目標表示 -->
+        {% if recent_goal %}
+        <div style="margin-top: 1rem;">
+            <div class="metric-label">最新の目標</div>
+            <div style="margin-top: 0.5rem;">
+                <strong>{{ recent_goal.title }}</strong>
+                {% if recent_goal.due_date %}
+                <p class="text-muted">期限: {{ recent_goal.due_date.strftime('%Y年%m月%d日') }}</p>
+                {% endif %}
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ recent_goal.progress or 0 }}%"></div>
+                </div>
+                <small>進捗: {{ recent_goal.progress or 0 }}%</small>
+            </div>
+        </div>
+        {% endif %}
         
         <div style="margin-top: 1rem;">
             <a href="{{ url_for('student.todos') }}" class="btn-sm btn-outline-primary">ToDoを見る</a>
