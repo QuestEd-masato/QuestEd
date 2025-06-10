@@ -2,744 +2,391 @@
 
 {% block title %}ダッシュボード | QuestEd{% endblock %}
 
+{% block extra_css %}
+<style>
+/* グリッドレイアウトで効率的な配置 */
+.dashboard-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 1.5rem;
+    padding: 1.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.dashboard-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.dashboard-card h3 {
+    color: #0056b3;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 0.5rem;
+}
+
+.welcome-card {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, #0056b3 0%, #004494 100%);
+    color: white;
+    text-align: center;
+}
+
+.welcome-card h2 {
+    margin-bottom: 0.5rem;
+    font-size: 2rem;
+}
+
+.welcome-card p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+.ranking-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-top: 2rem;
+    grid-column: 1 / -1;
+}
+
+.ranking-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.ranking-card h3 {
+    color: #0056b3;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.ranking-list {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0 0 0;
+}
+
+.ranking-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    background: white;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+.ranking-item:hover {
+    background: #e9ecef;
+}
+
+.rank-number {
+    font-weight: bold;
+    color: #6c757d;
+    margin-right: 1rem;
+    min-width: 30px;
+}
+
+.rank-name {
+    flex: 1;
+    font-weight: 500;
+}
+
+.rank-score {
+    font-weight: bold;
+    color: #0056b3;
+}
+
+/* 進捗バー */
+.progress-bar {
+    background: #e9ecef;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+}
+
+.progress-fill {
+    background: #0056b3;
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.status-badge.completed {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-badge.pending {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 0.25rem;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background-color: #0056b3;
+    color: white;
+    border: 1px solid #0056b3;
+}
+
+.btn-primary:hover {
+    background-color: #004494;
+    color: white;
+}
+
+.btn-outline-primary {
+    background-color: transparent;
+    color: #0056b3;
+    border: 1px solid #0056b3;
+}
+
+.btn-outline-primary:hover {
+    background-color: #0056b3;
+    color: white;
+}
+
+.metric-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.metric-item:last-child {
+    border-bottom: none;
+}
+
+.metric-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.metric-value {
+    font-weight: bold;
+    color: #0056b3;
+    font-size: 1.1rem;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .dashboard-container {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+        gap: 1rem;
+    }
+    
+    .ranking-section {
+        grid-template-columns: 1fr;
+    }
+    
+    .welcome-card h2 {
+        font-size: 1.5rem;
+    }
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="dashboard-container">
-    <h2>マイダッシュボード</h2>
-    
-    <div class="dashboard-welcome">
-        <h3>こんにちは、{{ current_user.display_name }}さん</h3>
+    <!-- ウェルカムカード -->
+    <div class="dashboard-card welcome-card">
+        <h2>こんにちは、{{ current_user.display_name }}さん</h2>
         <p>あなたの探究学習の進捗状況や記録を確認できます</p>
     </div>
     
-    <!-- アンケート状況セクション（全幅） -->
-    <div class="row">
-        <div class="col-12 mb-4">
-            <div class="dashboard-section surveys-status">
-            <h3>アンケート状況</h3>
-            
-            <div class="status-cards">
-                <div class="status-card {% if interest_survey %}completed{% else %}pending{% endif %}">
-                    <h4>好きなこと・興味のあることアンケート</h4>
-                    {% if interest_survey %}
-                       <span class="status-badge">完了</span>
-                    {% if interest_survey.submitted_at is defined and interest_survey.submitted_at is not none %}
-                       <p>{{ interest_survey.submitted_at.strftime('%Y年%m月%d日') }}に回答</p>
-                    {% else %}
-                       <p>回答済み</p>
-                    {% endif %}
-                       <a href="{{ url_for('student.interest_survey_edit') }}" class="btn btn-sm">編集する</a>
-                    {% else %}
-                           
-                        <span class="status-badge">未回答</span>
-                        <p>あなたの好きなことや興味のあることを教えてください</p>
-                        <a href="{{ url_for('student.interest_survey') }}" class="btn btn-sm btn-primary">回答する</a>
-                    {% endif %}
-                </div>
-                
-                <div class="status-card {% if personality_survey %}completed{% else %}pending{% endif %}">
-                    <h4>学習スタイルアンケート</h4>
-                    {% if personality_survey %}
-                        <span class="status-badge">完了</span>
-                    {% if personality_survey is defined and personality_survey.submitted_at is defined and personality_survey.submitted_at is not none %}
-                        <p>{{ personality_survey.submitted_at.strftime('%Y年%m月%d日') }}に回答</p>
-                    {% else %}
-                        <p>回答済み</p>
-                    {% endif %}
-
-                        <a href="{{ url_for('student.personality_survey_edit') }}" class="btn btn-sm">編集する</a>
-                    {% else %}
-                        <span class="status-badge">未回答</span>
-                        <p>あなたの学習の仕方を知るために回答してください</p>
-                        <a href="{{ url_for('student.personality_survey') }}" class="btn btn-sm btn-primary">回答する</a>
-                    {% endif %}
-                </div>
-            </div>
-            
-            {% if interest_survey and personality_survey %}
-                {% if not selected_theme %}
-                <div class="action-button">
-                    <a href="{{ url_for('student.view_themes') }}" class="btn btn-primary">テーマを選択する</a>
-                </div>
-                {% endif %}
-            {% endif %}
-            </div>
-        </div>
-    </div>
-    
-    <!-- クラス別探究テーマセクション（全幅） -->
-    {% if class_themes %}
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="dashboard-section class-themes-section">
-                <h3><i class="fas fa-graduation-cap"></i> クラス別探究テーマ</h3>
-                <div class="row">
-                    {% for item in class_themes %}
-                    <div class="col-lg-6 col-md-12 mb-4">
-                        <div class="card h-100 class-theme-card">
-                            <div class="class-header">
-                                <h4><i class="fas fa-chalkboard"></i> {{ item.class.name }}</h4>
-                            </div>
-                            <div class="class-body">
-                                {% if item.main_theme %}
-                                    <div class="main-theme-info">
-                                        <h5>大テーマ</h5>
-                                        <p>{{ item.main_theme.title }}</p>
-                                        <a href="{{ url_for('student.student_view_main_themes', class_id=item.class.id) }}" class="btn btn-sm btn-outline-primary">
-                                            <i class="fas fa-book"></i> 詳細
-                                        </a>
-                                    </div>
-                                {% endif %}
-                                
-                                {% if item.personal_theme %}
-                                    <div class="personal-theme-info">
-                                        <h5>個人テーマ</h5>
-                                        <p class="theme-title">{{ item.personal_theme.title }}</p>
-                                        <p class="theme-question">{{ item.personal_theme.question }}</p>
-                                        <div class="theme-actions">
-                                            <a href="{{ url_for('student.view_themes', class_id=item.class.id) }}" class="btn btn-sm btn-outline-info">
-                                                <i class="fas fa-lightbulb"></i> 管理
-                                            </a>
-                                            <a href="{{ url_for('student.activities', class_id=item.class.id) }}" class="btn btn-sm btn-primary">
-                                                <i class="fas fa-pen"></i> 記録
-                                            </a>
-                                            <a href="{{ url_for('student.chat_page', class_id=item.class.id) }}" class="btn btn-sm btn-info">
-                                                <i class="fas fa-comments"></i> チャット
-                                            </a>
-                                        </div>
-                                    </div>
-                                {% else %}
-                                    <div class="no-personal-theme">
-                                        <p class="text-muted">個人テーマが未選択です</p>
-                                        <div class="theme-actions">
-                                            <a href="{{ url_for('student.view_themes', class_id=item.class.id) }}" class="btn btn-sm btn-warning">
-                                                <i class="fas fa-plus"></i> 選択する
-                                            </a>
-                                            <a href="{{ url_for('student.chat_page', class_id=item.class.id) }}" class="btn btn-sm btn-info">
-                                                <i class="fas fa-comments"></i> チャット
-                                            </a>
-                                        </div>
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- 最近の学習記録セクション -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="dashboard-section recent-activities">
-                <h3>最近の学習記録</h3>
-                
-                {% if recent_activities %}
-                    <div class="activity-list">
-                        {% for activity in recent_activities %}
-                            <div class="activity-item">
-                                <div class="activity-date">{{ activity.timestamp.strftime('%m/%d') }}</div>
-                                <div class="activity-info">
-                                    <h4>{{ activity.title }}</h4>
-                                    <p>{{ activity.content|truncate(80) }}</p>
-                                </div>
-                                <a href="{{ url_for('student.edit_activity', log_id=activity.id) }}" class="btn btn-sm">詳細/編集</a>
-                            </div>
-                        {% endfor %}
-                    </div>
-                    <div class="section-actions">
-                        <a href="{{ url_for('student.activities') }}" class="btn btn-sm">すべての学習記録を見る</a>
-                        <a href="{{ url_for('student.new_activity') }}" class="btn btn-sm btn-primary">新しい学習記録の作成</a>
-                    </div>
+    <!-- アンケート状況 -->
+    <div class="dashboard-card">
+        <h3>📋 アンケート状況</h3>
+        
+        <div class="metric-item">
+            <div>
+                <div class="metric-label">好きなこと・興味アンケート</div>
+                {% if interest_survey %}
+                <span class="status-badge completed">完了</span>
                 {% else %}
-                    <div class="no-activities">
-                        <p>まだ活動記録がありません</p>
-                        {% if selected_theme %}
-                            <a href="{{ url_for('student.new_activity') }}" class="btn btn-primary">学習内容を記録する</a>
-                        {% else %}
-                            <p class="help-text">学習記録にはテーマ選択が必要です</p>
-                        {% endif %}
-                    </div>
+                <span class="status-badge pending">未回答</span>
+                {% endif %}
+            </div>
+            <div>
+                {% if interest_survey %}
+                <a href="{{ url_for('student.interest_survey_edit') }}" class="btn-sm btn-outline-primary">編集</a>
+                {% else %}
+                <a href="{{ url_for('student.interest_survey') }}" class="btn-sm btn-primary">回答する</a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="metric-item">
+            <div>
+                <div class="metric-label">学習スタイルアンケート</div>
+                {% if personality_survey %}
+                <span class="status-badge completed">完了</span>
+                {% else %}
+                <span class="status-badge pending">未回答</span>
+                {% endif %}
+            </div>
+            <div>
+                {% if personality_survey %}
+                <a href="{{ url_for('student.personality_survey_edit') }}" class="btn-sm btn-outline-primary">編集</a>
+                {% else %}
+                <a href="{{ url_for('student.personality_survey') }}" class="btn-sm btn-primary">回答する</a>
                 {% endif %}
             </div>
         </div>
     </div>
     
-    <!-- 今後のマイルストーンセクション -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="dashboard-section upcoming-milestones">
-                <h3>今後のマイルストーン</h3>
-                
-                {% if upcoming_milestones %}
-                    <div class="milestone-list">
-                        {% for milestone_data in upcoming_milestones %}
-                            <div class="milestone-item">
-                                <div class="milestone-class">{{ milestone_data.class_name }}</div>
-                                <div class="milestone-info">
-                                    <h4>{{ milestone_data.title }}</h4>
-                                    <div class="due-date {% if milestone_data.days_remaining <= 3 %}urgent{% endif %}">
-                                        期限: {{ milestone_data.due_date.strftime('%Y年%m月%d日') }}
-                                        (あと{{ milestone_data.days_remaining }}日)
-                                    </div>
-                                </div>
-                                <a href="{{ url_for('teacher.view_milestone', milestone_id=milestone_data.id) }}" class="btn btn-sm">詳細</a>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="no-milestones">
-                        <p>現在期限の迫っているマイルストーンはありません</p>
-                    </div>
-                {% endif %}
-            </div>
+    <!-- 探究テーマ状況 -->
+    <div class="dashboard-card">
+        <h3>🎯 探究テーマ</h3>
+        {% if selected_theme %}
+        <div class="metric-item">
+            <div class="metric-label">現在のテーマ</div>
+            <div class="metric-value">設定済み</div>
         </div>
+        <div style="margin-top: 1rem;">
+            <strong>{{ selected_theme.title }}</strong>
+            <p class="text-muted" style="margin-top: 0.5rem;">{{ selected_theme.question }}</p>
+            <a href="{{ url_for('student.themes') }}" class="btn-sm btn-outline-primary">テーマを変更</a>
+        </div>
+        {% else %}
+        <div class="metric-item">
+            <div class="metric-label">テーマ設定</div>
+            <div class="metric-value">未設定</div>
+        </div>
+        <p style="margin-top: 1rem;">探究活動を始めるためにテーマを選択してください。</p>
+        <a href="{{ url_for('student.themes') }}" class="btn-sm btn-primary">テーマを選ぶ</a>
+        {% endif %}
     </div>
-
-    <!-- To Doリストとアカウント設定セクション -->
-    <div class="row mb-4">
-        <div class="col-lg-6 col-md-12 mb-4">
-            <div class="dashboard-section my-todos">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h3>To Doリスト</h3>
-                    <a href="{{ url_for('student.todos') }}" class="btn btn-sm">すべて表示</a>
-                </div>
-                
-                {% if todos %}
-                    <div class="todo-list">
-                        {% for todo in todos[:3] %}
-                            <div class="todo-item {% if todo.is_completed %}completed{% endif %}">
-                                <div class="todo-status">
-                                    {% if todo.is_completed %}
-                                        <span class="status-icon completed"><i class="fas fa-check-circle"></i></span>
-                                    {% else %}
-                                        <span class="status-icon pending"><i class="far fa-circle"></i></span>
-                                    {% endif %}
-                                </div>
-                                <div class="todo-info">
-                                    <h4>{{ todo.title }}</h4>
-                                    {% if todo.due_date %}
-                                        <span class="due-date {% if todo.due_date < today and not todo.is_completed %}urgent{% endif %}">
-                                            期限: {{ todo.due_date.strftime('%Y/%m/%d') }}
-                                        </span>
-                                    {% endif %}
-                                </div>
-                                <a href="{{ url_for('student.edit_todo', todo_id=todo.id) }}" class="btn btn-sm">詳細/編集</a>
-                            </div>
-                        {% endfor %}
-                    </div>
-                    <div class="section-actions">
-                        <a href="{{ url_for('student.new_todo') }}" class="btn btn-sm btn-primary">新規作成</a>
-                    </div>
-                {% else %}
-                    <div class="no-todos">
-                        <p>To Doがまだありません</p>
-                        <a href="{{ url_for('student.new_todo') }}" class="btn btn-primary">To Doを作成する</a>
-                    </div>
-                {% endif %}
-            </div>
+    
+    <!-- 活動記録状況 -->
+    <div class="dashboard-card">
+        <h3>📝 活動記録</h3>
+        <div class="metric-item">
+            <div class="metric-label">総記録数</div>
+            <div class="metric-value">{{ recent_activities|length }}件</div>
+        </div>
+        <div class="metric-item">
+            <div class="metric-label">今週の記録</div>
+            <div class="metric-value">{{ weekly_activities_count or 0 }}件</div>
         </div>
         
-        <div class="col-lg-6 col-md-12 mb-4">
-            <div class="dashboard-section my-classes">
-                <h3>所属クラス</h3>
-                
-                {% if classes %}
-                    <div class="class-list">
-                        {% for class in classes %}
-                            <div class="class-item">
-                                <h4>{{ class.name }}</h4>
-                                <p>{% if class.description is not none %}{{ class.description|truncate(50) }}{% else %}説明なし{% endif %}</p>
-                                <a href="{{ url_for('teacher.view_class', class_id=class.id) }}" class="btn btn-sm">詳細</a>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="no-classes">
-                        <p>まだクラスに所属していません</p>
-                    </div>
-                {% endif %}
+        {% if recent_activities %}
+        <div style="margin-top: 1rem;">
+            <div class="metric-label">最新の記録</div>
+            <div style="margin-top: 0.5rem;">
+                <strong>{{ recent_activities[0].title }}</strong>
+                <p class="text-muted">{{ recent_activities[0].date.strftime('%Y年%m月%d日') }}</p>
             </div>
         </div>
-    </div>
-
-    <!-- アカウント設定セクション -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="dashboard-section account-settings">
-                <h3>アカウント設定</h3>
-                <div class="settings-actions">
-                    <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-primary">
-                        <i class="fas fa-key"></i> パスワード変更
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 基礎学力トレーニングセクション -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="dashboard-section basebuilder-summary">
-                <h3>基礎学力トレーニング</h3>
-                {% if delivered_texts %}
-                   <div class="delivered-texts mb-3">
-                       <h4>配信されたテキスト</h4>
-                       <div class="text-list">
-                           {% for item in delivered_texts[:3] %}
-                               <div class="text-item mb-2 p-2 bg-light rounded">
-                                   <div class="d-flex justify-content-between align-items-center">
-                                       <div>
-                                           <h5 class="mb-1">{{ item.text_set.title }}</h5>
-                                           <small class="text-muted">
-                                               {{ item.delivery.delivered_at.strftime('%Y年%m月%d日') }} 配信
-                                               {% if item.delivery.due_date %}
-                                                   | 期限: {{ item.delivery.due_date.strftime('%Y年%m月%d日') }}
-                                               {% endif %}
-                                           </small>
-                                       </div>
-                                       <div class="text-right">
-                                           {% if item.proficiency %}
-                                               <span class="badge 
-                                                   {% if item.proficiency.level >= 80 %}badge-success
-                                                   {% elif item.proficiency.level >= 50 %}badge-primary
-                                                   {% elif item.proficiency.level >= 30 %}badge-warning
-                                                   {% else %}badge-danger{% endif %}">
-                                                   進捗: {{ item.proficiency.level }}%
-                                               </span>
-                                           {% else %}
-                                               <span class="badge badge-secondary">未着手</span>
-                                           {% endif %}
-                                       </div>
-                                   </div>
-                               </div>
-                           {% endfor %}
-                       </div>
-                       {% if delivered_texts|length > 3 %}
-                           <p class="text-muted text-center mt-2">他{{ delivered_texts|length - 3 }}件のテキストがあります</p>
-                       {% endif %}
-                   </div>
-                {% else %}
-                   <div class="alert alert-info">
-                        配信されたテキストがまだありません。
-                   </div>
-                {% endif %}
+        {% endif %}
         
-                <div class="section-actions">
-                    <a href="{{ url_for('basebuilder_module.index') }}" class="btn btn-primary">基礎学力ホームへ</a>
-                    <a href="{{ url_for('basebuilder_module.my_texts') }}" class="btn btn-outline-primary">配信テキスト一覧</a>
-               </div>
-           </div>
+        <div style="margin-top: 1rem;">
+            <a href="{{ url_for('student.activities') }}" class="btn-sm btn-outline-primary">記録を見る</a>
+            <a href="{{ url_for('student.new_activity') }}" class="btn-sm btn-primary">新しい記録</a>
         </div>
     </div>
+    
+    <!-- ToDoと目標 -->
+    <div class="dashboard-card">
+        <h3>✅ ToDo・目標</h3>
+        <div class="metric-item">
+            <div class="metric-label">未完了のToDo</div>
+            <div class="metric-value">{{ pending_todos_count or 0 }}件</div>
+        </div>
+        <div class="metric-item">
+            <div class="metric-label">進行中の目標</div>
+            <div class="metric-value">{{ active_goals_count or 0 }}件</div>
+        </div>
+        
+        <div style="margin-top: 1rem;">
+            <a href="{{ url_for('student.todos') }}" class="btn-sm btn-outline-primary">ToDoを見る</a>
+            <a href="{{ url_for('student.goals') }}" class="btn-sm btn-outline-primary">目標を見る</a>
+        </div>
+    </div>
+    
+    <!-- AIチャット -->
+    <div class="dashboard-card">
+        <h3>🤖 AIサポート</h3>
+        <p>学習の質問や探究活動について、AIと相談できます。</p>
+        
+        <div class="metric-item">
+            <div class="metric-label">今月の利用回数</div>
+            <div class="metric-value">{{ monthly_chat_count or 0 }}回</div>
+        </div>
+        
+        <div style="margin-top: 1rem;">
+            <a href="{{ url_for('chat') }}" class="btn-sm btn-primary">AIチャットを開く</a>
+        </div>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_css %}
-<style>
-    .dashboard-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 2rem 1rem;
-    }
+<!-- ランキングセクション -->
+<div class="ranking-section">
+    <!-- クラス学習ランキング -->
+    <div class="ranking-card">
+        <h3>🏆 クラス活動記録ランキング</h3>
+        <ol class="ranking-list">
+            {% for learner in class_top_learners[:5] %}
+            <li class="ranking-item {% if learner.id == current_user.id %}style='background: #e3f2fd;'{% endif %}">
+                <span class="rank-number">{{ loop.index }}</span>
+                <span class="rank-name">{{ learner.display_name }}</span>
+                <span class="rank-score">{{ learner.activity_count or 0 }}件</span>
+            </li>
+            {% else %}
+            <li class="ranking-item">
+                <span class="rank-name">データなし</span>
+            </li>
+            {% endfor %}
+        </ol>
+    </div>
     
-    .dashboard-welcome {
-        margin-bottom: 2rem;
-        padding: 1.5rem;
-        background-color: #f8f9fa;
-        border-radius: 8px;
-        border-left: 4px solid #0056b3;
-    }
-    
-    .dashboard-welcome h3 {
-        color: #0056b3;
-        margin-bottom: 0.5rem;
-    }
-    
-    .dashboard-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 1.5rem;
-    }
-    
-    .dashboard-section {
-        background-color: white;
-        border-radius: 8px;
-        padding: 1.5rem;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-    
-    .dashboard-section h3 {
-        margin-bottom: 1rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 1px solid #eee;
-        color: #333;
-    }
-    
-    .status-cards {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-    }
-    
-    .status-card {
-        padding: 1rem;
-        border-radius: 8px;
-        background-color: #f8f9fa;
-    }
-    
-    .status-card.completed {
-        background-color: #e8f5e9;
-    }
-    
-    .status-card.pending {
-        background-color: #fff3e0;
-    }
-    
-    .status-badge {
-        display: inline-block;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-size: 0.75rem;
-        margin-bottom: 0.5rem;
-    }
-    
-    .status-card.completed .status-badge {
-        background-color: #4caf50;
-        color: white;
-    }
-    
-    .status-card.pending .status-badge {
-        background-color: #ff9800;
-        color: white;
-    }
-    
-    .theme-card {
-        background-color: #e3f2fd;
-        padding: 1rem;
-        border-radius: 8px;
-    }
-    
-    .theme-question {
-        font-style: italic;
-        margin-bottom: 0.5rem;
-    }
-    
-    .activity-list,
-    .milestone-list {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-    
-    .activity-item,
-    .milestone-item {
-        display: flex;
-        align-items: center;
-        padding: 0.75rem;
-        background-color: #f8f9fa;
-        border-radius: 8px;
-    }
-    
-    .activity-date,
-    .milestone-class {
-        min-width: 60px;
-        text-align: center;
-        font-weight: bold;
-    }
-    
-    .activity-info,
-    .milestone-info {
-        flex-grow: 1;
-        padding: 0 1rem;
-    }
-    
-    .activity-info h4,
-    .milestone-info h4 {
-        margin-bottom: 0.25rem;
-    }
-    
-    .due-date {
-        font-size: 0.85rem;
-        color: #6c757d;
-    }
-    
-    .due-date.urgent {
-        color: #dc3545;
-        font-weight: bold;
-    }
-    
-    .class-list {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-    }
-    
-    .class-item {
-        padding: 1rem;
-        background-color: #f8f9fa;
-        border-radius: 8px;
-    }
-    
-    .section-actions {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 1rem;
-    }
-    
-    .no-theme,
-    .no-activities,
-    .no-milestones,
-    .no-classes {
-        padding: 2rem;
-        text-align: center;
-        background-color: #f8f9fa;
-        border-radius: 8px;
-    }
-    
-    .help-text {
-        font-size: 0.85rem;
-        color: #6c757d;
-        margin-top: 0.5rem;
-    }
-    
-    .action-button {
-        text-align: center;
-        margin-top: 1rem;
-    }
-    
-    .btn-sm {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.875rem;
-    }
-    
-    .surveys-status,
-    .current-theme {
-        grid-column: span 2;
-    }
-    
-    .recent-activities {
-        grid-column: span 2;
-    }
-    
-    .todo-list {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .todo-item {
-        display: flex;
-        align-items: center;
-        padding: 0.75rem;
-        background-color: #f8f9fa;
-        border-radius: 8px;
-    }
-
-    .todo-item.completed {
-        background-color: #e8f5e9;
-        opacity: 0.8;
-    }
-
-    .todo-status {
-        min-width: 40px;
-        text-align: center;
-    }
-
-    .status-icon {
-        font-size: 1.2rem;
-    }
-
-    .status-icon.completed {
-        color: #4caf50;
-    }
-
-    .status-icon.pending {
-        color: #ff9800;
-    }
-
-    .todo-info {
-        flex-grow: 1;
-        padding: 0 1rem;
-    }
-
-    .todo-info h4 {
-        margin-bottom: 0.25rem;
-    }
-
-    .no-todos {
-        padding: 2rem;
-        text-align: center;
-        background-color: #f8f9fa;
-        border-radius: 8px;
-    }
-    
-    /* 新しく追加するアカウント設定セクションのスタイル */
-    .account-settings {
-        grid-column: span 2;
-    }
-
-    .settings-actions {
-        display: flex;
-        justify-content: center;
-        gap: 1rem;
-        padding: 1rem;
-    }
-    
-    /* 基礎学力トレーニングセクションのスタイル */
-    .basebuilder-summary {
-        grid-column: span 2;
-    }
-    
-    .text-item {
-        transition: background-color 0.2s;
-    }
-    
-    .text-item:hover {
-        background-color: #e9ecef !important;
-    }
-    
-    .text-item h5 {
-        font-size: 1rem;
-        color: #333;
-    }
-    
-    .badge {
-        font-size: 0.85rem;
-        padding: 0.25rem 0.5rem;
-    }
-    
-    @media (max-width: 768px) {
-        .dashboard-grid {
-            grid-template-columns: 1fr;
-        }
-        
-        .surveys-status,
-        .current-theme,
-        .recent-activities,
-        .account-settings,
-        .basebuilder-summary {
-            grid-column: span 1;
-        }
-        
-        .status-cards {
-            grid-template-columns: 1fr;
-        }
-    }
-    
-    /* クラス別テーマスタイル */
-    .class-themes-section {
-        margin-bottom: 30px;
-    }
-    
-    .class-themes-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 25px;
-        margin-top: 15px;
-    }
-    
-    /* タブレット以上: 1列（幅広表示） */
-    @media (min-width: 768px) {
-        .class-themes-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-    
-    /* デスクトップ: 2列 */
-    @media (min-width: 1200px) {
-        .class-themes-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-    }
-    
-    .class-theme-card {
-        background: #ffffff;
-        border: 1px solid #e0e0e0;
-        border-radius: 10px;
-        overflow: hidden;
-        transition: all 0.3s ease;
-    }
-    
-    .class-theme-card:hover {
-        box-shadow: 0 4px 12px rgba(93, 168, 232, 0.15);
-        transform: translateY(-2px);
-    }
-    
-    .class-header {
-        background: var(--primary-soft);
-        padding: 15px;
-        border-bottom: 1px solid #e0e0e0;
-    }
-    
-    .class-header h4 {
-        margin: 0;
-        color: var(--primary-color);
-        font-size: 1.1rem;
-    }
-    
-    .class-body {
-        padding: 20px;
-    }
-    
-    .main-theme-info,
-    .personal-theme-info {
-        margin-bottom: 20px;
-        padding: 15px;
-        background: #f8f9fa;
-        border-radius: 8px;
-        border: 1px solid #e9ecef;
-    }
-    
-    .main-theme-info:last-child,
-    .personal-theme-info:last-child,
-    .no-personal-theme {
-        margin-bottom: 0;
-    }
-    
-    .main-theme-info {
-        border-left: 4px solid var(--primary-color);
-    }
-    
-    .personal-theme-info {
-        border-left: 4px solid #28a745;
-    }
-    
-    .main-theme-info h5,
-    .personal-theme-info h5 {
-        color: #666;
-        font-size: 0.9rem;
-        margin-bottom: 8px;
-    }
-    
-    .theme-title {
-        font-weight: 600;
-        color: #333;
-        margin-bottom: 5px;
-    }
-    
-    .theme-question {
-        color: #666;
-        font-size: 0.9rem;
-        margin-bottom: 10px;
-    }
-    
-    .theme-actions {
-        display: flex;
-        gap: 8px;
-        margin-top: 10px;
-    }
-    
-    .no-personal-theme {
-        text-align: center;
-        padding: 20px 0;
-    }
-    
-    .no-personal-theme p {
-        margin-bottom: 10px;
-    }
-</style>
+    <!-- 週間ランキング -->
+    <div class="ranking-card">
+        <h3>📅 今週の活動ランキング</h3>
+        <ol class="ranking-list">
+            {% for learner in weekly_top_learners[:5] %}
+            <li class="ranking-item {% if learner.id == current_user.id %}style='background: #e3f2fd;'{% endif %}">
+                <span class="rank-number">{{ loop.index }}</span>
+                <span class="rank-name">{{ learner.display_name }}</span>
+                <span class="rank-score">{{ learner.weekly_count or 0 }}件</span>
+            </li>
+            {% else %}
+            <li class="ranking-item">
+                <span class="rank-name">データなし</span>
+            </li>
+            {% endfor %}
+        </ol>
+    </div>
+</div>
 {% endblock %}

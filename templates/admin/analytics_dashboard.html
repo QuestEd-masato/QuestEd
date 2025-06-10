@@ -327,17 +327,44 @@ const dailyUsersChart = new Chart(ctx, {
     options: {
         responsive: true,
         maintainAspectRatio: false,
+        plugins: {
+            title: {
+                display: true,
+                text: '日別アクティブユーザー',
+                font: {
+                    size: 16,
+                    weight: 'bold'
+                },
+                padding: 20
+            },
+            legend: {
+                display: true,
+                position: 'top'
+            }
+        },
         scales: {
             y: {
                 beginAtZero: true,
                 ticks: {
-                    stepSize: 1
+                    stepSize: 5,
+                    callback: function(value) {
+                        return value + '人';
+                    }
+                },
+                grid: {
+                    color: 'rgba(0, 0, 0, 0.1)'
+                }
+            },
+            x: {
+                grid: {
+                    display: false
                 }
             }
         },
-        plugins: {
-            legend: {
-                display: false
+        elements: {
+            point: {
+                radius: 4,
+                hoverRadius: 6
             }
         }
     }
@@ -385,7 +412,13 @@ setInterval(function() {
 
 .chart-container {
     position: relative;
-    height: 200px;
+    height: 300px;
+    width: 100%;
+    margin-bottom: 2rem;
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .status-card .stat-number {

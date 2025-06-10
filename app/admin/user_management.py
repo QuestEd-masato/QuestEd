@@ -71,48 +71,55 @@ def import_users():
                 error_messages = []
                 
                 # CSVの各行を処理
-                for row in csv_reader:
+                for row_num, row in enumerate(csv_reader, start=2):  # ヘッダーを飛ばして2行目から
                     try:
+                        # CSVのカラムを正しく取得
+                        username = row.get('username', '').strip()
+                        full_name = row.get('full_name', '').strip()
+                        email = row.get('email', '').strip()
+                        password = row.get('password', '').strip()
+                        role = row.get('role', '').strip()
+                        school_id = row.get('school_id', '').strip()
+                        
                         # 必須項目の確認
-                        if not row.get('username') or not row.get('email') or not row.get('role'):
+                        if not username or not email or not role:
                             error_count += 1
-                            error_messages.append(f"行: {csv_reader.line_num} - ユーザー名、メールアドレス、ロールは必須です。")
+                            error_messages.append(f"行: {row_num} - ユーザー名、メールアドレス、ロールは必須です。")
                             continue
+                        
+                        # 数値ユーザー名の文字列変換
+                        username = str(username)
                         
                         # 既存ユーザーのチェック
                         existing_user = User.query.filter(
-                            (User.username == row['username']) | (User.email == row['email'])
+                            (User.username == username) | (User.email == email)
                         ).first()
                         
                         if existing_user:
                             error_count += 1
-                            error_messages.append(f"行: {csv_reader.line_num} - ユーザー名またはメールアドレスが既に使用されています: {row['username']}, {row['email']}")
+                            error_messages.append(f"行: {row_num} - ユーザー名またはメールアドレスが既に使用されています: {username}, {email}")
                             continue
                         
-                        # 管理者は任意の学校IDを指定可能
-                        school_id = row.get('school_id')
-                        if school_id:
-                            try:
-                                school_id = int(school_id)
-                            except ValueError:
-                                school_id = None
+                        # 学校IDの処理
+                        try:
+                            school_id = int(school_id) if school_id else None
+                        except ValueError:
+                            school_id = None
                         
                         # パスワードの生成または取得
-                        password = row.get('password')
                         if not password:
-                            # パスワードが指定されていない場合はランダムなパスワードを生成
                             password = generate_random_password()
                         
                         # ユーザー作成
                         new_user = User(
-                            username=row['username'],
-                            full_name=row.get('full_name', ''),
-                            email=row['email'],
+                            username=username,
+                            full_name=full_name or username,  # full_nameがない場合はusernameを使用
+                            email=email,
                             password=generate_password_hash(password),
-                            role=row['role'],
+                            role=role,
                             school_id=school_id,
                             email_confirmed=True,  # CSV登録ユーザーは確認済み
-                            is_approved=(row['role'] != 'student')  # 学生以外は自動承認
+                            is_approved=(role != 'student')  # 学生以外は自動承認
                         )
                         
                         db.session.add(new_user)
@@ -134,21 +141,27 @@ def import_users():
                         
                     except Exception as e:
                         error_count += 1
-                        error_messages.append(f"行: {csv_reader.line_num} - エラー: {str(e)}")
+                        error_messages.append(f"行: {row_num} - エラー: {str(e)}")
+                        db.session.rollback()  # エラー時はロールバック
                 
                 # 変更をコミット
-                db.session.commit()
-                
-                # 結果の表示
                 if success_count > 0:
-                    flash(f'{success_count}人のユーザーを正常にインポートしました。')
+                    try:
+                        db.session.commit()
+                        flash(f'{success_count}人のユーザーを正常にインポートしました。', 'success')
+                    except Exception as e:
+                        db.session.rollback()
+                        flash(f'データベースへの保存中にエラーが発生しました: {str(e)}', 'error')
+                        return redirect(url_for('admin_panel.import_users'))
                 
                 if error_count > 0:
-                    flash(f'{error_count}件のエラーが発生しました。')
-                    for msg in error_messages:
+                    flash(f'{error_count}件のエラーが発生しました。', 'warning')
+                    for msg in error_messages[:10]:  # 最初の10件のエラーのみ表示
                         flash(msg, 'error')
+                    if len(error_messages) > 10:
+                        flash(f'他に{len(error_messages) - 10}件のエラーがあります。', 'warning')
                 
-                return redirect(url_for('admin_panel.admin_users'))
+                return redirect(url_for('admin_panel.users'))
                 
             except Exception as e:
                 flash(f'CSVファイルの処理中にエラーが発生しました: {str(e)}')

@@ -296,3 +296,82 @@ def get_school_performance_stats():
     except Exception as e:
         # SQLiteやその他のDBでDATE_SUB関数が使えない場合のフォールバック
         return []
+
+@admin_bp.route('/analytics/school/<int:school_id>')
+@login_required
+@admin_required
+def school_analytics(school_id):
+    """学校別の利用状況分析"""
+    school = School.query.get_or_404(school_id)
+    
+    # 学校別の統計データを取得
+    school_stats = {
+        'total_users': User.query.filter_by(school_id=school_id).count(),
+        'active_users': User.query.filter_by(school_id=school_id).filter(User.created_at >= datetime.now() - timedelta(days=30)).count(),
+        'total_activities': ActivityLog.query.join(User).filter(User.school_id == school_id).count(),
+        'weekly_activities': get_school_weekly_activities(school_id),
+        'class_rankings': get_school_class_rankings(school_id)
+    }
+    
+    return render_template('admin/school_analytics.html', 
+                         school=school, 
+                         stats=school_stats)
+
+def get_school_weekly_activities(school_id):
+    """学校の週間活動数を取得"""
+    week_ago = datetime.now() - timedelta(days=7)
+    return ActivityLog.query.join(User).filter(
+        User.school_id == school_id,
+        ActivityLog.timestamp >= week_ago
+    ).count()
+
+def get_school_class_rankings(school_id):
+    """学校内のクラス別ランキングを取得"""
+    from sqlalchemy import func
+    
+    results = db.session.query(
+        Class.name,
+        func.count(ActivityLog.id).label('activity_count')
+    ).join(User, Class.teacher_id == User.id)\
+     .outerjoin(ActivityLog, User.id == ActivityLog.student_id)\
+     .filter(User.school_id == school_id)\
+     .group_by(Class.id, Class.name)\
+     .order_by(func.count(ActivityLog.id).desc())\
+     .limit(10).all()
+    
+    return [{'name': r.name, 'activity_count': r.activity_count} for r in results]
+
+@admin_bp.route('/analytics/export/pdf')
+@login_required 
+@admin_required
+def export_analytics_pdf():
+    """分析レポートをPDFで出力"""
+    try:
+        # データ収集
+        data = {
+            'date': datetime.now().strftime('%Y年%m月%d日'),
+            'daily_users': get_daily_active_users(30),
+            'api_usage': get_api_usage_stats(),
+            'school_stats': get_school_statistics()
+        }
+        
+        # HTMLテンプレートをレンダリング
+        html_content = render_template('admin/analytics_report_pdf.html', **data)
+        
+        # 簡易PDF生成（WeasyPrintなしの場合）
+        from flask import Response
+        return Response(
+            html_content,
+            mimetype='text/html',
+            headers={
+                'Content-Disposition': f'attachment; filename=analytics_report_{datetime.now().strftime("%Y%m%d")}.html'
+            }
+        )
+        
+    except Exception as e:
+        flash(f'レポート生成エラー: {str(e)}', 'error')
+        return redirect(url_for('admin_panel.analytics_dashboard'))
+
+def get_all_schools_statistics():
+    """全学校の統計データを取得"""
+    return get_school_statistics()
