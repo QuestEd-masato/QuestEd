@@ -183,20 +183,71 @@ def dashboard():
             current_app.logger.debug(f"Table existence check failed: {str(e)}")
             pass
         
-        # word_proficiencyが存在する場合のみランキングを取得
-        if has_word_proficiency:
-            try:
-                # 現在のクラスメイトのIDリストを取得
-                classmate_ids = []
-                if enrollment:
-                    classmates = User.query.join(ClassEnrollment).filter(
-                        ClassEnrollment.class_id == enrollment.class_id,
-                        ClassEnrollment.is_active == True,
-                        User.role == 'student'
-                    ).all()
-                    classmate_ids = [u.id for u in classmates]
+        # ランキング機能（複数テーブル対応）
+        try:
+            # 現在のクラスメイトのIDリストを取得
+            classmate_ids = []
+            if enrollment:
+                classmates = User.query.join(ClassEnrollment).filter(
+                    ClassEnrollment.class_id == enrollment.class_id,
+                    ClassEnrollment.is_active == True,
+                    User.role == 'student'
+                ).all()
+                classmate_ids = [u.id for u in classmates]
+            
+            if classmate_ids:
+                table_names = inspector.get_table_names()
                 
-                if classmate_ids:
+                # word_proficiency_recordsテーブルを優先的に使用
+                if 'word_proficiency_records' in table_names:
+                    current_app.logger.info("Using word_proficiency_records for ranking")
+                    
+                    # 総合ランキング
+                    ranking_query = text("""
+                        SELECT 
+                            u.id,
+                            u.username,
+                            u.full_name,
+                            COUNT(DISTINCT CASE WHEN (wpr.proficiency_level >= 5 OR wpr.accuracy_rate >= 100) THEN wpr.word_id END) as word_count
+                        FROM users u
+                        LEFT JOIN word_proficiency_records wpr ON u.id = wpr.user_id
+                        WHERE u.id IN :user_ids
+                        GROUP BY u.id, u.username, u.full_name
+                        ORDER BY word_count DESC, u.username ASC
+                        LIMIT 10
+                    """)
+                    
+                    class_rankings_result = db.session.execute(
+                        ranking_query,
+                        {"user_ids": tuple(classmate_ids)}
+                    ).fetchall()
+                    
+                    # 週間ランキング
+                    one_week_ago = datetime.now() - timedelta(days=7)
+                    weekly_query = text("""
+                        SELECT 
+                            u.id,
+                            u.username,
+                            u.full_name,
+                            COUNT(DISTINCT wpr.word_id) as word_count
+                        FROM users u
+                        LEFT JOIN word_proficiency_records wpr ON u.id = wpr.user_id
+                        WHERE u.id IN :user_ids
+                        AND (wpr.proficiency_level >= 5 OR wpr.accuracy_rate >= 100)
+                        AND wpr.updated_at >= :one_week_ago
+                        GROUP BY u.id, u.username, u.full_name
+                        ORDER BY word_count DESC, u.username ASC
+                        LIMIT 10
+                    """)
+                    
+                    weekly_rankings_result = db.session.execute(
+                        weekly_query,
+                        {"user_ids": tuple(classmate_ids), "one_week_ago": one_week_ago}
+                    ).fetchall()
+                    
+                elif 'word_proficiency' in table_names:
+                    current_app.logger.info("Using word_proficiency for ranking")
+                    
                     # 総合ランキング（proficiency_level = 5の単語数）
                     ranking_query = text("""
                         SELECT 
@@ -216,16 +267,6 @@ def dashboard():
                         ranking_query,
                         {"user_ids": tuple(classmate_ids)}
                     ).fetchall()
-                    
-                    class_top_learners = [
-                        {
-                            'id': r.id,
-                            'username': r.username,
-                            'full_name': r.full_name,
-                            'word_count': r.word_count
-                        } for r in class_rankings_result
-                    ]
-                    context['class_top_learners'] = class_top_learners
                     
                     # 週間ランキング（今週5/5になった単語数）
                     one_week_ago = datetime.now() - timedelta(days=7)
@@ -250,12 +291,31 @@ def dashboard():
                         {"user_ids": tuple(classmate_ids), "one_week_ago": one_week_ago}
                     ).fetchall()
                     
+                else:
+                    # テーブルがない場合はクラスメイトのみ表示
+                    current_app.logger.info("No word proficiency tables found, showing classmates only")
+                    class_rankings_result = [(u.id, u.username, u.full_name, 0) for u in classmates[:10]]
+                    weekly_rankings_result = [(u.id, u.username, u.full_name, 0) for u in classmates[:10]]
+                
+                # 結果をcontextに設定
+                if 'class_rankings_result' in locals():
+                    class_top_learners = [
+                        {
+                            'id': r.id if hasattr(r, 'id') else r[0],
+                            'username': r.username if hasattr(r, 'username') else r[1],
+                            'full_name': r.full_name if hasattr(r, 'full_name') else r[2],
+                            'word_count': r.word_count if hasattr(r, 'word_count') else r[3]
+                        } for r in class_rankings_result
+                    ]
+                    context['class_top_learners'] = class_top_learners
+                
+                if 'weekly_rankings_result' in locals():
                     weekly_top_learners = [
                         {
-                            'id': r.id,
-                            'username': r.username,
-                            'full_name': r.full_name,
-                            'word_count': r.word_count
+                            'id': r.id if hasattr(r, 'id') else r[0],
+                            'username': r.username if hasattr(r, 'username') else r[1],
+                            'full_name': r.full_name if hasattr(r, 'full_name') else r[2],
+                            'word_count': r.word_count if hasattr(r, 'word_count') else r[3]
                         } for r in weekly_rankings_result
                     ]
                     context['weekly_top_learners'] = weekly_top_learners
