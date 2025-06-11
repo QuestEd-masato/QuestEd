@@ -509,8 +509,67 @@ def dashboard():
                     # デバッグログ
                     current_app.logger.info(f"Delivered texts count: {len(delivered_texts)}")
                     
-            # 定着度5の単語数を取得（全期間）
-            if 'word_proficiency' in table_names:
+            # デフォルト値を設定
+            context['total_mastered_words'] = 0
+            context['weekly_words_learned'] = 0
+            context['total_words_attempted'] = 0
+            context['mastery_rate'] = 0
+            context['weekly_target'] = 50
+            
+            # word_proficiency_recordsテーブルを優先的に使用
+            if 'word_proficiency_records' in table_names:
+                current_app.logger.info("Using word_proficiency_records table")
+                
+                # 総マスター単語数（レベル5または正解率100%）
+                total_mastered_query = text("""
+                    SELECT COUNT(DISTINCT word_id) as count
+                    FROM word_proficiency_records
+                    WHERE user_id = :user_id
+                    AND (proficiency_level >= 5 OR accuracy_rate >= 100)
+                """)
+                
+                result = db.session.execute(
+                    total_mastered_query,
+                    {"user_id": current_user.id}
+                ).first()
+                
+                context['total_mastered_words'] = result.count if result and result.count else 0
+                
+                # 今週マスターした単語数
+                one_week_ago = datetime.now() - timedelta(days=7)
+                weekly_mastered_query = text("""
+                    SELECT COUNT(DISTINCT word_id) as count
+                    FROM word_proficiency_records
+                    WHERE user_id = :user_id
+                    AND (proficiency_level >= 5 OR accuracy_rate >= 100)
+                    AND updated_at >= :week_ago
+                """)
+                
+                result = db.session.execute(
+                    weekly_mastered_query,
+                    {"user_id": current_user.id, "week_ago": one_week_ago}
+                ).first()
+                
+                context['weekly_words_learned'] = result.count if result and result.count else 0
+                
+                # 全単語数
+                total_words_query = text("""
+                    SELECT COUNT(DISTINCT word_id) as count
+                    FROM word_proficiency_records
+                    WHERE user_id = :user_id
+                """)
+                
+                result = db.session.execute(
+                    total_words_query,
+                    {"user_id": current_user.id}
+                ).first()
+                
+                context['total_words_attempted'] = result.count if result and result.count else 0
+                
+            # word_proficiencyテーブルを使用
+            elif 'word_proficiency' in table_names:
+                current_app.logger.info("Using word_proficiency table")
+                
                 # 総マスター単語数（定着度5）
                 total_mastered_query = text("""
                     SELECT COUNT(DISTINCT word_id) as count
@@ -557,14 +616,44 @@ def dashboard():
                 
                 context['total_words_attempted'] = total_words_result or 0
                 
-                # 達成率を計算（定着度5の単語数 / 全単語数）
-                if context['total_words_attempted'] > 0:
-                    context['mastery_rate'] = round((context['total_mastered_words'] / context['total_words_attempted']) * 100, 1)
-                else:
-                    context['mastery_rate'] = 0
-                    
-                # デバッグログ
-                current_app.logger.info(f"Mastery stats - Total: {context['total_mastered_words']}, Weekly: {context['weekly_words_learned']}, Rate: {context['mastery_rate']}%")
+            # wordsテーブルから基礎単語の総数を取得（目標値として使用）
+            elif 'words' in table_names:
+                current_app.logger.info("Using words table for basic stats")
+                
+                # ユーザーの学習記録がない場合、基礎単語の総数を表示
+                total_words_query = text("""
+                    SELECT COUNT(*) as count
+                    FROM words
+                    WHERE is_active = 1
+                """)
+                
+                result = db.session.execute(total_words_query).first()
+                total_basic_words = result.count if result and result.count else 1000  # デフォルト1000語
+                
+                # 学習進捗をシミュレート（デモ用）
+                context['total_words_attempted'] = 0
+                context['total_mastered_words'] = 0
+                context['weekly_words_learned'] = 0
+                
+                # メッセージとして総単語数を表示
+                context['total_basic_words'] = total_basic_words
+                
+            # 達成率を計算
+            if context['total_words_attempted'] > 0:
+                context['mastery_rate'] = round(
+                    (context['total_mastered_words'] / context['total_words_attempted']) * 100, 1
+                )
+            else:
+                context['mastery_rate'] = 0
+                
+            # デバッグログ
+            current_app.logger.info(
+                f"Word stats for user {current_user.id}: "
+                f"total_mastered={context['total_mastered_words']}, "
+                f"weekly={context['weekly_words_learned']}, "
+                f"total_attempted={context['total_words_attempted']}, "
+                f"rate={context['mastery_rate']}%"
+            )
                 
         except Exception as e:
             current_app.logger.error(f"BaseBuilder fetch error: {str(e)}")

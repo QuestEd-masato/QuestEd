@@ -236,109 +236,89 @@
         <p>あなたの探究学習の進捗状況や記録を確認できます</p>
     </div>
     
-    <!-- 基礎学力トレーニング -->
-    <div class="dashboard-card" id="basebuilder-card">
+    <!-- 基礎学力トレーニング（コンパクト版） -->
+    <div class="dashboard-card" style="min-height: auto;">
         <h3>🔥 基礎学力トレーニング</h3>
         
-        <p>単語学習を通じて基礎力を向上させましょう。</p>
+        <p style="font-size: 0.9rem; margin-bottom: 15px;">単語学習を通じて基礎力を向上させましょう。</p>
         
-        <!-- 定着度統計 -->
-        <div style="margin: 20px 0; padding: 20px; background: #e3f2fd; border-radius: 10px;">
-            <h4 style="margin: 0 0 15px 0; color: #1976d2;">学習統計</h4>
+        <!-- 学習統計（コンパクト版） -->
+        <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <h4 style="margin: 0 0 10px 0; font-size: 1rem; color: #1976d2;">学習統計</h4>
             
-            <!-- メイン統計 -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-                <div style="text-align: center; padding: 15px; background: white; border-radius: 8px;">
-                    <div style="font-size: 2.5rem; font-weight: bold; color: #0056b3;" id="total-mastered">
-                        {{ total_mastered_words|default(0) }}
+            {% if total_words_attempted > 0 %}
+            <!-- データがある場合 -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center;">
+                <div>
+                    <div style="font-size: 1.5rem; font-weight: bold; color: #0056b3;">
+                        {{ total_mastered_words }}
                     </div>
-                    <div style="color: #666; font-size: 0.9rem;">定着度5の単語数</div>
+                    <div style="font-size: 0.75rem; color: #666;">定着度5の<br>単語数</div>
                 </div>
                 
-                <div style="text-align: center; padding: 15px; background: white; border-radius: 8px;">
-                    <div style="font-size: 2.5rem; font-weight: bold; color: #28a745;" id="weekly-mastered">
-                        {{ weekly_words_learned|default(0) }}
+                <div>
+                    <div style="font-size: 1.5rem; font-weight: bold; color: #28a745;">
+                        {{ weekly_words_learned }}
                     </div>
-                    <div style="color: #666; font-size: 0.9rem;">今週の新規マスター</div>
+                    <div style="font-size: 0.75rem; color: #666;">今週の新規<br>マスター</div>
                 </div>
                 
-                <div style="text-align: center; padding: 15px; background: white; border-radius: 8px;">
-                    <div style="font-size: 2.5rem; font-weight: bold; color: #ff9800;" id="mastery-rate">
-                        {{ mastery_rate|default(0) }}%
+                <div>
+                    <div style="font-size: 1.5rem; font-weight: bold; color: #ff9800;">
+                        {{ mastery_rate }}%
                     </div>
-                    <div style="color: #666; font-size: 0.9rem;">達成率</div>
+                    <div style="font-size: 0.75rem; color: #666;">達成率</div>
                 </div>
             </div>
             
-            <!-- 達成率プログレスバー -->
-            <div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                    <span style="font-weight: 500;">全体の達成率</span>
-                    <span style="color: #666;">{{ total_mastered_words|default(0) }} / {{ total_words_attempted|default(0) }} 単語</span>
+            <!-- プログレスバー -->
+            <div style="margin-top: 12px;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #666;">
+                    <span>全体の達成率</span>
+                    <span>{{ total_mastered_words }} / {{ total_words_attempted }} 単語</span>
                 </div>
-                <div style="background: #e0e0e0; height: 20px; border-radius: 10px; overflow: hidden;">
-                    <div style="width: {{ mastery_rate|default(0) }}%; background: linear-gradient(90deg, #4caf50, #81c784); height: 100%; transition: width 1s ease-out; position: relative;" id="mastery-progress">
-                        <span style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: white; font-weight: 500; font-size: 0.9rem;">
-                            {% if mastery_rate|default(0) > 10 %}{{ mastery_rate|default(0) }}%{% endif %}
-                        </span>
-                    </div>
+                <div style="background: #e0e0e0; height: 6px; border-radius: 3px; overflow: hidden; margin-top: 4px;">
+                    <div style="width: {{ mastery_rate }}%; background: linear-gradient(90deg, #4caf50, #81c784); height: 100%;"></div>
                 </div>
             </div>
             
-            <!-- 週間目標 -->
-            <div style="margin-top: 15px;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                    <span style="font-weight: 500;">週間目標達成率</span>
-                    <span style="color: #666;">{{ weekly_words_learned|default(0) }} / {{ weekly_target|default(50) }} 単語</span>
+            <div style="margin-top: 8px;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #666;">
+                    <span>週間目標達成率</span>
+                    <span>{{ weekly_words_learned }} / {{ weekly_target }} 単語</span>
                 </div>
-                <div style="background: #e0e0e0; height: 12px; border-radius: 6px; overflow: hidden;">
-                    <div style="width: {{ ((weekly_words_learned|default(0) / (weekly_target|default(50)) * 100) if (weekly_target|default(50)) else 0)|round }}%; background: #2196f3; height: 100%; transition: width 1s ease-out;" id="weekly-progress"></div>
+                <div style="background: #e0e0e0; height: 6px; border-radius: 3px; overflow: hidden; margin-top: 4px;">
+                    <div style="width: {{ ((weekly_words_learned / weekly_target * 100) if weekly_target > 0 else 0)|round }}%; background: #2196f3; height: 100%;"></div>
                 </div>
             </div>
+            {% else %}
+            <!-- データがない場合 -->
+            <div style="text-align: center; padding: 20px 0;">
+                <div style="font-size: 3rem; margin-bottom: 10px;">🎯</div>
+                <p style="color: #666; margin: 0;">まだ学習記録がありません。<br>下のボタンから学習を始めましょう！</p>
+                {% if total_basic_words is defined %}
+                <p style="color: #999; font-size: 0.8rem; margin-top: 10px;">
+                    基礎単語: 全{{ total_basic_words }}語
+                </p>
+                {% endif %}
+            </div>
+            {% endif %}
         </div>
         
-        <!-- 配信テキスト（既存） -->
-        {% if delivered_texts %}
-            <h4 style="margin-top: 1.5rem;">配信されたテキスト:</h4>
-            {% for text in delivered_texts[:3] %}
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 10px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <strong>{{ text.text_name }}</strong>
-                        <div style="font-size: 0.9rem; color: #666;">
-                            配信日: {{ text.delivered_at.strftime('%Y年%m月%d日') if text.delivered_at else '未設定' }}
-                        </div>
-                    </div>
-                    <div style="text-align: right;">
-                        {% if text.is_completed %}
-                        <span style="color: #28a745;">✓ 完了</span>
-                        {% else %}
-                        <span style="color: #dc3545;">進行中</span>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-        {% else %}
-            <p style="color: #666; text-align: center; padding: 20px;">
-                現在配信されているテキストはありません。
-            </p>
-        {% endif %}
-        
-        <!-- アクションボタン（既存のまま維持） -->
-        <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <!-- アクションボタン -->
+        <div style="display: flex; gap: 10px;">
             <a href="{{ url_for('basebuilder_module.my_texts') }}" 
-               style="flex: 1; display: inline-block; padding: 12px; text-align: center; 
-                      background-color: white; color: #0056b3; border: 2px solid #0056b3; 
-                      border-radius: 8px; text-decoration: none; font-weight: 500;
-                      transition: all 0.3s; pointer-events: auto !important; z-index: 1000; position: relative;">
+               style="flex: 1; display: inline-block; padding: 10px 12px; text-align: center; 
+                      background-color: white; color: #0056b3; border: 1px solid #0056b3; 
+                      border-radius: 6px; text-decoration: none; font-size: 0.9rem;
+                      transition: all 0.2s; pointer-events: auto !important; z-index: 1000; position: relative;">
                 📚 テキスト一覧
             </a>
             <a href="{{ url_for('basebuilder_module.index') }}" 
-               style="flex: 1; display: inline-block; padding: 12px; text-align: center; 
-                      background-color: #0056b3; color: white; border: 2px solid #0056b3; 
-                      border-radius: 8px; text-decoration: none; font-weight: 500;
-                      transition: all 0.3s; pointer-events: auto !important; z-index: 1000; position: relative;">
+               style="flex: 1; display: inline-block; padding: 10px 12px; text-align: center; 
+                      background-color: #0056b3; color: white; border: 1px solid #0056b3; 
+                      border-radius: 6px; text-decoration: none; font-size: 0.9rem;
+                      transition: all 0.2s; pointer-events: auto !important; z-index: 1000; position: relative;">
                 🎯 トレーニング
             </a>
         </div>
