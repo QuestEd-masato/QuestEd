@@ -239,36 +239,72 @@
     <!-- 基礎学力トレーニング -->
     <div class="dashboard-card">
         <h3>🔥 基礎学力トレーニング</h3>
-        <div class="metric-item">
-            <div class="metric-label">今週のトレーニング</div>
-            <div class="metric-value">{{ weekly_training_count or 0 }}回</div>
-        </div>
-        <div class="metric-item">
-            <div class="metric-label">達成率</div>
-            <div class="metric-value">{{ training_completion_rate or 0 }}%</div>
+        
+        <!-- 最終更新時刻を表示 -->
+        <div style="text-align: right; font-size: 0.8rem; color: #999; margin-bottom: 10px;">
+            最終更新: {{ last_updated }}
         </div>
         
-        <!-- 配信されたテキスト情報 -->
+        <p>単語学習を通じて基礎力を向上させましょう。</p>
+        
         {% if delivered_texts %}
-        <div style="margin-top: 1rem;">
-            <div class="metric-label">配信テキスト</div>
+            <h4 style="margin-top: 1rem;">配信されたテキスト:</h4>
             {% for text in delivered_texts %}
-            <div class="metric-item">
-                <div>
-                    <div class="metric-label">{{ text.text_name }}</div>
-                    <div style="font-size: 0.8rem; color: #6c757d;">
-                        理解度: {{ text.understanding_level }}%
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>{{ text.text_name }}</strong>
+                        <div style="font-size: 0.9rem; color: #666;">
+                            配信日: {{ text.delivered_at.strftime('%Y年%m月%d日') if text.delivered_at else '未設定' }}
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 1.2rem; font-weight: bold; color: #0056b3;">
+                            理解度: {{ text.understanding_level }}%
+                        </div>
                         {% if text.is_completed %}
-                        <span class="status-badge completed">完了</span>
+                        <span style="color: #28a745; font-size: 0.9rem;">✓ 完了</span>
                         {% else %}
-                        <span class="status-badge pending">未完了</span>
+                        <span style="color: #dc3545; font-size: 0.9rem;">進行中</span>
                         {% endif %}
                     </div>
                 </div>
+                <!-- プログレスバー -->
+                <div style="margin-top: 10px; background: #e9ecef; height: 8px; border-radius: 4px; overflow: hidden;">
+                    <div style="width: {{ text.understanding_level }}%; background: #0056b3; height: 100%; transition: width 0.3s;"></div>
+                </div>
             </div>
             {% endfor %}
-        </div>
+        {% else %}
+            <p style="color: #666; text-align: center; padding: 20px;">
+                現在配信されているテキストはありません。
+            </p>
         {% endif %}
+        
+        <!-- 学習統計 -->
+        <div style="margin-top: 20px; padding: 15px; background: #e3f2fd; border-radius: 8px;">
+            <h4 style="margin: 0 0 10px 0;">今週の学習統計</h4>
+            <div style="display: flex; justify-content: space-between;">
+                <div>
+                    <div style="font-size: 2rem; font-weight: bold; color: #0056b3;">{{ weekly_words_learned or 0 }}</div>
+                    <div style="color: #666;">マスター単語数</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 2rem; font-weight: bold; color: #666;">{{ weekly_target or 50 }}</div>
+                    <div style="color: #666;">週間目標</div>
+                </div>
+            </div>
+            <!-- 達成率バー -->
+            <div style="margin-top: 10px;">
+                <div style="background: #e9ecef; height: 10px; border-radius: 5px; overflow: hidden;">
+                    <div style="width: {{ ((weekly_words_learned / (weekly_target or 50) * 100) if (weekly_target or 50) > 0 else 0)|int }}%; 
+                               background: #28a745; height: 100%; transition: width 0.5s;"></div>
+                </div>
+                <div style="text-align: center; margin-top: 5px; color: #666;">
+                    達成率: {{ ((weekly_words_learned / (weekly_target or 50) * 100) if (weekly_target or 50) > 0 else 0)|round(1) }}%
+                </div>
+            </div>
+        </div>
         
         <div style="margin-top: 1rem;">
             <a href="{{ url_for('basebuilder_module.my_texts') }}" 
@@ -542,4 +578,31 @@
     </div>
 </div>
 {% endif %}
+
+<!-- ページロード時のアニメーション -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 基礎力トレーニングカードを一時的にハイライト
+    const trainingCards = document.querySelectorAll('.dashboard-card');
+    trainingCards.forEach(card => {
+        if (card.innerHTML.includes('基礎学力トレーニング')) {
+            card.style.transition = 'all 0.5s ease';
+            card.style.boxShadow = '0 0 20px rgba(0, 86, 179, 0.3)';
+            setTimeout(() => {
+                card.style.boxShadow = '';
+            }, 1000);
+        }
+    });
+    
+    // プログレスバーのアニメーション
+    const progressBars = document.querySelectorAll('[style*="width:"]');
+    progressBars.forEach(bar => {
+        const width = bar.style.width;
+        bar.style.width = '0%';
+        setTimeout(() => {
+            bar.style.width = width;
+        }, 100);
+    });
+});
+</script>
 {% endblock %}

@@ -70,7 +70,11 @@ def student_required(f):
 @login_required
 @student_required
 def dashboard():
-    """生徒ダッシュボード - リファクタリング版"""
+    """生徒ダッシュボード - リアルタイム更新版"""
+    
+    # データベースキャッシュをクリア（重要）
+    db.session.expire_all()
+    db.session.commit()  # 未コミットのトランザクションをクリア
     
     # コンテキスト辞書を初期化
     context = {
@@ -115,7 +119,8 @@ def dashboard():
         'weekly_training_count': 0,
         'training_completion_rate': 0,
         'recent_training': None,
-        'delivered_texts': []
+        'delivered_texts': [],
+        'last_updated': datetime.now().strftime('%H:%M:%S')  # 更新時刻を追加
     }
     
     try:
@@ -447,38 +452,45 @@ def dashboard():
                 completion_rate = min(100, int((context['weekly_training_count'] / weekly_target) * 100)) if weekly_target > 0 else 0
                 context['training_completion_rate'] = completion_rate
             
-            # 配信されたテキスト情報を取得
-            if 'text_delivery' in table_names and 'text_set' in table_names and 'text_proficiency_record' in table_names:
-                # 学生が所属するクラスのIDリストを取得
-                enrolled_class_ids = []
-                if all_enrollments:
-                    enrolled_class_ids = [e.class_obj.id for e in all_enrollments if e.class_obj]
+            # 配信されたテキスト情報を取得（キャッシュを使わない）
+            if 'text_delivery' in table_names and 'text_set' in table_names:
+                # 所属クラスを再取得（キャッシュを避ける）
+                all_enrollments = db.session.query(ClassEnrollment).filter_by(
+                    student_id=current_user.id,
+                    is_active=True
+                ).options(db.lazyload('*')).all()  # リレーションを遅延読み込み
+                
+                enrolled_class_ids = [e.class_id for e in all_enrollments]
                 
                 if enrolled_class_ids:
-                    # 配信されたテキストと理解度を取得
+                    # 配信テキストを最新順で取得（FORCE INDEXヒント相当）
                     delivered_texts_query = text("""
-                        SELECT 
+                        SELECT DISTINCT
                             td.id as delivery_id,
                             ts.title as text_name,
                             ts.id as text_set_id,
                             td.delivered_at,
-                            tpr.understanding_level,
-                            tpr.completed_at
+                            COALESCE(tpr.understanding_level, 0) as understanding_level,
+                            tpr.completed_at,
+                            td.updated_at
                         FROM text_delivery td
-                        JOIN text_set ts ON td.text_set_id = ts.id
+                        INNER JOIN text_set ts ON td.text_set_id = ts.id
                         LEFT JOIN text_proficiency_record tpr ON (
-                            tpr.text_set_id = ts.id AND 
+                            tpr.text_set_id = ts.id AND
                             tpr.user_id = :user_id
                         )
                         WHERE td.class_id IN :class_ids
-                        ORDER BY td.delivered_at DESC
-                        LIMIT 3
+                        AND td.is_active = 1
+                        ORDER BY td.delivered_at DESC, td.updated_at DESC
+                        LIMIT 5
                     """)
                     
-                    texts_result = db.session.execute(
-                        delivered_texts_query,
-                        {"user_id": current_user.id, "class_ids": tuple(enrolled_class_ids)}
-                    ).fetchall()
+                    # 新しいセッションで実行（キャッシュ回避）
+                    with db.session.no_autoflush:
+                        texts_result = db.session.execute(
+                            delivered_texts_query,
+                            {"user_id": current_user.id, "class_ids": tuple(enrolled_class_ids)}
+                        ).fetchall()
                     
                     delivered_texts = []
                     for row in texts_result:
@@ -486,12 +498,37 @@ def dashboard():
                             'text_name': row.text_name,
                             'text_set_id': row.text_set_id,
                             'delivered_at': row.delivered_at,
-                            'understanding_level': row.understanding_level or 0,
+                            'understanding_level': int(row.understanding_level) if row.understanding_level else 0,
                             'completed_at': row.completed_at,
-                            'is_completed': row.completed_at is not None
+                            'is_completed': row.completed_at is not None,
+                            'updated_at': row.updated_at  # 更新時刻を追加
                         })
                     
                     context['delivered_texts'] = delivered_texts
+                    
+                    # デバッグログ
+                    current_app.logger.info(f"Delivered texts count: {len(delivered_texts)}")
+                    
+                # 週間学習語数も最新で取得
+                if 'word_proficiency' in table_names:
+                    one_week_ago = datetime.now() - timedelta(days=7)
+                    
+                    # 強制的に最新データを取得
+                    weekly_query = text("""
+                        SELECT COUNT(DISTINCT word_id) as count
+                        FROM word_proficiency
+                        WHERE user_id = :user_id
+                        AND proficiency_level = 5
+                        AND last_reviewed >= :week_ago
+                        AND last_reviewed <= NOW()
+                    """)
+                    
+                    result = db.session.execute(
+                        weekly_query,
+                        {"user_id": current_user.id, "week_ago": one_week_ago}
+                    ).scalar()
+                    
+                    context['weekly_words_learned'] = result or 0
                 
         except Exception as e:
             current_app.logger.debug(f"Could not fetch BaseBuilder info: {str(e)}")
