@@ -187,6 +187,8 @@ def dashboard():
         try:
             # 現在のクラスメイトのIDリストを取得
             classmate_ids = []
+            current_app.logger.info(f"Enrollment status: {enrollment is not None}")
+            
             if enrollment:
                 classmates = User.query.join(ClassEnrollment).filter(
                     ClassEnrollment.class_id == enrollment.class_id,
@@ -194,6 +196,9 @@ def dashboard():
                     User.role == 'student'
                 ).all()
                 classmate_ids = [u.id for u in classmates]
+                current_app.logger.info(f"Found {len(classmate_ids)} classmates in class {enrollment.class_id}")
+            else:
+                current_app.logger.warning("No enrollment found for current user")
             
             if classmate_ids:
                 table_names = inspector.get_table_names()
@@ -296,42 +301,34 @@ def dashboard():
                     current_app.logger.info("No word proficiency tables found, showing classmates only")
                     class_rankings_result = [(u.id, u.username, u.full_name, 0) for u in classmates[:10]]
                     weekly_rankings_result = [(u.id, u.username, u.full_name, 0) for u in classmates[:10]]
-                
-                # 結果をcontextに設定
-                if 'class_rankings_result' in locals():
-                    class_top_learners = [
-                        {
-                            'id': r.id if hasattr(r, 'id') else r[0],
-                            'username': r.username if hasattr(r, 'username') else r[1],
-                            'full_name': r.full_name if hasattr(r, 'full_name') else r[2],
-                            'word_count': r.word_count if hasattr(r, 'word_count') else r[3]
-                        } for r in class_rankings_result
-                    ]
-                    context['class_top_learners'] = class_top_learners
-                
-                if 'weekly_rankings_result' in locals():
-                    weekly_top_learners = [
-                        {
-                            'id': r.id if hasattr(r, 'id') else r[0],
-                            'username': r.username if hasattr(r, 'username') else r[1],
-                            'full_name': r.full_name if hasattr(r, 'full_name') else r[2],
-                            'word_count': r.word_count if hasattr(r, 'word_count') else r[3]
-                        } for r in weekly_rankings_result
-                    ]
-                    context['weekly_top_learners'] = weekly_top_learners
-                    
-                    # 自分の週間学習数
-                    my_weekly_result = db.session.execute(
-                        text("""
-                            SELECT COUNT(DISTINCT word_id) as count
-                            FROM word_proficiency
-                            WHERE user_id = :user_id
-                            AND last_reviewed >= :one_week_ago
-                        """),
-                        {"user_id": current_user.id, "one_week_ago": one_week_ago}
-                    ).first()
-                    
-                    context['weekly_words_learned'] = my_weekly_result.count if my_weekly_result else 0
+            else:
+                # クラスメイトがいない場合は自分だけを表示
+                current_app.logger.info("No classmates found, showing current user only")
+                class_rankings_result = [(current_user.id, current_user.username, current_user.full_name or current_user.username, 0)]
+                weekly_rankings_result = [(current_user.id, current_user.username, current_user.full_name or current_user.username, 0)]
+            
+            # 結果をcontextに設定（classmate_idsの有無に関わらず）
+            if 'class_rankings_result' in locals():
+                class_top_learners = [
+                    {
+                        'id': r.id if hasattr(r, 'id') else r[0],
+                        'username': r.username if hasattr(r, 'username') else r[1],
+                        'full_name': r.full_name if hasattr(r, 'full_name') else r[2],
+                        'word_count': r.word_count if hasattr(r, 'word_count') else r[3]
+                    } for r in class_rankings_result
+                ]
+                context['class_top_learners'] = class_top_learners
+            
+            if 'weekly_rankings_result' in locals():
+                weekly_top_learners = [
+                    {
+                        'id': r.id if hasattr(r, 'id') else r[0],
+                        'username': r.username if hasattr(r, 'username') else r[1],
+                        'full_name': r.full_name if hasattr(r, 'full_name') else r[2],
+                        'word_count': r.word_count if hasattr(r, 'word_count') else r[3]
+                    } for r in weekly_rankings_result
+                ]
+                context['weekly_top_learners'] = weekly_top_learners
                     
         except Exception as e:
             current_app.logger.warning(f"Could not fetch rankings: {str(e)}")
