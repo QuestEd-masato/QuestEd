@@ -333,8 +333,8 @@ def dashboard():
                     
                     context['weekly_words_learned'] = my_weekly_result.count if my_weekly_result else 0
                     
-            except Exception as e:
-                current_app.logger.warning(f"Could not fetch rankings: {str(e)}")
+        except Exception as e:
+            current_app.logger.warning(f"Could not fetch rankings: {str(e)}")
         
         # ToDoカウントと最新ToDo
         try:
