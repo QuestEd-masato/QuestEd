@@ -208,9 +208,9 @@ def dashboard():
                             u.id,
                             u.username,
                             u.full_name,
-                            COUNT(DISTINCT CASE WHEN (wpr.proficiency_level >= 5 OR wpr.accuracy_rate >= 100) THEN wpr.word_id END) as word_count
+                            COUNT(DISTINCT CASE WHEN wpr.level >= 5 THEN wpr.problem_id END) as word_count
                         FROM users u
-                        LEFT JOIN word_proficiency_records wpr ON u.id = wpr.user_id
+                        LEFT JOIN word_proficiency_records wpr ON u.id = wpr.student_id
                         WHERE u.id IN :user_ids
                         GROUP BY u.id, u.username, u.full_name
                         ORDER BY word_count DESC, u.username ASC
@@ -229,11 +229,11 @@ def dashboard():
                             u.id,
                             u.username,
                             u.full_name,
-                            COUNT(DISTINCT wpr.word_id) as word_count
+                            COUNT(DISTINCT wpr.problem_id) as word_count
                         FROM users u
-                        LEFT JOIN word_proficiency_records wpr ON u.id = wpr.user_id
+                        LEFT JOIN word_proficiency_records wpr ON u.id = wpr.student_id
                         WHERE u.id IN :user_ids
-                        AND (wpr.proficiency_level >= 5 OR wpr.accuracy_rate >= 100)
+                        AND wpr.level >= 5
                         AND wpr.updated_at >= :one_week_ago
                         GROUP BY u.id, u.username, u.full_name
                         ORDER BY word_count DESC, u.username ASC
@@ -580,12 +580,12 @@ def dashboard():
             if 'word_proficiency_records' in table_names:
                 current_app.logger.info("Using word_proficiency_records table")
                 
-                # 総マスター単語数（レベル5または正解率100%）
+                # 総マスター単語数（レベル5）
                 total_mastered_query = text("""
-                    SELECT COUNT(DISTINCT word_id) as count
+                    SELECT COUNT(DISTINCT problem_id) as count
                     FROM word_proficiency_records
-                    WHERE user_id = :user_id
-                    AND (proficiency_level >= 5 OR accuracy_rate >= 100)
+                    WHERE student_id = :user_id
+                    AND level >= 5
                 """)
                 
                 result = db.session.execute(
@@ -598,10 +598,10 @@ def dashboard():
                 # 今週マスターした単語数
                 one_week_ago = datetime.now() - timedelta(days=7)
                 weekly_mastered_query = text("""
-                    SELECT COUNT(DISTINCT word_id) as count
+                    SELECT COUNT(DISTINCT problem_id) as count
                     FROM word_proficiency_records
-                    WHERE user_id = :user_id
-                    AND (proficiency_level >= 5 OR accuracy_rate >= 100)
+                    WHERE student_id = :user_id
+                    AND level >= 5
                     AND updated_at >= :week_ago
                 """)
                 
@@ -614,9 +614,9 @@ def dashboard():
                 
                 # 全単語数
                 total_words_query = text("""
-                    SELECT COUNT(DISTINCT word_id) as count
+                    SELECT COUNT(DISTINCT problem_id) as count
                     FROM word_proficiency_records
-                    WHERE user_id = :user_id
+                    WHERE student_id = :user_id
                 """)
                 
                 result = db.session.execute(
