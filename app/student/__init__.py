@@ -509,29 +509,70 @@ def dashboard():
                     # デバッグログ
                     current_app.logger.info(f"Delivered texts count: {len(delivered_texts)}")
                     
-                # 週間学習語数も最新で取得
-                if 'word_proficiency' in table_names:
-                    one_week_ago = datetime.now() - timedelta(days=7)
+            # 定着度5の単語数を取得（全期間）
+            if 'word_proficiency' in table_names:
+                # 総マスター単語数（定着度5）
+                total_mastered_query = text("""
+                    SELECT COUNT(DISTINCT word_id) as count
+                    FROM word_proficiency
+                    WHERE user_id = :user_id
+                    AND proficiency_level = 5
+                """)
+                
+                total_result = db.session.execute(
+                    total_mastered_query,
+                    {"user_id": current_user.id}
+                ).scalar()
+                
+                context['total_mastered_words'] = total_result or 0
+                
+                # 今週マスターした単語数
+                one_week_ago = datetime.now() - timedelta(days=7)
+                weekly_mastered_query = text("""
+                    SELECT COUNT(DISTINCT word_id) as count
+                    FROM word_proficiency
+                    WHERE user_id = :user_id
+                    AND proficiency_level = 5
+                    AND last_reviewed >= :week_ago
+                """)
+                
+                weekly_result = db.session.execute(
+                    weekly_mastered_query,
+                    {"user_id": current_user.id, "week_ago": one_week_ago}
+                ).scalar()
+                
+                context['weekly_words_learned'] = weekly_result or 0
+                
+                # 全体の単語数を取得（定着度に関わらず）
+                total_words_query = text("""
+                    SELECT COUNT(DISTINCT word_id) as count
+                    FROM word_proficiency
+                    WHERE user_id = :user_id
+                """)
+                
+                total_words_result = db.session.execute(
+                    total_words_query,
+                    {"user_id": current_user.id}
+                ).scalar()
+                
+                context['total_words_attempted'] = total_words_result or 0
+                
+                # 達成率を計算（定着度5の単語数 / 全単語数）
+                if context['total_words_attempted'] > 0:
+                    context['mastery_rate'] = round((context['total_mastered_words'] / context['total_words_attempted']) * 100, 1)
+                else:
+                    context['mastery_rate'] = 0
                     
-                    # 強制的に最新データを取得
-                    weekly_query = text("""
-                        SELECT COUNT(DISTINCT word_id) as count
-                        FROM word_proficiency
-                        WHERE user_id = :user_id
-                        AND proficiency_level = 5
-                        AND last_reviewed >= :week_ago
-                        AND last_reviewed <= NOW()
-                    """)
-                    
-                    result = db.session.execute(
-                        weekly_query,
-                        {"user_id": current_user.id, "week_ago": one_week_ago}
-                    ).scalar()
-                    
-                    context['weekly_words_learned'] = result or 0
+                # デバッグログ
+                current_app.logger.info(f"Mastery stats - Total: {context['total_mastered_words']}, Weekly: {context['weekly_words_learned']}, Rate: {context['mastery_rate']}%")
                 
         except Exception as e:
-            current_app.logger.debug(f"Could not fetch BaseBuilder info: {str(e)}")
+            current_app.logger.error(f"BaseBuilder fetch error: {str(e)}")
+            # デフォルト値を設定
+            context['total_mastered_words'] = 0
+            context['weekly_words_learned'] = 0
+            context['total_words_attempted'] = 0
+            context['mastery_rate'] = 0
         
     except Exception as e:
         current_app.logger.error(f"Dashboard error: {str(e)}")

@@ -237,19 +237,70 @@
     </div>
     
     <!-- 基礎学力トレーニング -->
-    <div class="dashboard-card">
+    <div class="dashboard-card" id="basebuilder-card">
         <h3>🔥 基礎学力トレーニング</h3>
-        
-        <!-- 最終更新時刻を表示 -->
-        <div style="text-align: right; font-size: 0.8rem; color: #999; margin-bottom: 10px;">
-            最終更新: {{ last_updated }}
-        </div>
         
         <p>単語学習を通じて基礎力を向上させましょう。</p>
         
+        <!-- 定着度統計 -->
+        <div style="margin: 20px 0; padding: 20px; background: #e3f2fd; border-radius: 10px;">
+            <h4 style="margin: 0 0 15px 0; color: #1976d2;">学習統計</h4>
+            
+            <!-- メイン統計 -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                <div style="text-align: center; padding: 15px; background: white; border-radius: 8px;">
+                    <div style="font-size: 2.5rem; font-weight: bold; color: #0056b3;" id="total-mastered">
+                        {{ total_mastered_words|default(0) }}
+                    </div>
+                    <div style="color: #666; font-size: 0.9rem;">定着度5の単語数</div>
+                </div>
+                
+                <div style="text-align: center; padding: 15px; background: white; border-radius: 8px;">
+                    <div style="font-size: 2.5rem; font-weight: bold; color: #28a745;" id="weekly-mastered">
+                        {{ weekly_words_learned|default(0) }}
+                    </div>
+                    <div style="color: #666; font-size: 0.9rem;">今週の新規マスター</div>
+                </div>
+                
+                <div style="text-align: center; padding: 15px; background: white; border-radius: 8px;">
+                    <div style="font-size: 2.5rem; font-weight: bold; color: #ff9800;" id="mastery-rate">
+                        {{ mastery_rate|default(0) }}%
+                    </div>
+                    <div style="color: #666; font-size: 0.9rem;">達成率</div>
+                </div>
+            </div>
+            
+            <!-- 達成率プログレスバー -->
+            <div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span style="font-weight: 500;">全体の達成率</span>
+                    <span style="color: #666;">{{ total_mastered_words|default(0) }} / {{ total_words_attempted|default(0) }} 単語</span>
+                </div>
+                <div style="background: #e0e0e0; height: 20px; border-radius: 10px; overflow: hidden;">
+                    <div style="width: {{ mastery_rate|default(0) }}%; background: linear-gradient(90deg, #4caf50, #81c784); height: 100%; transition: width 1s ease-out; position: relative;" id="mastery-progress">
+                        <span style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: white; font-weight: 500; font-size: 0.9rem;">
+                            {% if mastery_rate|default(0) > 10 %}{{ mastery_rate|default(0) }}%{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 週間目標 -->
+            <div style="margin-top: 15px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span style="font-weight: 500;">週間目標達成率</span>
+                    <span style="color: #666;">{{ weekly_words_learned|default(0) }} / {{ weekly_target|default(50) }} 単語</span>
+                </div>
+                <div style="background: #e0e0e0; height: 12px; border-radius: 6px; overflow: hidden;">
+                    <div style="width: {{ ((weekly_words_learned|default(0) / (weekly_target|default(50)) * 100) if (weekly_target|default(50)) else 0)|round }}%; background: #2196f3; height: 100%; transition: width 1s ease-out;" id="weekly-progress"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 配信テキスト（既存） -->
         {% if delivered_texts %}
-            <h4 style="margin-top: 1rem;">配信されたテキスト:</h4>
-            {% for text in delivered_texts %}
+            <h4 style="margin-top: 1.5rem;">配信されたテキスト:</h4>
+            {% for text in delivered_texts[:3] %}
             <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 10px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
@@ -259,19 +310,12 @@
                         </div>
                     </div>
                     <div style="text-align: right;">
-                        <div style="font-size: 1.2rem; font-weight: bold; color: #0056b3;">
-                            理解度: {{ text.understanding_level }}%
-                        </div>
                         {% if text.is_completed %}
-                        <span style="color: #28a745; font-size: 0.9rem;">✓ 完了</span>
+                        <span style="color: #28a745;">✓ 完了</span>
                         {% else %}
-                        <span style="color: #dc3545; font-size: 0.9rem;">進行中</span>
+                        <span style="color: #dc3545;">進行中</span>
                         {% endif %}
                     </div>
-                </div>
-                <!-- プログレスバー -->
-                <div style="margin-top: 10px; background: #e9ecef; height: 8px; border-radius: 4px; overflow: hidden;">
-                    <div style="width: {{ text.understanding_level }}%; background: #0056b3; height: 100%; transition: width 0.3s;"></div>
                 </div>
             </div>
             {% endfor %}
@@ -281,39 +325,21 @@
             </p>
         {% endif %}
         
-        <!-- 学習統計 -->
-        <div style="margin-top: 20px; padding: 15px; background: #e3f2fd; border-radius: 8px;">
-            <h4 style="margin: 0 0 10px 0;">今週の学習統計</h4>
-            <div style="display: flex; justify-content: space-between;">
-                <div>
-                    <div style="font-size: 2rem; font-weight: bold; color: #0056b3;">{{ weekly_words_learned or 0 }}</div>
-                    <div style="color: #666;">マスター単語数</div>
-                </div>
-                <div style="text-align: right;">
-                    <div style="font-size: 2rem; font-weight: bold; color: #666;">{{ weekly_target or 50 }}</div>
-                    <div style="color: #666;">週間目標</div>
-                </div>
-            </div>
-            <!-- 達成率バー -->
-            <div style="margin-top: 10px;">
-                <div style="background: #e9ecef; height: 10px; border-radius: 5px; overflow: hidden;">
-                    <div style="width: {{ ((weekly_words_learned / (weekly_target or 50) * 100) if (weekly_target or 50) > 0 else 0)|int }}%; 
-                               background: #28a745; height: 100%; transition: width 0.5s;"></div>
-                </div>
-                <div style="text-align: center; margin-top: 5px; color: #666;">
-                    達成率: {{ ((weekly_words_learned / (weekly_target or 50) * 100) if (weekly_target or 50) > 0 else 0)|round(1) }}%
-                </div>
-            </div>
-        </div>
-        
-        <div style="margin-top: 1rem;">
+        <!-- アクションボタン（既存のまま維持） -->
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
             <a href="{{ url_for('basebuilder_module.my_texts') }}" 
-               style="{{ btn_primary_style }}">
-               テキスト一覧
+               style="flex: 1; display: inline-block; padding: 12px; text-align: center; 
+                      background-color: white; color: #0056b3; border: 2px solid #0056b3; 
+                      border-radius: 8px; text-decoration: none; font-weight: 500;
+                      transition: all 0.3s; pointer-events: auto !important; z-index: 1000; position: relative;">
+                📚 テキスト一覧
             </a>
             <a href="{{ url_for('basebuilder_module.index') }}" 
-               style="{{ btn_outline_style }}">
-               トレーニング
+               style="flex: 1; display: inline-block; padding: 12px; text-align: center; 
+                      background-color: #0056b3; color: white; border: 2px solid #0056b3; 
+                      border-radius: 8px; text-decoration: none; font-weight: 500;
+                      transition: all 0.3s; pointer-events: auto !important; z-index: 1000; position: relative;">
+                🎯 トレーニング
             </a>
         </div>
     </div>
@@ -582,27 +608,66 @@
 <!-- ページロード時のアニメーション -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // 基礎力トレーニングカードを一時的にハイライト
-    const trainingCards = document.querySelectorAll('.dashboard-card');
-    trainingCards.forEach(card => {
-        if (card.innerHTML.includes('基礎学力トレーニング')) {
-            card.style.transition = 'all 0.5s ease';
-            card.style.boxShadow = '0 0 20px rgba(0, 86, 179, 0.3)';
-            setTimeout(() => {
-                card.style.boxShadow = '';
-            }, 1000);
-        }
-    });
+    // 数値のカウントアップアニメーション
+    function animateValue(element, start, end, duration) {
+        if (!element) return;
+        
+        let startTimestamp = null;
+        const step = (timestamp) => {
+            if (!startTimestamp) startTimestamp = timestamp;
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+            const current = Math.floor(progress * (end - start) + start);
+            element.textContent = current;
+            if (progress < 1) {
+                window.requestAnimationFrame(step);
+            }
+        };
+        window.requestAnimationFrame(step);
+    }
+    
+    // 各統計値をアニメーション
+    const totalMasteredEl = document.getElementById('total-mastered');
+    const weeklyMasteredEl = document.getElementById('weekly-mastered');
+    const masteryRateEl = document.getElementById('mastery-rate');
+    
+    if (totalMasteredEl) {
+        animateValue(totalMasteredEl, 0, {{ total_mastered_words|default(0) }}, 1000);
+    }
+    if (weeklyMasteredEl) {
+        animateValue(weeklyMasteredEl, 0, {{ weekly_words_learned|default(0) }}, 1000);
+    }
+    if (masteryRateEl) {
+        const targetRate = {{ mastery_rate|default(0) }};
+        let currentRate = 0;
+        const rateInterval = setInterval(() => {
+            currentRate += 1;
+            if (currentRate >= targetRate) {
+                currentRate = targetRate;
+                clearInterval(rateInterval);
+            }
+            masteryRateEl.textContent = currentRate + '%';
+        }, 20);
+    }
     
     // プログレスバーのアニメーション
-    const progressBars = document.querySelectorAll('[style*="width:"]');
-    progressBars.forEach(bar => {
-        const width = bar.style.width;
-        bar.style.width = '0%';
+    const masteryProgress = document.getElementById('mastery-progress');
+    const weeklyProgress = document.getElementById('weekly-progress');
+    
+    if (masteryProgress) {
+        const originalWidth = masteryProgress.style.width;
+        masteryProgress.style.width = '0%';
         setTimeout(() => {
-            bar.style.width = width;
-        }, 100);
-    });
+            masteryProgress.style.width = originalWidth;
+        }, 500);
+    }
+    
+    if (weeklyProgress) {
+        const originalWidth = weeklyProgress.style.width;
+        weeklyProgress.style.width = '0%';
+        setTimeout(() => {
+            weeklyProgress.style.width = originalWidth;
+        }, 700);
+    }
 });
 </script>
 {% endblock %}
