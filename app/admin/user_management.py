@@ -65,6 +65,10 @@ def import_users():
                 stream = io.StringIO(csv_content)
                 csv_reader = csv.DictReader(stream)
                 
+                # ヘッダー情報をログに出力
+                current_app.logger.info(f"CSV fieldnames: {csv_reader.fieldnames}")
+                flash(f"CSVヘッダー: {csv_reader.fieldnames}", 'info')  # デバッグ用
+                
                 # 成功と失敗のカウンター
                 success_count = 0
                 error_count = 0
@@ -73,13 +77,25 @@ def import_users():
                 # CSVの各行を処理
                 for row_num, row in enumerate(csv_reader, start=2):  # ヘッダーを飛ばして2行目から
                     try:
-                        # CSVのカラムを正しく取得
-                        username = row.get('username', '').strip()
-                        full_name = row.get('full_name', '').strip()
-                        email = row.get('email', '').strip()
-                        password = row.get('password', '').strip()
-                        role = row.get('role', '').strip()
-                        school_id = row.get('school_id', '').strip()
+                        # デバッグ: 元のrow内容を出力
+                        current_app.logger.debug(f"Row {row_num} original: {row}")
+                        
+                        # カラム名の正規化（空白除去、小文字化）
+                        normalized_row = {}
+                        for key, value in row.items():
+                            if key:  # Noneキーを除外
+                                normalized_key = key.strip().lower().replace(' ', '_')
+                                normalized_row[normalized_key] = value.strip() if value else ''
+                        
+                        current_app.logger.debug(f"Row {row_num} normalized: {normalized_row}")
+                        
+                        # 正規化されたキーで取得
+                        username = str(normalized_row.get('username', '')).strip()
+                        full_name = normalized_row.get('full_name', '').strip()
+                        email = normalized_row.get('email', '').strip()
+                        password = normalized_row.get('password', '').strip()
+                        role = normalized_row.get('role', 'student').strip()
+                        school_id = normalized_row.get('school_id', '').strip()
                         
                         # 必須項目の確認
                         if not username or not email or not role:

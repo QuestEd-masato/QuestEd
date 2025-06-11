@@ -2,6 +2,10 @@
 let autoRefreshInterval = null;
 let isLoading = false;
 let lastMessageCount = 0;
+let messageCount = 0;
+let hasReloaded = false;
+let reloadCount = 0;
+const MAX_RELOADS = 2;
 
 document.addEventListener('DOMContentLoaded', function() {
     // チャットコンテナの参照を取得
@@ -137,6 +141,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // AIの応答を表示
             if (data.response) {
                 addMessage(data.response, false);
+                handleMessageSent(); // メッセージ送信後の処理
             } else if (data.error) {
                 addMessage('エラーが発生しました: ' + data.error, false, true);
             }
@@ -223,13 +228,15 @@ document.addEventListener('DOMContentLoaded', function() {
         return `${year}-${month}-${day} ${hours}:${minutes}`;
     }
     
-    // 自動更新機能
+    // 自動更新機能（無効化）
     function startAutoRefresh() {
-        autoRefreshInterval = setInterval(() => {
-            if (!isLoading) {
-                loadMessages();
-            }
-        }, 3000); // 3秒ごとに更新
+        // 自動更新を無効化
+        return;
+        // autoRefreshInterval = setInterval(() => {
+        //     if (!isLoading) {
+        //         loadMessages();
+        //     }
+        // }, 3000); // 3秒ごとに更新
     }
 
     // ローディング表示
@@ -309,4 +316,45 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 初期メッセージ数を設定
     lastMessageCount = chatContainer.children.length;
+    
+    // ページロード時に最下部へスクロール
+    scrollToBottom();
 });
+
+// 新しいメッセージ送信後の処理
+function handleMessageSent() {
+    messageCount++;
+    
+    // 2回までリロード
+    if (reloadCount < MAX_RELOADS) {
+        reloadCount++;
+        setTimeout(() => {
+            // 最下部にスクロールしてからリロード
+            scrollToBottom();
+            location.reload();
+        }, 3000); // 3秒後にリロード
+    }
+}
+
+// 最下部へのスクロール関数
+function scrollToBottom() {
+    const chatContainer = document.getElementById('chat-messages') || 
+                         document.querySelector('.chat-container');
+    if (chatContainer) {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+        
+        // 最新メッセージを表示
+        const messages = chatContainer.querySelectorAll('.message');
+        if (messages.length > 0) {
+            messages[messages.length - 1].scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'end' 
+            });
+        }
+    }
+}
+
+// 既存の自動更新を無効化
+if (typeof autoRefreshInterval !== 'undefined') {
+    clearInterval(autoRefreshInterval);
+}

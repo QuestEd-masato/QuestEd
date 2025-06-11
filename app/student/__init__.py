@@ -192,18 +192,18 @@ def dashboard():
                     classmate_ids = [u.id for u in classmates]
                 
                 if classmate_ids:
-                    # クラス全体のランキング（最適化されたクエリ）
+                    # 総合ランキング（proficiency_level = 5の単語数）
                     ranking_query = text("""
                         SELECT 
                             u.id,
                             u.username,
                             u.full_name,
-                            COUNT(DISTINCT wp.word_id) as word_count
+                            COUNT(DISTINCT CASE WHEN wp.proficiency_level = 5 THEN wp.word_id END) as word_count
                         FROM users u
                         LEFT JOIN word_proficiency wp ON u.id = wp.user_id
                         WHERE u.id IN :user_ids
                         GROUP BY u.id, u.username, u.full_name
-                        ORDER BY word_count DESC, u.full_name ASC
+                        ORDER BY word_count DESC, u.username ASC
                         LIMIT 10
                     """)
                     
@@ -222,7 +222,7 @@ def dashboard():
                     ]
                     context['class_top_learners'] = class_top_learners
                     
-                    # 週間ランキング
+                    # 週間ランキング（今週5/5になった単語数）
                     one_week_ago = datetime.now() - timedelta(days=7)
                     weekly_query = text("""
                         SELECT 
@@ -233,9 +233,10 @@ def dashboard():
                         FROM users u
                         LEFT JOIN word_proficiency wp ON u.id = wp.user_id
                         WHERE u.id IN :user_ids
+                        AND wp.proficiency_level = 5
                         AND wp.last_reviewed >= :one_week_ago
                         GROUP BY u.id, u.username, u.full_name
-                        ORDER BY word_count DESC
+                        ORDER BY word_count DESC, u.username ASC
                         LIMIT 10
                     """)
                     
