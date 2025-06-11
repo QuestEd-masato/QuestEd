@@ -239,7 +239,7 @@ def dashboard():
                         LEFT JOIN word_proficiency_records wpr ON u.id = wpr.student_id
                         WHERE u.id IN :user_ids
                         AND wpr.level >= 5
-                        AND wpr.updated_at >= :one_week_ago
+                        AND wpr.last_updated >= :one_week_ago
                         GROUP BY u.id, u.username, u.full_name
                         ORDER BY word_count DESC, u.username ASC
                         LIMIT 10
@@ -365,7 +365,7 @@ def dashboard():
                 is_completed=False
             ).order_by(
                 Goal.due_date.asc().nullslast(),
-                Goal.updated_at.desc()
+                Goal.last_updated.desc()
             ).first()
             
         except Exception as e:
@@ -441,7 +441,7 @@ def dashboard():
                         is_completed=False
                     ).order_by(
                         Goal.due_date.asc().nullslast(),
-                        Goal.updated_at.desc()
+                        Goal.last_updated.desc()
                     ).first()
                     
                     if latest_goal:
@@ -529,7 +529,7 @@ def dashboard():
                             td.delivered_at,
                             COALESCE(tpr.understanding_level, 0) as understanding_level,
                             tpr.completed_at,
-                            td.updated_at
+                            td.last_updated
                         FROM text_delivery td
                         INNER JOIN text_set ts ON td.text_set_id = ts.id
                         LEFT JOIN text_proficiency_record tpr ON (
@@ -538,7 +538,7 @@ def dashboard():
                         )
                         WHERE td.class_id IN :class_ids
                         AND td.is_active = 1
-                        ORDER BY td.delivered_at DESC, td.updated_at DESC
+                        ORDER BY td.delivered_at DESC, td.last_updated DESC
                         LIMIT 5
                     """)
                     
@@ -558,7 +558,7 @@ def dashboard():
                             'understanding_level': int(row.understanding_level) if row.understanding_level else 0,
                             'completed_at': row.completed_at,
                             'is_completed': row.completed_at is not None,
-                            'updated_at': row.updated_at  # 更新時刻を追加
+                            'last_updated': row.last_updated  # 更新時刻を追加
                         })
                     
                     context['delivered_texts'] = delivered_texts
@@ -599,7 +599,7 @@ def dashboard():
                     FROM word_proficiency_records
                     WHERE student_id = :user_id
                     AND level >= 5
-                    AND updated_at >= :week_ago
+                    AND last_updated >= :week_ago
                 """)
                 
                 result = db.session.execute(
@@ -1393,7 +1393,7 @@ def toggle_todo(todo_id):
     
     # 完了状態を切り替え
     todo.is_completed = not todo.is_completed
-    todo.updated_at = datetime.utcnow()
+    todo.last_updated = datetime.utcnow()
     db.session.commit()
     
     status = "完了" if todo.is_completed else "未完了"
@@ -1539,7 +1539,7 @@ def update_goal_progress(goal_id):
     if goal.progress >= 100:
         goal.is_completed = True
     
-    goal.updated_at = datetime.utcnow()
+    goal.last_updated = datetime.utcnow()
     db.session.commit()
     
     flash(f'目標の進捗を{goal.progress}%に更新しました。')
@@ -2012,14 +2012,14 @@ def generate_theme_ai():
         if interest_survey and hasattr(interest_survey, '__dict__'):
             # SQLAlchemyモデルの属性を辞書に変換
             for column in interest_survey.__table__.columns:
-                if column.name not in ['id', 'student_id', 'created_at', 'updated_at']:
+                if column.name not in ['id', 'student_id', 'created_at', 'last_updated']:
                     interest_data[column.name] = getattr(interest_survey, column.name)
 
         personality_data = {}
         personality_survey = surveys.get('personality_survey')
         if personality_survey and hasattr(personality_survey, '__dict__'):
             for column in personality_survey.__table__.columns:
-                if column.name not in ['id', 'student_id', 'created_at', 'updated_at']:
+                if column.name not in ['id', 'student_id', 'created_at', 'last_updated']:
                     personality_data[column.name] = getattr(personality_survey, column.name)
 
         # 既存のgenerate_personal_themes_with_ai関数を使用
