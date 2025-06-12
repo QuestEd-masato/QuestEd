@@ -15,4 +15,4 @@ build/
 static/uploads/
 *.db
 .idea/
-.vscode/
+.vscode/ACCESS_CONTROL_VULNERABILITIES.md
