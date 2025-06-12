@@ -171,11 +171,12 @@ document.addEventListener('DOMContentLoaded', function() {
             contentDiv.style.color = '#721c24';
         }
         
-        // 改行を保持
-        contentDiv.innerHTML = content.replace(/\n/g, '<br>');
+        // 改行を保持（安全にテキスト設定）
+        contentDiv.textContent = content;
+        contentDiv.innerHTML = contentDiv.innerHTML.replace(/\n/g, '<br>');
         
         const timeDiv = document.createElement('div');
-        timeDiv.innerHTML = `<small class="text-muted">${getCurrentTime()}</small>`;
+        timeDiv.innerHTML = '<small class="text-muted">' + getCurrentTime() + '</small>';
         
         messageDiv.appendChild(contentDiv);
         messageDiv.appendChild(timeDiv);
@@ -197,7 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const contentDiv = document.createElement('div');
         contentDiv.className = 'message-content';
-        contentDiv.innerHTML = '処理中...';
+        contentDiv.textContent = '処理中...';
         
         loadingDiv.appendChild(contentDiv);
         chatContainer.appendChild(loadingDiv);

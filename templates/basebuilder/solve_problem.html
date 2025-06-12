@@ -48,7 +48,7 @@
         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 20px; width: 100%;">
           {% if all_choices %}
             {% for choice in all_choices %}
-              <div class="choice-item" onclick="selectChoice(this, '{{ choice }}')" data-value="{{ choice }}" 
+              <div class="choice-item" onclick="selectChoice(this, {{ choice|tojson }})" data-value="{{ choice }}" 
                    style="background-color: #ffffff; border: 2px solid #e9ecef; border-radius: 12px; 
                           padding: 18px 15px; cursor: pointer; position: relative; display: flex; 
                           align-items: center; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
@@ -76,7 +76,7 @@
             {% endfor %}
           {% else %}
             <!-- 選択肢が提供されていない場合のフォールバック -->
-            <div class="choice-item" onclick="selectChoice(this, '{{ problem.title }}')" data-value="{{ problem.title }}" 
+            <div class="choice-item" onclick="selectChoice(this, {{ problem.title|tojson }})" data-value="{{ problem.title }}" 
                  style="background-color: #e7f5ff; border: 2px solid #4dabf7; border-radius: 12px; 
                         padding: 18px 15px; cursor: pointer; position: relative; display: flex; 
                         align-items: center; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);">
@@ -95,7 +95,7 @@
             </div>
           
             {% for choice in dummy_choices %}
-              <div class="choice-item" onclick="selectChoice(this, '{{ choice }}')" data-value="{{ choice }}" 
+              <div class="choice-item" onclick="selectChoice(this, {{ choice|tojson }})" data-value="{{ choice }}" 
                    style="background-color: #ffffff; border: 2px solid #e9ecef; border-radius: 12px; 
                           padding: 18px 15px; cursor: pointer; position: relative; display: flex; 
                           align-items: center; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);">

@@ -44,7 +44,7 @@
                                 </a>
                                 <a href="{{ url_for('teacher.delete_class', class_id=class.id) }}" 
                                    class="btn btn-outline-danger" 
-                                   onclick="return confirm('このクラス「{{ class.name }}」を削除してもよろしいですか？この操作は元に戻せません。');">
+                                   onclick="return confirm('このクラス' + {{ class.name|tojson }} + 'を削除してもよろしいですか？この操作は元に戻せません。');">
                                     <i class="fas fa-trash"></i>
                                 </a>
                             </div>

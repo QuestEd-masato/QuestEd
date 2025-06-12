@@ -56,7 +56,7 @@ class Config:
     CELERY_BEAT_SCHEDULE = {
         'daily-reports': {
             'task': 'app.tasks.daily_report.generate_daily_reports',
-            'schedule': crontab(hour=18, minute=0),  # 毎日18:00に実行
+            'schedule': crontab(hour=17, minute=0),  # 毎日17:00に実行（日本時間）
             'options': {'queue': 'default'}
         },
     }
