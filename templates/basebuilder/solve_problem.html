@@ -48,37 +48,39 @@
         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 20px; width: 100%;">
           {% if all_choices %}
             {% for choice in all_choices %}
-              <div class="choice-item" onclick="selectChoice(this, {{ choice|tojson }})" data-value="{{ choice }}" 
+              <div class="choice-item" data-value="{{ choice }}" 
                    style="background-color: #ffffff; border: 2px solid #e9ecef; border-radius: 12px; 
                           padding: 18px 15px; cursor: pointer; position: relative; display: flex; 
-                          align-items: center; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);">
+                          align-items: center; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                          transition: all 0.2s ease-in-out;">
                 <input type="radio" name="answer" value="{{ choice }}" 
-                       style="position: absolute; opacity: 0;">
-                <label style="cursor: pointer; display: block; width: 100%; margin: 0; padding-right: 30px; 
-                             font-weight: 500; color: #495057;">
+                       style="position: absolute; opacity: 0; pointer-events: none;">
+                <div class="choice-text" style="cursor: pointer; display: block; width: 100%; margin: 0; padding-right: 30px; 
+                             font-weight: 500; color: #495057; pointer-events: none;">
                   {{ choice }}
-                </label>
+                </div>
                 <span class="choice-number" style="position: absolute; left: -5px; top: -5px; width: 25px; height: 25px; 
                             background-color: #e9ecef; 
                             border-radius: 50%; display: flex; align-items: center; justify-content: center; 
                             font-size: 0.8rem; font-weight: bold; 
-                            color: #495057;">
+                            color: #495057; pointer-events: none; z-index: 1;">
                   {{ loop.index }}
                 </span>
               </div>
             {% endfor %}
           {% else %}
             <!-- 選択肢が提供されていない場合のフォールバック -->
-            <div class="choice-item" onclick="selectChoice(this, {{ problem.title|tojson }})" data-value="{{ problem.title }}" 
+            <div class="choice-item" data-value="{{ problem.title }}" 
                  style="background-color: #ffffff; border: 2px solid #e9ecef; border-radius: 12px; 
                         padding: 18px 15px; cursor: pointer; position: relative; display: flex; 
-                        align-items: center; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);">
+                        align-items: center; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                        transition: all 0.2s ease-in-out;">
               <input type="radio" name="answer" value="{{ problem.title }}" 
-                     style="position: absolute; opacity: 0;">
-              <label style="cursor: pointer; display: block; width: 100%; margin: 0; 
-                           padding-right: 30px; font-weight: 500; color: #495057;">
+                     style="position: absolute; opacity: 0; pointer-events: none;">
+              <div class="choice-text" style="cursor: pointer; display: block; width: 100%; margin: 0; 
+                           padding-right: 30px; font-weight: 500; color: #495057; pointer-events: none;">
                 {{ problem.title }}
-              </label>
+              </div>
               <span class="choice-number" style="position: absolute; left: -5px; top: -5px; width: 25px; height: 25px; 
                           background-color: #e9ecef; border-radius: 50%; display: flex; 
                           align-items: center; justify-content: center; font-size: 0.8rem; 
@@ -86,16 +88,17 @@
             </div>
           
             {% for choice in dummy_choices %}
-              <div class="choice-item" onclick="selectChoice(this, {{ choice|tojson }})" data-value="{{ choice }}" 
+              <div class="choice-item" data-value="{{ choice }}" 
                    style="background-color: #ffffff; border: 2px solid #e9ecef; border-radius: 12px; 
                           padding: 18px 15px; cursor: pointer; position: relative; display: flex; 
-                          align-items: center; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);">
+                          align-items: center; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                          transition: all 0.2s ease-in-out;">
                 <input type="radio" name="answer" value="{{ choice }}" 
-                       style="position: absolute; opacity: 0;">
-                <label style="cursor: pointer; display: block; width: 100%; margin: 0; 
-                             padding-right: 30px; font-weight: 500; color: #495057;">
+                       style="position: absolute; opacity: 0; pointer-events: none;">
+                <div class="choice-text" style="cursor: pointer; display: block; width: 100%; margin: 0; 
+                             padding-right: 30px; font-weight: 500; color: #495057; pointer-events: none;">
                   {{ choice }}
-                </label>
+                </div>
                 <span class="choice-number" style="position: absolute; left: -5px; top: -5px; width: 25px; height: 25px; 
                             background-color: #e9ecef; border-radius: 50%; display: flex; 
                             align-items: center; justify-content: center; font-size: 0.8rem; 
@@ -211,10 +214,10 @@ function selectChoice(element, value) {
     item.style.backgroundColor = '#ffffff';
     item.style.borderColor = '#e9ecef';
     
-    var label = item.querySelector('label');
-    if (label) {
-      label.style.color = '#495057';
-      label.style.fontWeight = '500';
+    var choiceText = item.querySelector('.choice-text');
+    if (choiceText) {
+      choiceText.style.color = '#495057';
+      choiceText.style.fontWeight = '500';
     }
     
     var numSpan = item.querySelector('.choice-number');
@@ -242,10 +245,10 @@ function selectChoice(element, value) {
   element.style.backgroundColor = '#e7f5ff';
   element.style.borderColor = '#4dabf7';
   
-  var label = element.querySelector('label');
-  if (label) {
-    label.style.color = '#0d6efd';
-    label.style.fontWeight = '600';
+  var choiceText = element.querySelector('.choice-text');
+  if (choiceText) {
+    choiceText.style.color = '#0d6efd';
+    choiceText.style.fontWeight = '600';
   }
   
   var numSpan = element.querySelector('.choice-number');
@@ -305,6 +308,34 @@ if (answerForm) {
     return true;
   });
 }
+
+// 選択肢クリックイベントの設定
+document.addEventListener('DOMContentLoaded', function() {
+  var choiceItems = document.querySelectorAll('.choice-item');
+  choiceItems.forEach(function(item) {
+    item.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var value = this.getAttribute('data-value');
+      selectChoice(this, value);
+    });
+    
+    // マウスオーバー効果
+    item.addEventListener('mouseenter', function() {
+      if (this.style.backgroundColor !== 'rgb(231, 245, 255)') {
+        this.style.transform = 'translateY(-2px)';
+        this.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
+      }
+    });
+    
+    item.addEventListener('mouseleave', function() {
+      if (this.style.backgroundColor !== 'rgb(231, 245, 255)') {
+        this.style.transform = 'translateY(0)';
+        this.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.05)';
+      }
+    });
+  });
+});
 
 // キーボード操作のサポート (数字キー1-4)
 document.addEventListener('keydown', function(e) {
