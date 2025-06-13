@@ -1,0 +1,77 @@
+# Dockerfile.production - 本番環境用Dockerfile
+FROM python:3.9-slim
+
+# セキュリティ: 非rootユーザーで実行
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# システムパッケージ更新とセキュリティパッチ適用
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    default-libmysqlclient-dev \
+    build-essential \
+    curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get purge -y build-essential \
+    && apt-get autoremove -y
+
+# 作業ディレクトリ設定
+WORKDIR /app
+
+# 依存関係ファイルをコピー
+COPY requirements-secure.txt .
+
+# Pythonパッケージインストール
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements-secure.txt \
+    && pip install --no-cache-dir gunicorn[gevent] gevent
+
+# アプリケーションファイルをコピー
+COPY . .
+
+# ログディレクトリ作成
+RUN mkdir -p /var/log/quested \
+    && mkdir -p /app/uploads
+
+# 本番用設定ファイル作成
+RUN echo '#!/bin/bash\n\
+set -e\n\
+echo "Starting QuestEd Production..."\n\
+\n\
+# データベースマイグレーション\n\
+python -c "from app import create_app, db; app = create_app(); app.app_context().push(); db.create_all()"\n\
+\n\
+# Gunicornでアプリケーション起動\n\
+exec gunicorn --bind 0.0.0.0:8000 \\\n\
+    --workers ${WORKERS:-4} \\\n\
+    --worker-class gevent \\\n\
+    --worker-connections ${MAX_CONNECTIONS:-100} \\\n\
+    --timeout ${TIMEOUT:-60} \\\n\
+    --keep-alive 5 \\\n\
+    --max-requests 1000 \\\n\
+    --max-requests-jitter 100 \\\n\
+    --preload \\\n\
+    --access-logfile /var/log/quested/access.log \\\n\
+    --error-logfile /var/log/quested/error.log \\\n\
+    --log-level warning \\\n\
+    run:app' > /app/start.sh \
+    && chmod +x /app/start.sh
+
+# セキュリティ: ファイル権限設定
+RUN chown -R appuser:appuser /app \
+    && chown -R appuser:appuser /var/log/quested \
+    && chmod -R 755 /app \
+    && chmod -R 755 /var/log/quested
+
+# 非rootユーザーに切り替え
+USER appuser
+
+# ヘルスチェック
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# ポート公開
+EXPOSE 8000
+
+# アプリケーション起動
+CMD ["/app/start.sh"]

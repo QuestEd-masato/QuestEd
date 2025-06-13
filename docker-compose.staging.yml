@@ -1,0 +1,110 @@
+# docker-compose.staging.yml - ステージング環境用
+version: '3.8'
+
+services:
+  # Web アプリケーション（ステージング）
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - FLASK_ENV=staging
+      - DB_HOST=${STAGING_DB_HOST}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}_staging
+      - REDIS_URL=${STAGING_REDIS_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - OPENAI_API_KEY=${STAGING_OPENAI_API_KEY}
+      - SENTRY_DSN=${STAGING_SENTRY_DSN}
+    env_file:
+      - .env.staging
+    volumes:
+      - staging_uploads:/app/uploads
+      - staging_logs:/var/log/quested
+    networks:
+      - staging_network
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx（リバースプロキシ）
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/staging.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+      - staging_static:/var/www/static
+    depends_on:
+      - web
+    networks:
+      - staging_network
+
+  # Celery Worker（ステージング）
+  celery:
+    build: .
+    command: celery -A run.celery worker --loglevel=info --concurrency=2
+    environment:
+      - FLASK_ENV=staging
+      - DB_HOST=${STAGING_DB_HOST}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}_staging
+      - REDIS_URL=${STAGING_REDIS_URL}
+      - SECRET_KEY=${SECRET_KEY}
+    env_file:
+      - .env.staging
+    volumes:
+      - staging_logs:/var/log/quested
+    networks:
+      - staging_network
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 256M
+
+  # Monitoring（ステージング用）
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - staging_network
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - staging_network
+
+volumes:
+  staging_uploads:
+  staging_logs:
+  staging_static:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  staging_network:
+    driver: bridge

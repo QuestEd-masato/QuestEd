@@ -1,0 +1,80 @@
+# QuestEd セキュリティ強化版 依存関係
+# 最新の安定版でセキュリティパッチが適用されたバージョン
+
+# Core Framework
+Flask==3.0.0
+Werkzeug==3.0.1
+
+# Database
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.0.5
+PyMySQL==1.1.0
+mysql-connector-python==8.2.0
+
+# Authentication & Security
+Flask-Login==0.6.3
+Flask-WTF==1.2.1
+cryptography==41.0.8
+
+# Admin Interface
+Flask-Admin==1.6.1
+
+# Environment Management
+python-dotenv==1.0.0
+
+# HTTP Requests (Updated for security)
+requests==2.31.0
+urllib3==2.1.0
+
+# AI Integration (Updated)
+openai==1.3.7
+
+# Image Processing (Updated for security)
+Pillow==10.1.0
+
+# PDF Generation
+reportlab==4.0.7
+
+# HTML Sanitization (Security)
+bleach==6.1.0
+MarkupSafe==2.1.3
+
+# Rate Limiting
+Flask-Limiter==3.5.0
+
+# Production Server
+gunicorn==21.2.0
+
+# Task Queue (Optional - for background jobs)
+celery==5.3.4
+redis==5.0.1
+
+# Email
+email-validator==2.1.0
+
+# Security Headers
+flask-talisman==1.1.0
+
+# Logging and Monitoring
+structlog==23.2.0
+
+# Development and Testing Dependencies
+pytest==7.4.3
+pytest-flask==1.3.0
+pytest-cov==4.1.0
+factory-boy==3.3.0
+
+# Security Tools
+bandit==1.7.5
+safety==2.3.5
+
+# Code Quality
+black==23.11.0
+flake8==6.1.0
+isort==5.12.0
+mypy==1.7.1
+
+# Environment-specific configurations
+# Use pip-tools for dependency management:
+# pip install pip-tools
+# pip-compile requirements-secure.in

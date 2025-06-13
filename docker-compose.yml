@@ -1,0 +1,105 @@
+# docker-compose.yml - 開発環境用
+version: '3.8'
+
+services:
+  # Web アプリケーション
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - FLASK_ENV=development
+      - DB_HOST=db
+      - DB_USERNAME=quested_user
+      - DB_PASSWORD=quested_password
+      - DB_NAME=quested_dev
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=dev-secret-key-change-in-production
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/var/log/quested
+    networks:
+      - quested_network
+
+  # データベース
+  db:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - MYSQL_DATABASE=quested_dev
+      - MYSQL_USER=quested_user
+      - MYSQL_PASSWORD=quested_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+    networks:
+      - quested_network
+
+  # Redis（セッション・キャッシュ用）
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - quested_network
+
+  # Celery Worker（バックグラウンドタスク）
+  celery:
+    build: .
+    command: celery -A run.celery worker --loglevel=info
+    environment:
+      - FLASK_ENV=development
+      - DB_HOST=db
+      - DB_USERNAME=quested_user
+      - DB_PASSWORD=quested_password
+      - DB_NAME=quested_dev
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=dev-secret-key-change-in-production
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./logs:/var/log/quested
+    networks:
+      - quested_network
+
+  # Celery Beat（定期タスク）
+  celery-beat:
+    build: .
+    command: celery -A run.celery beat --loglevel=info
+    environment:
+      - FLASK_ENV=development
+      - DB_HOST=db
+      - DB_USERNAME=quested_user
+      - DB_PASSWORD=quested_password
+      - DB_NAME=quested_dev
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=dev-secret-key-change-in-production
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./logs:/var/log/quested
+    networks:
+      - quested_network
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  quested_network:
+    driver: bridge
